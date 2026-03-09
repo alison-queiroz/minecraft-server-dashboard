@@ -1,10 +1,14 @@
 {
-  "ExVegano4795": "https://exvegan-minecraft-map.duckdns.org/#world:-24:58:39:59:-2.27:1.28:0:0:perspective",
-  "Ex_Vegano": "https://exvegan-minecraft-map.duckdns.org/#world:-24:58:39:59:-2.27:1.28:0:0:perspective",
-  "glattanzi": "https://exvegan-minecraft-map.duckdns.org/#world:-73:68:-12:117:0.79:1.17:0:0:perspective",
-  "QueroLasagna": "https://exvegan-minecraft-map.duckdns.org/#world:68:72:48:52:-2.25:0.97:0:0:perspective",
-  "YaraSada": "https://exvegan-minecraft-map.duckdns.org/#world:68:72:48:52:-2.25:0.97:0:0:perspective",
-  "NiaSoshi": "https://exvegan-minecraft-map.duckdns.org/#world:68:72:48:52:-2.25:0.97:0:0:perspective",
-  "TamanduaDe4ngola": "https://exvegan-minecraft-map.duckdns.org/#world:-41:112:-124:68:-0.11:1.29:0:0:perspective",
-  "Abattoir77": "https://exvegan-minecraft-map.duckdns.org/#world:-286:123:182:92:-2.12:1.2:0:0:perspective"
+  "baseUrl": "https://exvegan-minecraft-map.duckdns.org/",
+  "players": {
+    "ExVegano4795": "#world:-24:58:39:59:-2.27:1.28:0:0:perspective",
+    "Ex_Vegano": "#world:-24:58:39:59:-2.27:1.28:0:0:perspective",
+    "glattanzi": "#world:-73:68:-12:117:0.79:1.17:0:0:perspective",
+    "QueroLasagna": "#world:68:72:48:52:-2.25:0.97:0:0:perspective",
+    "YaraSada": "#world:68:72:48:52:-2.25:0.97:0:0:perspective",
+    "NiaSoshi": "#world:68:72:48:52:-2.25:0.97:0:0:perspective",
+    "TamanduaDe4ngola": "#world:-41:112:-124:68:-0.11:1.29:0:0:perspective",
+    "Abattoir77": "#world:-286:123:182:92:-2.12:1.2:0:0:perspective",
+    "igorar22": "#world:-6:112:-465:5:-0.58:0.83:0:0:perspective"
+  }
 }

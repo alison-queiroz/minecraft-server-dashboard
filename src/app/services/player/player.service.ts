@@ -43,8 +43,13 @@ export class PlayerService {
   }
 
   private fetchHouseLinks() {
-    this.http.get<Record<string, string>>('assets/player-houses-mapping.json').subscribe({
-      next: (data) => this.houseLinks.set(data),
+    this.http.get<{ baseUrl: string; players: Record<string, string> }>('assets/player-houses-mapping.json').subscribe({
+      next: ({ baseUrl, players }) => {
+        const resolved = Object.fromEntries(
+          Object.entries(players).map(([name, path]) => [name, baseUrl + path])
+        );
+        this.houseLinks.set(resolved);
+      },
       error: () => console.warn('Could not reach house links JSON file.'),
     });
   }
