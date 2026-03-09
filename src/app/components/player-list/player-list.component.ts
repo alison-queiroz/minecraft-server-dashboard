@@ -17,7 +17,7 @@ export class PlayerListComponent implements AfterViewInit, OnDestroy {
   protected readonly service = inject(PlayerService);
   private readonly hostRef = inject(ElementRef<HTMLElement>);
 
-  @ViewChild(CdkVirtualScrollViewport) private viewport!: CdkVirtualScrollViewport;
+  @ViewChild(CdkVirtualScrollViewport) private readonly viewport!: CdkVirtualScrollViewport;
 
   private resizeObserver!: ResizeObserver;
 
@@ -32,7 +32,7 @@ export class PlayerListComponent implements AfterViewInit, OnDestroy {
     this.resizeObserver?.disconnect();
   }
 
-  trackByUuid(_index: number, player: Player): string {
+  protected trackByUuid(_index: number, player: Player): string {
     return player.uuid;
   }
 }

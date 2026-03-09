@@ -71,6 +71,7 @@ export class PlayerDetailComponent implements OnInit, OnDestroy {
         canvas: document.createElement('canvas'),
         width: 220,
         height: 300,
+        zoom: 0.62,
         skin: url,
       });
 

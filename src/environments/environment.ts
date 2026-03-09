@@ -3,7 +3,11 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  serverAddress: 'exvegan.duckdns.org',
+  statusApiUrl: 'https://api.mcsrvstat.us/3/',
+  playerRefreshInterval: 30_000,
+  statusRefreshInterval: 60_000,
 };
 
 /*

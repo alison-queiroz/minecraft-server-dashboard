@@ -30,7 +30,14 @@ export class Player {
   }
 
   avatarUrl(size = 64): string {
-    return `https://mc-heads.net/avatar/${this.name}/${size}`;
+    if (this.skin_url?.includes('mc-heads.net/skin/')) {
+      return this.skin_url.replace('/skin/', '/avatar/') + '/' + size;
+    }
+    return this.skin_url;
+  }
+
+  isRawAvatar(): boolean {
+    return this.skin_url ? !this.skin_url.includes('mc-heads.net') : false;
   }
 
   healthPercent(): number {

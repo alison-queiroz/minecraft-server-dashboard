@@ -4,6 +4,7 @@ import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { PlayerListComponent } from './components/player-list/player-list.component';
 import { PlayerDetailComponent } from './components/player-detail/player-detail.component';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +19,6 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.playerService.fetchPlayerData();
-    setInterval(() => this.playerService.fetchPlayerData(), 30000);
+    setInterval(() => this.playerService.fetchPlayerData(), environment.playerRefreshInterval);
   }
 }

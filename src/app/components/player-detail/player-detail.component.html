@@ -133,20 +133,19 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="m21 16-4 4-4-4" />
-                <path d="M17 20V4" />
-                <path d="m3 8 4-4 4 4" />
-                <path d="M7 4v16" />
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                <circle cx="12" cy="10" r="3" />
               </svg>
             </div>
-            <span
-              class="text-xs font-mono bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800 text-emerald-400"
-            >
-              {{ player.pos[0] | number: "1.0-0" }}
-              {{ player.pos[1] | number: "1.0-0" }}
-              {{ player.pos[2] | number: "1.0-0" }}
-            </span>
+            <span class="text-sm font-bold text-zinc-400">Player Location</span>
           </div>
+          <span
+            class="text-xs font-mono bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800 text-emerald-400"
+          >
+            {{ player.pos[0] | number: "1.0-0" }}
+            {{ player.pos[1] | number: "1.0-0" }}
+            {{ player.pos[2] | number: "1.0-0" }}
+          </span>
         </div>
       </div>
 

@@ -4,23 +4,23 @@ import { Player } from './player.model';
 
 @Injectable({ providedIn: 'root' })
 export class PlayerService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
-  private rawPlayers = signal<Player[]>([]);
-  private houseLinks = signal<Record<string, string>>({});
+  private readonly rawPlayers = signal<Player[]>([]);
+  private readonly houseLinks = signal<Record<string, string>>({});
 
-  players = computed(() => {
+  readonly players = computed(() => {
     const links = this.houseLinks();
     return this.rawPlayers().map(p => new Player({ ...p, houseUrl: links[p.name] || undefined }));
   });
 
-  searchTerm = signal<string>('');
-  selectedPlayerName = signal<string | null>(null);
-  selectedPlayer = computed(() =>
+  readonly searchTerm = signal<string>('');
+  readonly selectedPlayerName = signal<string | null>(null);
+  readonly selectedPlayer = computed(() =>
     this.players().find(p => p.name === this.selectedPlayerName()) ?? null
   );
 
-  filteredPlayers = computed(() => {
+  readonly filteredPlayers = computed(() => {
     const term = this.searchTerm().toLowerCase().trim();
     const all = this.players();
 
@@ -42,7 +42,7 @@ export class PlayerService {
     });
   }
 
-  fetchHouseLinks() {
+  private fetchHouseLinks() {
     this.http.get<Record<string, string>>('assets/player-houses-mapping.json').subscribe({
       next: (data) => this.houseLinks.set(data),
       error: () => console.warn('Could not reach house links JSON file.'),

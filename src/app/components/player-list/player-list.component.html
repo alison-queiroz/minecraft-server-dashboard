@@ -62,17 +62,17 @@
       [class.bg-emerald-500/10]="service.selectedPlayerName() === player.name"
     >
       <div class="col-span-5 flex items-center gap-4">
-        <div class="relative">
-          <img
-            [src]="player.avatarUrl()"
-            class="w-10 h-10 rounded-lg bg-zinc-800 pixelated border border-zinc-700 group-hover:border-emerald-500/50 transition-colors shadow-lg"
-            alt=""
-          />
+        <div class="relative w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 group-hover:border-emerald-500/50 transition-colors shadow-lg overflow-hidden pixelated shrink-0">
+          @if (player.isRawAvatar()) {
+            <div
+              class="w-full h-full bg-no-repeat [background-size:800%] [background-position:-37px_-40px]"
+              [style.background-image]="'url(' + player.avatarUrl() + ')'"
+            ></div>
+          } @else {
+            <img [src]="player.avatarUrl(64)" class="w-full h-full object-cover" alt="Avatar" />
+          }
           @if (player.isBedrock()) {
-            <span
-              class="absolute -bottom-1 -right-1 bg-blue-600 text-[8px] font-black px-1 rounded border border-blue-400"
-              >BEDROCK</span
-            >
+            <span class="absolute -bottom-1 -right-1 bg-blue-600 text-[8px] font-black px-1 rounded border border-blue-400 z-10">BEDROCK</span>
           }
         </div>
         <div class="flex flex-col">

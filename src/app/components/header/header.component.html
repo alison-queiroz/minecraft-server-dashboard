@@ -50,22 +50,22 @@
         class="flex items-center justify-center gap-2 text-xs font-black px-2 py-1 rounded-full border transition-colors"
         [ngClass]="{
           'text-emerald-400 bg-emerald-500/10 border-emerald-500/20':
-            serverService.status() === 'ONLINE',
+            serverService.status() === serverStatus.ONLINE,
           'text-red-400 bg-red-500/10 border-red-500/20':
-            serverService.status() === 'OFFLINE',
+            serverService.status() === serverStatus.OFFLINE,
           'text-yellow-400 bg-yellow-500/10 border-yellow-500/20':
-            serverService.status() === 'LOADING',
+            serverService.status() === serverStatus.LOADING,
         }"
       >
         <span class="relative flex h-2 w-2">
-          @if (serverService.status() === "ONLINE") {
+          @if (serverService.status() === serverStatus.ONLINE) {
             <span
               class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
             ></span>
             <span
               class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"
             ></span>
-          } @else if (serverService.status() === "OFFLINE") {
+          } @else if (serverService.status() === serverStatus.OFFLINE) {
             <span
               class="relative inline-flex rounded-full h-2 w-2 bg-red-500"
             ></span>

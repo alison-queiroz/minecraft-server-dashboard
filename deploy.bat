@@ -13,7 +13,6 @@ set KEY_PATH="C:\Users\alison.soares\Desktop\Alison\cloud\ssh-key-2025-12-18.key
 set PROJECT_DIR=%cd%
 :: Removed trailing slash to prevent Windows quote escaping issues
 set BUILD_DIR=%PROJECT_DIR%\dist\minecraft-server-dashboard
-set PYTHON_FILE=%PROJECT_DIR%\server_api.py
 
 set REMOTE_WWW_DIR=/var/www/dashboard
 set REMOTE_API_DIR=/home/opc/minecraft
@@ -64,7 +63,8 @@ echo.
 echo ==========================================================
 echo   5. UPLOADING PYTHON API AND RESTARTING SERVICE
 echo ==========================================================
-scp -i %KEY_PATH% "%PYTHON_FILE%" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/server_api.py"
+scp -r -i %KEY_PATH% "%PROJECT_DIR%\api" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/"
+scp -i %KEY_PATH% "%PROJECT_DIR%\run.py" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/run.py"
 ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo systemctl restart minecraft-api.service"
 
 echo.
