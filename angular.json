@@ -1,5 +1,8 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "cli": {
+    "analytics": false
+  },
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
@@ -31,7 +34,7 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.css"
             ],
             "scripts": []
           },
@@ -72,10 +75,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "minecraft-server-dashboard:build:production"
+              "buildTarget": "minecraft-server-dashboard:build:production"
             },
             "development": {
-              "browserTarget": "minecraft-server-dashboard:build:development"
+              "buildTarget": "minecraft-server-dashboard:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -83,7 +86,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "minecraft-server-dashboard:build"
+            "buildTarget": "minecraft-server-dashboard:build"
           }
         },
         "test": {
@@ -99,7 +102,7 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.css"
             ],
             "scripts": []
           }
@@ -107,5 +110,4 @@
       }
     }
   },
-  "defaultProject": "minecraft-server-dashboard"
 }
