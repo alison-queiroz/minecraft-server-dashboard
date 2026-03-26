@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, inject } from '@angular/core';
-import { ServerService } from '../../../services/server/server.service';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
 export type ServerIconSize = 'nav' | 'login' | 'card' | 'home';
 
@@ -13,6 +12,4 @@ export type ServerIconSize = 'nav' | 'login' | 'card' | 'home';
 })
 export class ServerIconComponent {
   @Input() size: ServerIconSize = 'card';
-
-  protected readonly serverService = inject(ServerService);
 }

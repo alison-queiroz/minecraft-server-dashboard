@@ -1,6 +1,5 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { DOCUMENT } from '@angular/common';
 import { environment } from '../../../environments/environment';
 
 export const SERVER_STATUS = {
@@ -27,10 +26,10 @@ interface ServerStatusResponse {
 @Injectable({ providedIn: 'root' })
 export class ServerService {
   private readonly http = inject(HttpClient);
-  private readonly document = inject(DOCUMENT);
   private readonly statusUrl = environment.statusApiUrl;
   private readonly bedrockStatusUrl = environment.bedrockStatusApiUrl;
   private readonly serverAddress = environment.serverAddress;
+  private readonly serverIP = environment.serverIP;
   private readonly statusCheckInterval = environment.statusRefreshInterval;
 
   // Java
@@ -39,7 +38,6 @@ export class ServerService {
   readonly maxPlayers = signal<number>(0);
   readonly version = signal<string | null>(null);
   readonly motd = signal<string[]>([]);
-  readonly icon = signal<string | null>(null);
   readonly software = signal<string | null>(null);
   readonly hostname = signal<string | null>(null);
   readonly ip = signal<string | null>(null);
@@ -63,7 +61,7 @@ export class ServerService {
   }
 
   private fetchStatus() {
-    this.http.get<ServerStatusResponse>(`${this.statusUrl}${this.serverAddress}`).subscribe({
+    this.http.get<ServerStatusResponse>(`${this.statusUrl}${this.serverIP}`).subscribe({
       next: (res) => {
         this.status.set(res.online ? SERVER_STATUS.ONLINE : SERVER_STATUS.OFFLINE);
         this.onlinePlayers.set(res.players?.online ?? 0);
@@ -75,10 +73,6 @@ export class ServerService {
         this.ip.set(res.ip ?? null);
         this.port.set(res.port ?? null);
         this.protocol.set(res.protocol ?? null);
-        if (res.icon) {
-          this.icon.set(res.icon);
-          this.updateFavicon(res.icon);
-        }
       },
       error: () => {
         this.status.set(SERVER_STATUS.OFFLINE);
@@ -89,7 +83,7 @@ export class ServerService {
   }
 
   private fetchBedrockStatus() {
-    this.http.get<ServerStatusResponse>(`${this.bedrockStatusUrl}${this.serverAddress}`).subscribe({
+    this.http.get<ServerStatusResponse>(`${this.bedrockStatusUrl}${this.serverIP}`).subscribe({
       next: (res) => {
         this.bedrockStatus.set(res.online ? SERVER_STATUS.ONLINE : SERVER_STATUS.OFFLINE);
         this.bedrockOnlinePlayers.set(res.players?.online ?? 0);
@@ -105,10 +99,4 @@ export class ServerService {
     });
   }
 
-  private updateFavicon(iconDataUrl: string): void {
-    const link = this.document.querySelector<HTMLLinkElement>("link[rel='icon']");
-    if (link) {
-      link.href = iconDataUrl;
-    }
-  }
 }

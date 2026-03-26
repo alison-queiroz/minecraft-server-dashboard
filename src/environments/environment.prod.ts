@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
   serverAddress: 'exvegan.duckdns.org',
+  serverIP: '163.176.228.223',
   statusApiUrl: 'https://api.mcsrvstat.us/3/',
   bedrockStatusApiUrl: 'https://api.mcsrvstat.us/bedrock/3/',
   playerRefreshInterval: 30_000,
