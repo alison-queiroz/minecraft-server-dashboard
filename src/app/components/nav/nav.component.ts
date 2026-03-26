@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { ServerService, SERVER_STATUS } from '../../services/server/server.service';
+import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
   selector: 'app-nav',
@@ -13,6 +14,7 @@ import { ServerService, SERVER_STATUS } from '../../services/server/server.servi
 })
 export class NavComponent {
   protected readonly serverService = inject(ServerService);
+  protected readonly auth = inject(AuthService);
   protected readonly serverStatus = SERVER_STATUS;
   protected readonly menuOpen = signal(false);
 
@@ -22,5 +24,10 @@ export class NavComponent {
 
   closeMenu(): void {
     this.menuOpen.set(false);
+  }
+
+  async signOut(): Promise<void> {
+    this.menuOpen.set(false);
+    await this.auth.signOut();
   }
 }

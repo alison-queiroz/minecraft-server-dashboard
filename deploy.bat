@@ -77,7 +77,7 @@ echo   6. UPLOADING PYTHON API AND RESTARTING SERVICE
 echo ==========================================================
 scp -r -i %KEY_PATH% "%PROJECT_DIR%\api" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/"
 scp -i %KEY_PATH% "%PROJECT_DIR%\run.py" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/run.py"
-ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo systemctl restart minecraft-api.service"
+ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && sudo systemctl restart minecraft-api.service"
 
 echo.
 color 0A
