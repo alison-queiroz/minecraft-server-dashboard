@@ -1,0 +1,86 @@
+<section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5">
+  <h2 class="text-base font-bold text-zinc-100">Minecraft Accounts</h2>
+
+  @if (profileService.isLoading()) {
+    <p class="text-sm text-zinc-500">Loading...</p>
+  } @else {
+    @if (accountError()) {
+      <p class="text-xs text-red-400">{{ accountError() }}</p>
+    }
+
+    <!-- Java -->
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-black text-emerald-400 uppercase tracking-widest w-16 shrink-0">Java</span>
+        @if (profileService.minecraftAccounts().java) {
+          <img [src]="'https://mc-heads.net/avatar/' + profileService.minecraftAccounts().java + '/28'"
+               alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().java }}</span>
+        }
+      </div>
+      <div class="flex gap-2">
+        <input [value]="accountInputs().java"
+               (input)="updateInput('java', $any($event.target).value)"
+               list="available-players"
+               placeholder="Java username..."
+               class="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+        <button (click)="save('java')" [disabled]="savingAccount() === 'java'"
+          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0">
+          {{ savingAccount() === 'java' ? '...' : (profileService.minecraftAccounts().java ? 'Update' : 'Link') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Bedrock -->
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-black text-blue-400 uppercase tracking-widest w-16 shrink-0">Bedrock</span>
+        @if (profileService.minecraftAccounts().bedrock) {
+          <img [src]="'https://mc-heads.net/avatar/' + profileService.minecraftAccounts().bedrock + '/28'"
+               alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().bedrock }}</span>
+        }
+      </div>
+      <div class="flex gap-2">
+        <input [value]="accountInputs().bedrock"
+               (input)="updateInput('bedrock', $any($event.target).value)"
+               list="available-players"
+               placeholder="Bedrock username..."
+               class="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-colors" />
+        <button (click)="save('bedrock')" [disabled]="savingAccount() === 'bedrock'"
+          class="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0">
+          {{ savingAccount() === 'bedrock' ? '...' : (profileService.minecraftAccounts().bedrock ? 'Update' : 'Link') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Admin -->
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-black text-orange-400 uppercase tracking-widest w-16 shrink-0">Admin</span>
+        @if (profileService.minecraftAccounts().admin) {
+          <img [src]="'https://mc-heads.net/avatar/' + profileService.minecraftAccounts().admin + '/28'"
+               alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().admin }}</span>
+        }
+      </div>
+      <div class="flex gap-2">
+        <input [value]="accountInputs().admin"
+               (input)="updateInput('admin', $any($event.target).value)"
+               list="available-players"
+               placeholder="Admin username..."
+               class="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors" />
+        <button (click)="save('admin')" [disabled]="savingAccount() === 'admin'"
+          class="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0">
+          {{ savingAccount() === 'admin' ? '...' : (profileService.minecraftAccounts().admin ? 'Update' : 'Link') }}
+        </button>
+      </div>
+    </div>
+
+    <datalist id="available-players">
+      @for (name of availablePlayers(); track name) {
+        <option [value]="name">{{ name }}</option>
+      }
+    </datalist>
+  }
+</section>

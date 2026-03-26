@@ -1,0 +1,13 @@
+@if (isRaw) {
+  <div
+    #skinContainer
+    class="relative z-20 h-44 mt-0 drop-shadow-[0_25px_40px_rgba(16,185,129,0.4)] cursor-grab active:cursor-grabbing flex justify-center items-center">
+  </div>
+} @else {
+  <img
+    [src]="skinUrl"
+    class="relative z-20 h-44 mt-0 drop-shadow-[0_25px_40px_rgba(16,185,129,0.4)] pixelated transition-transform hover:scale-105 duration-500"
+    alt="Player Render"
+    onerror="this.src = 'https://mc-heads.net/body/MHF_Steve/200'"
+  />
+}

@@ -1,0 +1,73 @@
+<div class="flex flex-col gap-4 h-full">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-black tracking-tighter text-zinc-100 uppercase flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400">
+        <path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13"/><path d="M15 7v13"/>
+      </svg>
+      World Map
+    </h1>
+    @if (saved()) {
+      <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
+        Location saved!
+      </span>
+    }
+  </div>
+
+  <!-- Map viewer (resizable, tall) -->
+  <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex-1">
+    <app-map-viewer
+      [resizable]="true"
+      class="map-full-height"
+      (positionCaptured)="onPositionCaptured($event)">
+    </app-map-viewer>
+  </div>
+
+  <!-- Save form (appears after capture) -->
+  @if (showSaveForm()) {
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <p class="text-sm font-bold text-zinc-200">Save captured location</p>
+        <button (click)="cancelSave()" class="text-zinc-500 hover:text-zinc-300 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <p class="text-xs font-mono text-zinc-600 truncate">{{ capturedHash() }}</p>
+
+      <input [value]="saveName()" (input)="saveName.set($any($event.target).value)"
+        placeholder="Location name..." maxlength="64"
+        class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+      <input [value]="saveDesc()" (input)="saveDesc.set($any($event.target).value)"
+        placeholder="Description (optional)" maxlength="160"
+        class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+
+      <label class="flex items-center gap-3 cursor-pointer select-none">
+        <div class="relative">
+          <input type="checkbox" class="sr-only peer" [checked]="savePublic()" (change)="savePublic.set($any($event.target).checked)" />
+          <div class="w-9 h-5 bg-zinc-700 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+        </div>
+        <span class="text-sm text-zinc-300">Show on player card <span class="text-zinc-500 text-xs">(visible to all users)</span></span>
+      </label>
+
+      @if (saveError()) { <p class="text-xs text-red-400">{{ saveError() }}</p> }
+
+      <div class="flex gap-2 justify-end">
+        <button (click)="cancelSave()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold transition-colors">
+          Cancel
+        </button>
+        <button (click)="saveLocation()" [disabled]="saving()"
+          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-colors disabled:opacity-60">
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
+      </div>
+    </div>
+  }
+
+</div>

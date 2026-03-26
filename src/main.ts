@@ -48,6 +48,14 @@ bootstrapApplication(AppComponent, {
           ),
         canActivate: [authGuard],
       },
+      {
+        path: 'map',
+        loadComponent: () =>
+          import('./app/pages/map/map.component').then(
+            (m) => m.MapComponent,
+          ),
+        canActivate: [authGuard],
+      },
       { path: '**', redirectTo: '' },
     ]),
   ],

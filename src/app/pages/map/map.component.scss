@@ -1,0 +1,9 @@
+.map-full-height {
+  display: block;
+
+  ::ng-deep .resize-handle {
+    height: calc(100vh - 280px);
+    min-height: 400px;
+    max-height: calc(100vh - 180px);
+  }
+}

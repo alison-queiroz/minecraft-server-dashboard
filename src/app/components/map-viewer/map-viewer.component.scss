@@ -1,0 +1,11 @@
+.resize-handle {
+  resize: vertical;
+  overflow: hidden;
+  min-height: 240px;
+  max-height: 80vh;
+  height: 320px;
+
+  iframe {
+    height: 100% !important;
+  }
+}

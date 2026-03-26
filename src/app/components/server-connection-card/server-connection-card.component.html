@@ -1,0 +1,82 @@
+<div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl">
+  <div class="p-5 border-b border-zinc-800">
+    <h3 class="text-[10px] uppercase font-black tracking-widest text-zinc-500 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+        <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+        <line x1="12" x2="12.01" y1="20" y2="20"/>
+      </svg>
+      Connection Details
+    </h3>
+  </div>
+  <div class="divide-y divide-zinc-800">
+    <!-- Hostname -->
+    <div class="p-5 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+            <path d="M2 12h20"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-0.5">Hostname</p>
+          <code class="font-mono text-emerald-400 text-sm">{{ serverService.hostname() || 'exvegan.duckdns.org' }}</code>
+        </div>
+      </div>
+      <button (click)="copyAddress()"
+        class="shrink-0 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl border transition-all active:scale-95"
+        [ngClass]="copied()
+          ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+          : 'text-zinc-400 bg-zinc-800 border-zinc-700 hover:text-zinc-100 hover:bg-zinc-700'">
+        {{ copied() ? 'Copied!' : 'Copy' }}
+      </button>
+    </div>
+    <!-- IP -->
+    @if (serverService.ip()) {
+      <div class="p-5 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+              <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+              <line x1="6" x2="6.01" y1="6" y2="6"/>
+              <line x1="6" x2="6.01" y1="18" y2="18"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-0.5">IP Address</p>
+            <code class="font-mono text-zinc-300 text-sm">{{ serverService.ip() }}</code>
+          </div>
+        </div>
+        <button (click)="copyIp()"
+          class="shrink-0 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl border transition-all active:scale-95"
+          [ngClass]="copiedIp()
+            ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+            : 'text-zinc-400 bg-zinc-800 border-zinc-700 hover:text-zinc-100 hover:bg-zinc-700'">
+          {{ copiedIp() ? 'Copied!' : 'Copy' }}
+        </button>
+      </div>
+    }
+    <!-- Port -->
+    <div class="p-5 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="16 3 21 3 21 8"/>
+          <line x1="4" x2="21" y1="20" y2="3"/>
+          <polyline points="21 16 21 21 16 21"/>
+          <line x1="15" x2="21" y1="15" y2="21"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-0.5">Port</p>
+        <code class="font-mono text-zinc-300 text-sm">{{ serverService.port() ?? 25565 }}</code>
+      </div>
+    </div>
+  </div>
+</div>

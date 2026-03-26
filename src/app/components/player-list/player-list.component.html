@@ -2,43 +2,7 @@
   class="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden flex flex-col h-full"
 >
   <!-- Search Bar -->
-  <div
-    class="p-4 border-b border-zinc-800 flex flex-col md:flex-row gap-4 items-center bg-zinc-900/50"
-  >
-    <div class="relative w-full">
-      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
-      </span>
-      <input
-        type="text"
-        [ngModel]="service.searchTerm()"
-        (ngModelChange)="service.searchTerm.set($event)"
-        placeholder="Search by name, UUID or dimension..."
-        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all placeholder:text-zinc-700"
-      />
-    </div>
-    <div
-      class="flex items-center gap-2 whitespace-nowrap text-xs font-bold text-zinc-500"
-    >
-      <span
-        >Showing {{ service.filteredPlayers().length }} of
-        {{ service.players().length }}</span
-      >
-    </div>
-  </div>
+  <app-player-search></app-player-search>
 
   <!-- Table Header (Static) -->
   <div
@@ -52,66 +16,11 @@
 
   <!-- Virtual Scroll Viewport -->
   <cdk-virtual-scroll-viewport itemSize="65" class="flex-1 custom-scrollbar">
-    <div
-      *cdkVirtualFor="
-        let player of service.filteredPlayers();
-        trackBy: trackByUuid
-      "
-      (click)="service.selectedPlayerName.set(player.name)"
-      class="grid grid-cols-12 items-center py-3 px-6 hover:bg-emerald-500/5 cursor-pointer transition-all border-b border-zinc-800/50 group"
-      [class.bg-emerald-500/10]="service.selectedPlayerName() === player.name"
-    >
-      <div class="col-span-5 flex items-center gap-4">
-        <div class="relative w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 group-hover:border-emerald-500/50 transition-colors shadow-lg overflow-hidden pixelated shrink-0">
-          @if (player.isRawAvatar()) {
-            <div
-              class="w-full h-full bg-no-repeat [background-size:800%] [background-position:-37px_-40px]"
-              [style.background-image]="'url(' + player.avatarUrl() + ')'"
-            ></div>
-          } @else {
-            <img [src]="service.getAvatarUrl(player.avatarUrl(64))" class="w-full h-full object-cover" alt="Avatar" />
-          }
-          @if (player.isBedrock()) {
-            <span class="absolute -bottom-1 -right-1 bg-blue-600 text-[8px] font-black px-1 rounded border border-blue-400 z-10">BEDROCK</span>
-          }
-        </div>
-        <div class="flex flex-col">
-          <span
-            class="font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors"
-            >{{ player.name }}</span
-          >
-          <span
-            class="text-[10px] font-mono text-zinc-600 truncate max-w-[120px]"
-            >{{ player.uuid }}</span
-          >
-        </div>
-      </div>
-
-      <div class="col-span-2">
-        <span
-          class="bg-zinc-800 px-2.5 py-1 rounded-md text-emerald-400 font-mono text-xs font-bold border border-zinc-700"
-        >
-          LVL {{ player.level }}
-        </span>
-      </div>
-
-      <div class="col-span-3">
-        <span
-          class="text-xs font-bold"
-          [ngClass]="{
-            'text-emerald-500': player.dimension === 'Overworld',
-            'text-orange-500': player.dimension === 'Nether',
-            'text-purple-500': player.dimension === 'The End',
-          }"
-          >{{ player.dimension }}</span
-        >
-      </div>
-
-      <div class="col-span-2 text-right">
-        <span class="text-zinc-500 text-[10px] font-mono">{{
-          player.last_seen
-        }}</span>
-      </div>
-    </div>
+    <app-player-card-row
+      *cdkVirtualFor="let player of service.filteredPlayers(); trackBy: trackByUuid"
+      [player]="player"
+      [isSelected]="service.selectedPlayerName() === player.name"
+      (select)="service.selectedPlayerName.set(player.name)">
+    </app-player-card-row>
   </cdk-virtual-scroll-viewport>
 </div>

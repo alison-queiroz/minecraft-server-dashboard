@@ -1,0 +1,41 @@
+<div class="flex flex-col">
+  <div [class.resize-handle]="resizable">
+    <iframe
+      #mapIframe
+      [src]="mapSrc()"
+      class="w-full border-0 block"
+      [style.height]="resizable ? '100%' : '320px'"
+      loading="lazy"
+      title="Minecraft Map"
+      sandbox="allow-scripts allow-same-origin allow-forms">
+    </iframe>
+  </div>
+  <div class="p-4 flex flex-col gap-3 bg-zinc-950/50">
+    <p class="text-xs text-zinc-500">
+      Navigate to a spot on the map, then click <strong class="text-zinc-300">Capture position</strong>
+      to save your current view as a location.
+    </p>
+    <div class="flex gap-2">
+      <button (click)="capturePosition()"
+        class="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition-colors shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        Capture position
+      </button>
+    </div>
+    @if (showCaptureInput()) {
+      <div class="flex gap-2">
+        <input [value]="captureInput()"
+               (input)="captureInput.set($any($event.target).value)"
+               placeholder="Paste map URL here..."
+               class="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors font-mono" />
+        <button (click)="applyCapturedUrl()"
+          class="px-4 py-2 rounded-xl bg-zinc-700 hover:bg-zinc-600 text-zinc-100 text-xs font-bold transition-colors shrink-0">
+          Use
+        </button>
+      </div>
+    }
+  </div>
+</div>

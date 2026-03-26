@@ -1,0 +1,38 @@
+<div class="col-span-5 flex items-center gap-4">
+    <div class="relative w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 group-hover:border-emerald-500/50 transition-colors shadow-lg overflow-hidden pixelated shrink-0">
+      @if (player.isRawAvatar()) {
+        <div
+          class="w-full h-full bg-no-repeat [background-size:800%] [background-position:-37px_-40px]"
+          [style.background-image]="'url(' + player.avatarUrl() + ')'">
+        </div>
+      } @else {
+        <img [src]="playerService.getAvatarUrl(player.avatarUrl(64))" class="w-full h-full object-cover" alt="Avatar" />
+      }
+      @if (player.isBedrock()) {
+        <span class="absolute -bottom-1 -right-1 bg-blue-600 text-[8px] font-black px-1 rounded border border-blue-400 z-10">BEDROCK</span>
+      }
+    </div>
+    <div class="flex flex-col">
+      <span class="font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">{{ player.name }}</span>
+      <span class="text-[10px] font-mono text-zinc-600 truncate max-w-[120px]">{{ player.uuid }}</span>
+    </div>
+  </div>
+
+  <div class="col-span-2">
+    <span class="bg-zinc-800 px-2.5 py-1 rounded-md text-emerald-400 font-mono text-xs font-bold border border-zinc-700">
+      LVL {{ player.level }}
+    </span>
+  </div>
+
+  <div class="col-span-3">
+    <span class="text-xs font-bold"
+      [ngClass]="{
+        'text-emerald-500': player.dimension === 'Overworld',
+        'text-orange-500': player.dimension === 'Nether',
+        'text-purple-500': player.dimension === 'The End'
+      }">{{ player.dimension }}</span>
+  </div>
+
+  <div class="col-span-2 text-right">
+    <span class="text-zinc-500 text-[10px] font-mono">{{ player.last_seen }}</span>
+  </div>

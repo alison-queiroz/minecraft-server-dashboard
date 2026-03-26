@@ -1,0 +1,95 @@
+<section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-4">
+  <div class="flex items-center justify-between">
+    <h2 class="text-base font-bold text-zinc-100">Saved Locations</h2>
+    <button (click)="toggleAddForm()"
+      class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-colors"
+      [class.bg-emerald-600]="!showAddForm()" [class.hover:bg-emerald-500]="!showAddForm()"
+      [class.text-white]="!showAddForm()" [class.bg-zinc-800]="showAddForm()"
+      [class.hover:bg-zinc-700]="showAddForm()" [class.text-zinc-300]="showAddForm()">
+      @if (!showAddForm()) { Add location } @else { Cancel }
+    </button>
+  </div>
+
+  @if (showAddForm()) {
+    <div class="flex flex-col gap-3 bg-zinc-800/60 border border-zinc-700 rounded-xl p-4">
+      <input [value]="newLocName()" (input)="newLocName.set($any($event.target).value)"
+        placeholder="Location name (e.g. My House)" maxlength="64"
+        class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+      <input [value]="newLocHash()" (input)="newLocHash.set($any($event.target).value)"
+        placeholder="Map link or #world:x:y:z:... fragment"
+        class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors font-mono text-xs" />
+      <input [value]="newLocDesc()" (input)="newLocDesc.set($any($event.target).value)"
+        placeholder="Description (optional)" maxlength="160"
+        class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+      <label class="flex items-center gap-3 cursor-pointer select-none">
+        <div class="relative">
+          <input type="checkbox" class="sr-only peer" [checked]="newLocPublic()" (change)="newLocPublic.set($any($event.target).checked)" />
+          <div class="w-9 h-5 bg-zinc-700 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+        </div>
+        <span class="text-sm text-zinc-300">Show on player card <span class="text-zinc-500 text-xs">(visible to all users)</span></span>
+      </label>
+      @if (addError()) { <p class="text-xs text-red-400">{{ addError() }}</p> }
+      <button (click)="addLocation()" [disabled]="saving()"
+        class="self-end px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+        {{ saving() ? 'Saving...' : 'Save location' }}
+      </button>
+    </div>
+  }
+
+  @if (profileService.savedLocations().length === 0 && !showAddForm()) {
+    <p class="text-sm text-zinc-500 text-center py-4">No saved locations yet.</p>
+  }
+
+  @for (loc of profileService.savedLocations(); track loc.id) {
+    <div class="flex flex-col gap-2 border border-zinc-800 rounded-xl p-4">
+      @if (editingId() === loc.id) {
+        <input [value]="editName()" (input)="editName.set($any($event.target).value)" maxlength="64"
+          class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors" />
+        <input [value]="editHash()" (input)="editHash.set($any($event.target).value)"
+          class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-100 font-mono focus:outline-none focus:border-emerald-500 transition-colors" />
+        <input [value]="editDesc()" (input)="editDesc.set($any($event.target).value)" maxlength="160"
+          class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors" />
+        <label class="flex items-center gap-3 cursor-pointer select-none">
+          <div class="relative">
+            <input type="checkbox" class="sr-only peer" [checked]="editPublic()" (change)="editPublic.set($any($event.target).checked)" />
+            <div class="w-9 h-5 bg-zinc-700 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
+            <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+          </div>
+          <span class="text-sm text-zinc-300">Show on player card</span>
+        </label>
+        <div class="flex gap-2 justify-end">
+          <button (click)="cancelEdit()" class="px-3 py-1.5 text-xs font-bold text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors">Cancel</button>
+          <button (click)="saveEdit(loc.id)" [disabled]="saving()" class="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors disabled:opacity-60">{{ saving() ? 'Saving...' : 'Save' }}</button>
+        </div>
+      } @else {
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-bold text-zinc-100 truncate flex items-center gap-2">
+              {{ loc.name }}
+              @if (loc.isPublic) {
+                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">Public</span>
+              }
+            </p>
+            @if (loc.description) { <p class="text-xs text-zinc-400 mt-0.5">{{ loc.description }}</p> }
+          </div>
+          <div class="flex gap-1 shrink-0">
+            <button (click)="previewOnMap(loc.mapHash)" class="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 transition-colors" title="Preview on map">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13"/><path d="M15 7v13"/></svg>
+            </button>
+            <a [href]="mapUrl(loc.mapHash)" target="_blank" rel="noopener" class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" title="Open in new tab">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+            </a>
+            <button (click)="startEdit(loc)" class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" title="Edit">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+            </button>
+            <button (click)="deleteLocation(loc.id)" class="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors" title="Delete">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </div>
+        <p class="text-xs font-mono text-zinc-600 truncate">{{ loc.mapHash }}</p>
+      }
+    </div>
+  }
+</section>

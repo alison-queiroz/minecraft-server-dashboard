@@ -4,12 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { Player } from '../../services/player/player.model';
 import { PlayerService } from '../../services/player/player.service';
+import { PlayerSearchComponent } from '../player-search/player-search.component';
+import { PlayerCardRowComponent } from '../player-card-row/player-card-row.component';
 
 @Component({
   selector: 'app-player-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ScrollingModule],
+  imports: [CommonModule, FormsModule, ScrollingModule, PlayerSearchComponent, PlayerCardRowComponent],
   templateUrl: './player-list.component.html',
   styleUrls: ['./player-list.component.scss'],
 })
