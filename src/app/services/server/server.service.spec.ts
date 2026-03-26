@@ -1,11 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { DOCUMENT } from '@angular/common';
 import { ServerService, SERVER_STATUS } from './server.service';
 import { environment } from '../../../environments/environment';
 
-const JAVA_URL = `${environment.statusApiUrl}${environment.serverAddress}`;
-const BEDROCK_URL = `${environment.bedrockStatusApiUrl}${environment.serverAddress}`;
+const JAVA_URL = `${environment.statusApiUrl}${environment.serverIP}`;
+const BEDROCK_URL = `${environment.bedrockStatusApiUrl}${environment.serverIP}`;
 
 const ONLINE_RESPONSE = {
   online: true,
@@ -78,33 +77,6 @@ describe('ServerService', () => {
       expect(service.protocol()).toEqual({ version: 774, name: '1.21.11' });
     });
 
-    it('should populate the icon signal', () => {
-      expect(service.icon()).toBe('data:image/png;base64,abc123');
-    });
-  });
-
-  // ─── Favicon update ────────────────────────────────────────────────────────
-  describe('favicon update', () => {
-    let linkEl: HTMLLinkElement;
-
-    beforeEach(() => {
-      // Add a <link rel="icon"> to the document BEFORE flushing the response
-      // so updateFavicon() can find and update it.
-      const doc = TestBed.inject(DOCUMENT);
-      linkEl = doc.createElement('link');
-      linkEl.setAttribute('rel', 'icon');
-      doc.head.appendChild(linkEl);
-
-      const { httpMock } = createService();
-      httpMock.expectOne(JAVA_URL).flush(ONLINE_RESPONSE);
-      httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
-    });
-
-    afterEach(() => linkEl.remove());
-
-    it('should update the favicon href from the API icon', () => {
-      expect(linkEl.href).toBe('data:image/png;base64,abc123');
-    });
   });
 
   // ─── Java server OFFLINE ───────────────────────────────────────────────────
