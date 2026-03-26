@@ -55,6 +55,11 @@ export class PlayerDetailComponent {
     return base + (hash.startsWith('#') ? hash : '#' + hash);
   }
 
+  /** Extracts the fragment (text after #) from a map hash string for Angular routerLink */
+  protected locFragment(hash: string): string {
+    return hash.startsWith('#') ? hash.slice(1) : hash;
+  }
+
   /** Extracts the fragment (text after #) from a full Dynmap URL for use with routerLink */
   protected houseFragment(url: string): string {
     const i = url.indexOf('#');

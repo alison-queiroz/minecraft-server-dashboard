@@ -8,12 +8,14 @@ import {
 } from '@angular/core';
 import { UserProfileService, AccountType } from '../../services/user-profile/user-profile.service';
 import { PlayerService } from '../../services/player/player.service';
+import { Player } from '../../services/player/player.model';
+import { PlayerFaceComponent } from '../player-face/player-face.component';
 
 @Component({
   selector: 'app-profile-accounts',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [PlayerFaceComponent],
   templateUrl: './profile-accounts.component.html',
   styleUrls: ['./profile-accounts.component.scss'],
 })
@@ -33,10 +35,9 @@ export class ProfileAccountsComponent implements OnInit {
     return this.playerService.players().map(p => p.name).filter(n => !linked.has(n));
   });
 
-  /** Returns the resolved skin_url for a linked username, or null if not found. */
-  protected skinUrl(username: string | null | undefined): string | null {
+  protected findPlayer(username: string | null | undefined): Player | null {
     if (!username) return null;
-    return this.playerService.players().find(p => p.name === username)?.skin_url ?? null;
+    return this.playerService.players().find(p => p.name === username) ?? null;
   }
 
   ngOnInit(): void {

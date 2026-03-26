@@ -13,8 +13,10 @@
       <div class="flex items-center gap-2">
         <span class="text-xs font-black text-emerald-400 uppercase tracking-widest w-16 shrink-0">Java</span>
         @if (profileService.minecraftAccounts().java) {
-          @if (skinUrl(profileService.minecraftAccounts().java); as url) {
-            <img [src]="url" alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          @if (findPlayer(profileService.minecraftAccounts().java); as player) {
+            <app-player-face [player]="player" [size]="28"
+              class="w-7 h-7 rounded-md border border-zinc-700 shrink-0">
+            </app-player-face>
           }
           <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().java }}</span>
         }
@@ -37,8 +39,10 @@
       <div class="flex items-center gap-2">
         <span class="text-xs font-black text-blue-400 uppercase tracking-widest w-16 shrink-0">Bedrock</span>
         @if (profileService.minecraftAccounts().bedrock) {
-          @if (skinUrl(profileService.minecraftAccounts().bedrock); as url) {
-            <img [src]="url" alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          @if (findPlayer(profileService.minecraftAccounts().bedrock); as player) {
+            <app-player-face [player]="player" [size]="28"
+              class="w-7 h-7 rounded-md border border-zinc-700 shrink-0">
+            </app-player-face>
           }
           <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().bedrock }}</span>
         }
@@ -61,8 +65,10 @@
       <div class="flex items-center gap-2">
         <span class="text-xs font-black text-orange-400 uppercase tracking-widest w-16 shrink-0">Admin</span>
         @if (profileService.minecraftAccounts().admin) {
-          @if (skinUrl(profileService.minecraftAccounts().admin); as url) {
-            <img [src]="url" alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          @if (findPlayer(profileService.minecraftAccounts().admin); as player) {
+            <app-player-face [player]="player" [size]="28"
+              class="w-7 h-7 rounded-md border border-zinc-700 shrink-0">
+            </app-player-face>
           }
           <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().admin }}</span>
         }

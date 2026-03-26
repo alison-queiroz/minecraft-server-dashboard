@@ -12,12 +12,13 @@ import {
 import { NgClass } from '@angular/common';
 import { Player } from '../../services/player/player.model';
 import { PlayerService } from '../../services/player/player.service';
+import { PlayerFaceComponent } from '../player-face/player-face.component';
 
 @Component({
   selector: 'app-player-card-row',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass],
+  imports: [NgClass, PlayerFaceComponent],
   templateUrl: './player-card-row.component.html',
   styleUrls: ['./player-card-row.component.scss'],
   host: {
