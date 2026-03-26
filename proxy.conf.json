@@ -1,9 +1,7 @@
 {
-  "/map": {
-    "target": "https://exvegan-minecraft-map.duckdns.org",
+  "/api": {
+    "target": "http://localhost:5000",
     "changeOrigin": true,
-    "secure": true,
-    "pathRewrite": { "^/map": "" },
     "logLevel": "warn"
   }
 }

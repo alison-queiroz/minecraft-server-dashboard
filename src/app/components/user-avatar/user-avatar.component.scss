@@ -1,0 +1,14 @@
+:host {
+  display: contents;
+}
+
+.avatar-img {
+  @apply rounded-full border-2 border-zinc-700 object-cover shrink-0;
+}
+
+:host([data-size="sm"]) .avatar-img {
+  @apply w-8 h-8;
+}
+:host([data-size="lg"]) .avatar-img {
+  @apply w-16 h-16;
+}

@@ -4,6 +4,7 @@ import glob
 import json
 import logging
 import os
+import threading
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -12,6 +13,7 @@ from typing import Any, Optional
 import nbtlib
 
 from .skin_resolver import get_skin_url
+from .firestore_sync import sync_players
 
 logger = logging.getLogger(__name__)
 
@@ -94,5 +96,7 @@ def _fetch_live() -> list[dict[str, Any]]:
 
 def get_players() -> list[dict[str, Any]]:
     if _cache.is_stale():
-        _cache.refresh(_fetch_live())
+        fresh = _fetch_live()
+        _cache.refresh(fresh)
+        threading.Thread(target=sync_players, args=(fresh,), daemon=True).start()
     return _cache.data

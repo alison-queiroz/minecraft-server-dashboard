@@ -33,6 +33,12 @@ export class ProfileAccountsComponent implements OnInit {
     return this.playerService.players().map(p => p.name).filter(n => !linked.has(n));
   });
 
+  /** Returns the resolved skin_url for a linked username, or null if not found. */
+  protected skinUrl(username: string | null | undefined): string | null {
+    if (!username) return null;
+    return this.playerService.players().find(p => p.name === username)?.skin_url ?? null;
+  }
+
   ngOnInit(): void {
     const accts = this.profileService.minecraftAccounts();
     this.accountInputs.set({

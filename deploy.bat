@@ -3,6 +3,30 @@ title Oracle Cloud Full Deployment Pipeline
 color 0B
 
 :: -------------------------------------------------------------------
+:: Bootstrap Node.js into PATH when launched by double-click.
+:: Covers nvm-windows, the official Node.js installer, and Volta.
+:: -------------------------------------------------------------------
+where node >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+  for %%P in (
+    "%APPDATA%\nvm"
+    "%ProgramFiles%\nodejs"
+    "%ProgramFiles(x86)%\nodejs"
+    "%LOCALAPPDATA%\Volta\bin"
+  ) do (
+    if exist "%%~P\node.exe" (
+      set "PATH=%%~P;%PATH%"
+      goto :node_found
+    )
+  )
+  color 0C
+  echo [ERROR] Node.js not found. Install it or run this script from a terminal.
+  pause
+  exit /b 1
+)
+:node_found
+
+:: -------------------------------------------------------------------
 :: ENVIRONMENT CONFIGURATION
 :: -------------------------------------------------------------------
 set SERVER_IP=163.176.228.223
@@ -21,7 +45,7 @@ set TAR_FILE=deploy_build.tar.gz
 echo ==========================================================
 echo   1. RUNNING UNIT TESTS
 echo ==========================================================
-call ng test --watch=false --browsers=ChromeHeadless
+call npx ng test --watch=false --browsers=ChromeHeadless
 if %ERRORLEVEL% NEQ 0 (
     color 0C
     echo [ERROR] Unit tests failed. Deployment aborted.
@@ -34,7 +58,7 @@ echo ==========================================================
 echo   2. BUILDING ANGULAR PROJECT
 echo ==========================================================
 :: Using 'call' ensures the batch script doesn't exit after ng build finishes
-call ng build --configuration production
+call npx ng build --configuration production
 if %ERRORLEVEL% NEQ 0 (
     color 0C
     echo [ERROR] Angular build failed. Please check the code for errors.
@@ -78,6 +102,13 @@ echo ==========================================================
 scp -r -i %KEY_PATH% "%PROJECT_DIR%\api" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/"
 scp -i %KEY_PATH% "%PROJECT_DIR%\run.py" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/run.py"
 ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && sudo systemctl restart minecraft-api.service"
+
+echo.
+echo ==========================================================
+echo   7. CONFIGURING NGINX MAP PROXY (idempotent)
+echo ==========================================================
+scp -i %KEY_PATH% "%PROJECT_DIR%\config\setup-nginx-map.sh" %SERVER_USER%@%SERVER_IP%:"/tmp/setup-nginx-map.sh"
+ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "chmod +x /tmp/setup-nginx-map.sh && /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
 
 echo.
 color 0A

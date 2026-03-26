@@ -10,12 +10,13 @@ import { AuthService } from '../../services/auth/auth.service';
 import { ProfileAccountsComponent } from '../../components/profile-accounts/profile-accounts.component';
 import { MapViewerComponent } from '../../components/map-viewer/map-viewer.component';
 import { ProfileLocationsComponent } from '../../components/profile-locations/profile-locations.component';
+import { UserAvatarComponent } from '../../components/user-avatar/user-avatar.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProfileAccountsComponent, MapViewerComponent, ProfileLocationsComponent],
+  imports: [ProfileAccountsComponent, MapViewerComponent, ProfileLocationsComponent, UserAvatarComponent],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
 })

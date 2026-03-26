@@ -1,0 +1,44 @@
+:host {
+  display: contents;
+}
+
+.icon-container {
+  @apply overflow-hidden bg-zinc-800;
+}
+
+:host([data-size="card"]) .icon-container {
+  @apply w-24 h-24 rounded-2xl border-2 border-zinc-700 shadow-2xl;
+}
+
+:host([data-size="nav"]) .icon-container {
+  @apply w-10 h-10 rounded-xl border border-zinc-700 shrink-0 shadow-lg;
+}
+
+:host([data-size="login"]) .icon-container {
+  @apply w-20 h-20 rounded-xl;
+}
+
+:host([data-size="home"]) .icon-container {
+  @apply shrink-0 w-24 h-24 rounded-2xl border-2 border-zinc-700 shadow-2xl;
+}
+
+@media (min-width: 768px) {
+  :host([data-size="home"]) .icon-container {
+    @apply w-32 h-32;
+  }
+}
+
+svg {
+  @apply w-9 h-9;
+  display: block;
+}
+
+:host([data-size="nav"]) svg {
+  @apply w-5 h-5;
+}
+:host([data-size="login"]) svg {
+  @apply w-7 h-7;
+}
+:host([data-size="home"]) svg {
+  @apply w-10 h-10;
+}

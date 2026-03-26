@@ -1,14 +1,20 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ServerService } from '../../services/server/server.service';
 import { PlayerService } from '../../services/player/player.service';
+import { LucideUsers } from '@lucide/angular';
+import { IconComponent } from '../icon/icon.component';
 
 @Component({
   selector: 'app-server-players-card',
   standalone: true,
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [IconComponent],
   templateUrl: './server-players-card.component.html',
 })
 export class ServerPlayersCardComponent {
+  protected readonly LucideUsers = LucideUsers;
+
   protected readonly serverService = inject(ServerService);
   protected readonly playerService = inject(PlayerService);
 

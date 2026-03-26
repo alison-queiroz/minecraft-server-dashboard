@@ -1,0 +1,7 @@
+@if (auth.currentUser()?.photoURL) {
+  <img
+    [src]="auth.currentUser()!.photoURL!"
+    [alt]="auth.currentUser()?.displayName ?? 'User'"
+    class="avatar-img"
+  />
+}

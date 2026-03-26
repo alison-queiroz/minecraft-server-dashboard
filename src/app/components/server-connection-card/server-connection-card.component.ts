@@ -1,15 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { LucideWifi, LucideGlobe, LucideServer } from '@lucide/angular';
+import { IconComponent } from '../icon/icon.component';
 import { ServerService } from '../../services/server/server.service';
 
 @Component({
   selector: 'app-server-connection-card',
   standalone: true,
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass],
+  imports: [NgClass, IconComponent],
   templateUrl: './server-connection-card.component.html',
 })
 export class ServerConnectionCardComponent {
+  protected readonly LucideWifi   = LucideWifi;
+  protected readonly LucideGlobe  = LucideGlobe;
+  protected readonly LucideServer = LucideServer;
+
   protected readonly serverService = inject(ServerService);
   protected readonly copied = signal(false);
   protected readonly copiedIp = signal(false);

@@ -1,4 +1,5 @@
 ﻿import { Injectable, inject, signal, computed } from '@angular/core';
+import { Observable } from 'rxjs';
 import { getApps, initializeApp } from 'firebase/app';
 import {
   getFirestore,
@@ -6,6 +7,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  onSnapshot,
 } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth/auth.service';
@@ -137,24 +139,36 @@ export class UserProfileService {
   }
 
   /**
-   * Looks up a Minecraft username in the `usernames` collection,
-   * then returns public saved locations for that user.
-   * Used by PlayerDetailComponent to show community-shared spots.
+   * Returns a live Observable of public saved locations for a given Minecraft
+   * username. Backed by Firestore onSnapshot so it updates in real time across
+   * tabs and within the same tab whenever the profile changes.
    */
-  async getPublicLocationsForPlayer(minecraftName: string): Promise<SavedLocation[]> {
-    try {
-      const usernameSnap = await getDoc(doc(this.db, 'usernames', minecraftName));
-      if (!usernameSnap.exists()) return [];
+  getPublicLocationsStream(minecraftName: string): Observable<SavedLocation[]> {
+    return new Observable(observer => {
+      let unsubscribeSnapshot: (() => void) | null = null;
 
-      const { uid } = usernameSnap.data() as { uid: string };
-      const userSnap = await getDoc(doc(this.db, 'users', uid));
-      if (!userSnap.exists()) return [];
+      getDoc(doc(this.db, 'usernames', minecraftName))
+        .then(usernameSnap => {
+          if (!usernameSnap.exists()) {
+            observer.next([]);
+            return;
+          }
+          const { uid } = usernameSnap.data() as { uid: string };
+          unsubscribeSnapshot = onSnapshot(
+            doc(this.db, 'users', uid),
+            userSnap => {
+              if (!userSnap.exists()) { observer.next([]); return; }
+              const profile = userSnap.data() as UserProfile;
+              observer.next((profile.savedLocations ?? []).filter(l => l.isPublic));
+            },
+            () => observer.next([])
+          );
+        })
+        .catch(() => observer.next([]));
 
-      const profile = userSnap.data() as UserProfile;
-      return (profile.savedLocations ?? []).filter(l => l.isPublic);
-    } catch {
-      return [];
-    }
+      // Teardown: cancel Firestore listener when subscriber unsubscribes
+      return () => unsubscribeSnapshot?.();
+    });
   }
 
   // ---- Private helpers -----------------------------------------------------

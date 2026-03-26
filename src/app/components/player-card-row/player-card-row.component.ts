@@ -1,14 +1,17 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   EventEmitter,
   Input,
+  OnDestroy,
+  OnInit,
   Output,
+  inject,
 } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { Player } from '../../services/player/player.model';
 import { PlayerService } from '../../services/player/player.service';
-import { inject } from '@angular/core';
 
 @Component({
   selector: 'app-player-card-row',
@@ -23,10 +26,34 @@ import { inject } from '@angular/core';
     '(click)': 'select.emit()',
   },
 })
-export class PlayerCardRowComponent {
+export class PlayerCardRowComponent implements OnInit, OnDestroy {
   protected readonly playerService = inject(PlayerService);
+  private readonly elementRef = inject(ElementRef);
 
   @Input({ required: true }) player!: Player;
   @Input() isSelected = false;
   @Output() select = new EventEmitter<void>();
+
+  private observer?: IntersectionObserver;
+
+  ngOnInit(): void {
+    // Only players with mc-heads.net URLs need an HTTP fetch; raw skins are CSS backgrounds
+    if (this.player.isRawAvatar()) return;
+
+    this.observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          this.playerService.fetchAvatarIfNeeded(this.player.avatarUrl(64));
+          this.observer?.disconnect();
+          this.observer = undefined;
+        }
+      },
+      { threshold: 0 }
+    );
+    this.observer.observe(this.elementRef.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    this.observer?.disconnect();
+  }
 }

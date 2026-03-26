@@ -2,10 +2,7 @@
 
   <!-- Header -->
   <div class="flex items-center gap-4">
-    @if (auth.currentUser()?.photoURL) {
-      <img [src]="auth.currentUser()!.photoURL!" [alt]="auth.currentUser()!.displayName ?? 'User'"
-           class="w-16 h-16 rounded-full border-2 border-zinc-700 object-cover shrink-0" />
-    }
+    <app-user-avatar size="lg"></app-user-avatar>
     <div>
       <h1 class="text-2xl font-black text-zinc-100">{{ auth.currentUser()?.displayName }}</h1>
       <p class="text-sm text-zinc-400">{{ auth.currentUser()?.email }}</p>

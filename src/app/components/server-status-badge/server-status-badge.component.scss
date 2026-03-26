@@ -1,0 +1,44 @@
+:host {
+  display: contents;
+}
+
+.badge {
+  @apply flex items-center rounded-full border transition-colors;
+}
+
+:host([data-size="sm"]) .badge {
+  @apply gap-2 px-3 py-1.5 text-xs font-bold;
+}
+:host([data-size="lg"]) .badge {
+  @apply gap-2.5 px-4 py-2 text-sm font-black;
+}
+
+/* Status colours */
+:host([data-status="ONLINE"]) .badge {
+  @apply text-emerald-400 bg-emerald-500/10 border-emerald-500/20;
+}
+:host([data-status="OFFLINE"]) .badge {
+  @apply text-red-400    bg-red-500/10    border-red-500/20;
+}
+:host([data-status="LOADING"]) .badge {
+  @apply text-yellow-400 bg-yellow-500/10 border-yellow-500/20;
+}
+
+/* Dot sizing */
+:host([data-size="sm"]) .dot {
+  @apply h-2 w-2;
+}
+:host([data-size="lg"]) .dot {
+  @apply h-2.5 w-2.5;
+}
+
+/* Dot fill for non-online states */
+.dot-fill {
+  @apply h-full w-full rounded-full;
+}
+:host([data-status="OFFLINE"]) .dot-fill {
+  @apply bg-red-500;
+}
+:host([data-status="LOADING"]) .dot-fill {
+  @apply bg-yellow-500 animate-pulse;
+}

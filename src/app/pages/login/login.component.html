@@ -3,12 +3,8 @@
   <!-- Card -->
   <div class="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-8 flex flex-col items-center gap-6 shadow-2xl">
 
-    <!-- Server icon or fallback grass block -->
-    @if (server.icon()) {
-      <img [src]="server.icon()" alt="Server icon" class="w-20 h-20 rounded-xl pixelated" />
-    } @else {
-      <div class="w-20 h-20 rounded-xl bg-zinc-800 flex items-center justify-center text-4xl select-none">⛏️</div>
-    }
+    <!-- Server icon -->
+    <app-server-icon size="login"></app-server-icon>
 
     <div class="text-center">
       <h1 class="text-xl font-bold text-zinc-100">Minecraft Dashboard</h1>

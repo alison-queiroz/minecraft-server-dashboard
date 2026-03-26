@@ -10,17 +10,24 @@ import {
   signal,
 } from '@angular/core';
 import { UserProfileService, SavedLocation } from '../../services/user-profile/user-profile.service';
+import { LucideMap, LucideExternalLink, LucidePencil, LucideTrash2 } from '@lucide/angular';
+import { IconComponent } from '../icon/icon.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-profile-locations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [IconComponent],
   templateUrl: './profile-locations.component.html',
   styleUrls: ['./profile-locations.component.scss'],
 })
 export class ProfileLocationsComponent implements OnChanges {
+  protected readonly LucideMap         = LucideMap;
+  protected readonly LucideExternalLink = LucideExternalLink;
+  protected readonly LucidePencil      = LucidePencil;
+  protected readonly LucideTrash2      = LucideTrash2;
+
   protected readonly profileService = inject(UserProfileService);
 
   protected readonly mapBaseUrl =

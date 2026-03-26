@@ -1,14 +1,17 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { forkJoin, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { Player } from './player.model';
+import { getApps, initializeApp } from 'firebase/app';
+import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class PlayerService {
   private readonly http = inject(HttpClient);
 
-  private readonly rawPlayers = signal<Player[]>([]);
+  protected readonly rawPlayers = signal<Player[]>([]);
   private readonly houseLinks = signal<Record<string, string>>({});
   private readonly _avatarCache = signal<ReadonlyMap<string, string>>(new Map());
 
@@ -39,39 +42,41 @@ export class PlayerService {
 
   constructor() {
     this.fetchHouseLinks();
+    this.subscribeToFirestorePlayers();
   }
 
-  fetchPlayerData() {
-    this.http.get<Player[]>('/api/players').subscribe({
-      next: (data: Player[]) => {
-        const players = data.map(p => new Player(p));
-        this.rawPlayers.set(players);
-        this.prefetchAvatars(players);
-      },
-      error: () => console.warn('Could not reach players data.'),
-    });
+  protected subscribeToFirestorePlayers(): void {
+    try {
+      const app = getApps().length ? getApps()[0] : initializeApp(environment.firebaseConfig);
+      const db = getFirestore(app);
+      onSnapshot(
+        collection(db, 'players'),
+        (snapshot) => {
+          if (snapshot.empty) return;
+          const players = snapshot.docs
+            .map(d => new Player(d.data() as Partial<Player>))
+            .sort((a, b) => b.level - a.level);
+          this.rawPlayers.set(players);
+        },
+        (err) => console.warn('Firestore player listener error:', err)
+      );
+    } catch (err) {
+      console.warn('Could not initialize Firestore player listener:', err);
+    }
   }
 
-  private prefetchAvatars(players: Player[]): void {
-    const currentCache = this._avatarCache();
-    const urls = players
-      .filter(p => !p.isRawAvatar())
-      .map(p => p.avatarUrl(64))
-      .filter(url => !currentCache.has(url));
-
-    if (!urls.length) return;
-
-    const fetches = urls.map(url =>
-      this.http.get(url, { responseType: 'blob' }).pipe(
-        map(blob => [url, URL.createObjectURL(blob)] as [string, string]),
-        catchError(() => of(null))
-      )
-    );
-
-    forkJoin(fetches).subscribe(results => {
-      const pairs = results.filter((r): r is [string, string] => r !== null);
-      if (pairs.length) {
-        this._avatarCache.update(m => new Map([...m, ...pairs]));
+  /**
+   * Fetches a single avatar URL and caches the resulting blob URL.
+   * Called lazily by PlayerCardRowComponent when the card enters the viewport.
+   * Subsequent calls for the same URL are no-ops (cache hit).
+   */
+  fetchAvatarIfNeeded(url: string): void {
+    if (this._avatarCache().has(url)) return;
+    this.http.get(url, { responseType: 'blob' }).pipe(
+      catchError(() => of(null))
+    ).subscribe(blob => {
+      if (blob) {
+        this._avatarCache.update(m => new Map([...m, [url, URL.createObjectURL(blob)]]));
       }
     });
   }

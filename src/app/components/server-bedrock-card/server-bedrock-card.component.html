@@ -42,11 +42,7 @@
       </div>
     </div>
     <div class="px-5 py-3 bg-blue-500/5 flex items-center gap-2">
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        class="text-blue-500 shrink-0">
-        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
-      </svg>
+      <app-icon [icon]="LucideInfo" [size]="12" class="text-blue-500 shrink-0"></app-icon>
       <p class="text-[10px] text-zinc-500">
         Mobile (iOS / Android) and console players connect via Bedrock on port
         <code class="font-mono text-blue-400">{{ serverService.bedrockPort() ?? 19132 }}</code>

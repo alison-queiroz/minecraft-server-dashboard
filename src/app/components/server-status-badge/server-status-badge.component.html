@@ -1,0 +1,15 @@
+<div class="badge">
+  <span class="dot relative flex shrink-0">
+    @if (serverService.status() === serverStatus.ONLINE) {
+      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+      <span class="relative inline-flex rounded-full bg-emerald-500 h-full w-full"></span>
+    } @else {
+      <span class="dot-fill relative inline-flex rounded-full"></span>
+    }
+  </span>
+  @if (mobileHideLabel) {
+    <span class="hidden sm:block">{{ serverService.status() }}</span>
+  } @else {
+    <span>{{ serverService.status() }}</span>
+  }
+</div>

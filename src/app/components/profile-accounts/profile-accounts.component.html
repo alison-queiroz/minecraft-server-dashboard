@@ -13,8 +13,9 @@
       <div class="flex items-center gap-2">
         <span class="text-xs font-black text-emerald-400 uppercase tracking-widest w-16 shrink-0">Java</span>
         @if (profileService.minecraftAccounts().java) {
-          <img [src]="'https://mc-heads.net/avatar/' + profileService.minecraftAccounts().java + '/28'"
-               alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          @if (skinUrl(profileService.minecraftAccounts().java); as url) {
+            <img [src]="url" alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          }
           <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().java }}</span>
         }
       </div>
@@ -36,8 +37,9 @@
       <div class="flex items-center gap-2">
         <span class="text-xs font-black text-blue-400 uppercase tracking-widest w-16 shrink-0">Bedrock</span>
         @if (profileService.minecraftAccounts().bedrock) {
-          <img [src]="'https://mc-heads.net/avatar/' + profileService.minecraftAccounts().bedrock + '/28'"
-               alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          @if (skinUrl(profileService.minecraftAccounts().bedrock); as url) {
+            <img [src]="url" alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          }
           <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().bedrock }}</span>
         }
       </div>
@@ -59,8 +61,9 @@
       <div class="flex items-center gap-2">
         <span class="text-xs font-black text-orange-400 uppercase tracking-widest w-16 shrink-0">Admin</span>
         @if (profileService.minecraftAccounts().admin) {
-          <img [src]="'https://mc-heads.net/avatar/' + profileService.minecraftAccounts().admin + '/28'"
-               alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          @if (skinUrl(profileService.minecraftAccounts().admin); as url) {
+            <img [src]="url" alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+          }
           <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().admin }}</span>
         }
       </div>

@@ -1,21 +1,35 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs/operators';
 import { MapViewerComponent } from '../../components/map-viewer/map-viewer.component';
 import { UserProfileService, SavedLocation } from '../../services/user-profile/user-profile.service';
-import { inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LucideMap, LucideX } from '@lucide/angular';
+import { IconComponent } from '../../components/icon/icon.component';
 import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
   selector: 'app-map',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MapViewerComponent, FormsModule],
+  imports: [MapViewerComponent, FormsModule, IconComponent],
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
 export class MapComponent {
+  protected readonly LucideMap = LucideMap;
+  protected readonly LucideX   = LucideX;
+
   private readonly profileService = inject(UserProfileService);
   protected readonly auth = inject(AuthService);
+
+  /** Fragment from the URL (#world:x:y:z:...) — used when navigating from player cards */
+  protected readonly navigateToHash = toSignal(
+    inject(ActivatedRoute).fragment.pipe(map(f => f ?? '')),
+    { initialValue: '' }
+  );
 
   protected readonly capturedHash = signal('');
   protected readonly showSaveForm = signal(false);

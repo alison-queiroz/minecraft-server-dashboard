@@ -1,21 +1,35 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { NgClass } from '@angular/common';
-import { ServerService, SERVER_STATUS } from '../../services/server/server.service';
+import {
+  LucideHouse, LucideServer, LucideUsers, LucideUserRound,
+  LucideMap, LucideX, LucideMenu,
+} from '@lucide/angular';
+import { IconComponent } from '../icon/icon.component';
+import { ServerService } from '../../services/server/server.service';
 import { AuthService } from '../../services/auth/auth.service';
+import { ServerIconComponent } from '../server-icon/server-icon.component';
+import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
+import { ServerStatusBadgeComponent } from '../server-status-badge/server-status-badge.component';
 
 @Component({
   selector: 'app-nav',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, NgClass],
+  imports: [RouterLink, RouterLinkActive, ServerIconComponent, UserAvatarComponent, ServerStatusBadgeComponent, IconComponent],
   templateUrl: './nav.component.html',
   styleUrls: ['./nav.component.scss'],
 })
 export class NavComponent {
+  protected readonly LucideHouse    = LucideHouse;
+  protected readonly LucideServer   = LucideServer;
+  protected readonly LucideUsers    = LucideUsers;
+  protected readonly LucideUserRound = LucideUserRound;
+  protected readonly LucideMap      = LucideMap;
+  protected readonly LucideX        = LucideX;
+  protected readonly LucideMenu     = LucideMenu;
+
   protected readonly serverService = inject(ServerService);
   protected readonly auth = inject(AuthService);
-  protected readonly serverStatus = SERVER_STATUS;
   protected readonly menuOpen = signal(false);
 
   toggleMenu(): void {

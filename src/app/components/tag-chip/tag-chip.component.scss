@@ -1,0 +1,7 @@
+:host {
+  @apply inline-flex items-center px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-[10px];
+}
+
+:host([data-color="green"]) { @apply font-black uppercase tracking-widest text-emerald-400; }
+:host([data-color="zinc"])  { @apply font-black uppercase tracking-widest text-zinc-300; }
+:host([data-color="dim"])   { @apply font-mono text-zinc-500; }

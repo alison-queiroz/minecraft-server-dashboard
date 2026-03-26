@@ -1,0 +1,14 @@
+<div class="icon-container">
+  @if (serverService.icon()) {
+    <img [src]="serverService.icon()!" class="w-full h-full pixelated" alt="Server Icon" />
+  } @else {
+    <div class="w-full h-full flex items-center justify-center text-emerald-500">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m10 3 5 2 5-2v12l-5 2-5-2-5 2V5l5-2Z" />
+        <path d="M10 3v14" />
+        <path d="M15 5v14" />
+      </svg>
+    </div>
+  }
+</div>

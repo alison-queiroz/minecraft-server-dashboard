@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+@layer utilities {
+  /* Reusable label style: small all-caps heading used in card sections */
+  .card-label {
+    @apply text-[10px] uppercase font-black tracking-widest;
+  }
+}

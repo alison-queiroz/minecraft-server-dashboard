@@ -7,6 +7,8 @@ import { ServerPlayersCardComponent } from '../../components/server-players-card
 import { ServerConnectionCardComponent } from '../../components/server-connection-card/server-connection-card.component';
 import { ServerDetailsCardComponent } from '../../components/server-details-card/server-details-card.component';
 import { ServerBedrockCardComponent } from '../../components/server-bedrock-card/server-bedrock-card.component';
+import { LucideUsers, LucideChevronRight } from '@lucide/angular';
+import { IconComponent } from '../../components/icon/icon.component';
 
 @Component({
   selector: 'app-server-status',
@@ -19,11 +21,15 @@ import { ServerBedrockCardComponent } from '../../components/server-bedrock-card
     ServerConnectionCardComponent,
     ServerDetailsCardComponent,
     ServerBedrockCardComponent,
+    IconComponent,
   ],
   templateUrl: './server-status.component.html',
   styleUrls: ['./server-status.component.scss'],
 })
 export class ServerStatusComponent {
+  protected readonly LucideUsers        = LucideUsers;
+  protected readonly LucideChevronRight = LucideChevronRight;
+
   protected readonly serverService = inject(ServerService);
   protected readonly playerService = inject(PlayerService);
   protected readonly serverStatus = SERVER_STATUS;
