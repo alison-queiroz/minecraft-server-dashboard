@@ -1,4 +1,4 @@
-﻿import {
+import {
   ChangeDetectionStrategy,
   Component,
   inject,
@@ -7,10 +7,10 @@
 } from '@angular/core';
 import { UserProfileService } from '../../services/user-profile/user-profile.service';
 import { AuthService } from '../../services/auth/auth.service';
-import { ProfileAccountsComponent } from '../../components/profile-accounts/profile-accounts.component';
-import { MapViewerComponent } from '../../components/map-viewer/map-viewer.component';
-import { ProfileLocationsComponent } from '../../components/profile-locations/profile-locations.component';
-import { UserAvatarComponent } from '../../components/user-avatar/user-avatar.component';
+import { ProfileAccountsComponent } from '../../components/profile/profile-accounts/profile-accounts.component';
+import { MapViewerComponent } from '../../components/shared/map-viewer/map-viewer.component';
+import { ProfileLocationsComponent } from '../../components/profile/profile-locations/profile-locations.component';
+import { UserAvatarComponent } from '../../components/shared/user-avatar/user-avatar.component';
 
 @Component({
   selector: 'app-profile',

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { ServerHeroCardComponent } from '../../components/server-hero-card/server-hero-card.component';
-import { HomeConnectCardComponent } from '../../components/home-connect-card/home-connect-card.component';
-import { HomeQuickNavComponent } from '../../components/home-quick-nav/home-quick-nav.component';
+import { ServerHeroCardComponent } from '../../components/server/server-hero-card/server-hero-card.component';
+import { HomeConnectCardComponent } from '../../components/home/home-connect-card/home-connect-card.component';
+import { HomeQuickNavComponent } from '../../components/home/home-quick-nav/home-quick-nav.component';
 
 @Component({
   selector: 'app-home',

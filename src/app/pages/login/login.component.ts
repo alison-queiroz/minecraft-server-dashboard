@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
 import { ServerService } from '../../services/server/server.service';
-import { ServerIconComponent } from '../../components/server-icon/server-icon.component';
+import { ServerIconComponent } from '../../components/shared/server-icon/server-icon.component';
 
 @Component({
   selector: 'app-login',

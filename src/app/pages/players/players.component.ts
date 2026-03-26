@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { PlayerService } from '../../services/player/player.service';
-import { PlayerListComponent } from '../../components/player-list/player-list.component';
-import { PlayerDetailComponent } from '../../components/player-detail/player-detail.component';
+import { PlayerListComponent } from '../../components/player/player-list/player-list.component';
+import { PlayerDetailComponent } from '../../components/player/player-detail/player-detail.component';
 
 @Component({
   selector: 'app-players',
