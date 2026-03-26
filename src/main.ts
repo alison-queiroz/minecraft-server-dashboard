@@ -40,6 +40,14 @@ bootstrapApplication(AppComponent, {
           ),
         canActivate: [authGuard],
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./app/pages/profile/profile.component').then(
+            (m) => m.ProfileComponent,
+          ),
+        canActivate: [authGuard],
+      },
       { path: '**', redirectTo: '' },
     ]),
   ],

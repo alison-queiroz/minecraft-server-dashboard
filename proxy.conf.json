@@ -1,0 +1,9 @@
+{
+  "/map": {
+    "target": "https://exvegan-minecraft-map.duckdns.org",
+    "changeOrigin": true,
+    "secure": true,
+    "pathRewrite": { "^/map": "" },
+    "logLevel": "warn"
+  }
+}

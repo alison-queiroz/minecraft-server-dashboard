@@ -1,0 +1,251 @@
+﻿<div class="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
+
+  <!-- Header -->
+  <div class="flex items-center gap-4">
+    @if (auth.currentUser()?.photoURL) {
+      <img [src]="auth.currentUser()!.photoURL!" [alt]="auth.currentUser()!.displayName ?? 'User'"
+           class="w-16 h-16 rounded-full border-2 border-zinc-700 object-cover shrink-0" />
+    }
+    <div>
+      <h1 class="text-2xl font-black text-zinc-100">{{ auth.currentUser()?.displayName }}</h1>
+      <p class="text-sm text-zinc-400">{{ auth.currentUser()?.email }}</p>
+    </div>
+  </div>
+
+  <!-- Minecraft Accounts -->
+  <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5">
+    <h2 class="text-base font-bold text-zinc-100">Minecraft Accounts</h2>
+
+    @if (profileService.isLoading()) {
+      <p class="text-sm text-zinc-500">Loading...</p>
+    } @else {
+      @if (accountError()) {
+        <p class="text-xs text-red-400">{{ accountError() }}</p>
+      }
+
+      <!-- Java -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-black text-emerald-400 uppercase tracking-widest w-16 shrink-0">Java</span>
+          @if (profileService.minecraftAccounts().java) {
+            <img [src]="'https://mc-heads.net/avatar/' + profileService.minecraftAccounts().java + '/28'"
+                 alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+            <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().java }}</span>
+          }
+        </div>
+        <div class="flex gap-2">
+          <input [value]="accountInputs().java"
+                 (input)="updateAccountInput('java', $any($event.target).value)"
+                 list="known-players"
+                 placeholder="Java username..."
+                 class="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+          <button (click)="saveAccount('java')" [disabled]="savingAccount() === 'java'"
+            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0">
+            {{ savingAccount() === 'java' ? '...' : (profileService.minecraftAccounts().java ? 'Update' : 'Link') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Bedrock -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-black text-blue-400 uppercase tracking-widest w-16 shrink-0">Bedrock</span>
+          @if (profileService.minecraftAccounts().bedrock) {
+            <img [src]="'https://mc-heads.net/avatar/' + profileService.minecraftAccounts().bedrock + '/28'"
+                 alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+            <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().bedrock }}</span>
+          }
+        </div>
+        <div class="flex gap-2">
+          <input [value]="accountInputs().bedrock"
+                 (input)="updateAccountInput('bedrock', $any($event.target).value)"
+                 list="known-players"
+                 placeholder="Bedrock username..."
+                 class="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-colors" />
+          <button (click)="saveAccount('bedrock')" [disabled]="savingAccount() === 'bedrock'"
+            class="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0">
+            {{ savingAccount() === 'bedrock' ? '...' : (profileService.minecraftAccounts().bedrock ? 'Update' : 'Link') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-black text-orange-400 uppercase tracking-widest w-16 shrink-0">Admin</span>
+          @if (profileService.minecraftAccounts().admin) {
+            <img [src]="'https://mc-heads.net/avatar/' + profileService.minecraftAccounts().admin + '/28'"
+                 alt="" class="w-7 h-7 rounded-md border border-zinc-700 pixelated shrink-0" />
+            <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().admin }}</span>
+          }
+        </div>
+        <div class="flex gap-2">
+          <input [value]="accountInputs().admin"
+                 (input)="updateAccountInput('admin', $any($event.target).value)"
+                 list="known-players"
+                 placeholder="Admin username..."
+                 class="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors" />
+          <button (click)="saveAccount('admin')" [disabled]="savingAccount() === 'admin'"
+            class="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0">
+            {{ savingAccount() === 'admin' ? '...' : (profileService.minecraftAccounts().admin ? 'Update' : 'Link') }}
+          </button>
+        </div>
+      </div>
+
+      <datalist id="known-players">
+        @for (name of knownPlayers(); track name) {
+          <option [value]="name">{{ name }}</option>
+        }
+      </datalist>
+    }
+  </section>
+
+  <!-- Map Browser -->
+  <section class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+    <button (click)="toggleMap()"
+      class="w-full flex items-center justify-between px-6 py-4 hover:bg-zinc-800/50 transition-colors">
+      <span class="text-base font-bold text-zinc-100 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400">
+          <path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13"/><path d="M15 7v13"/>
+        </svg>
+        Map Browser
+      </span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           class="text-zinc-500 transition-transform" [class.rotate-180]="showMap()">
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
+    </button>
+
+    @if (showMap()) {
+      <div class="border-t border-zinc-800">
+        <iframe #mapIframe [src]="mapSrc()" class="w-full h-80 border-0" loading="lazy"
+                title="Minecraft Map" sandbox="allow-scripts allow-same-origin allow-forms">
+        </iframe>
+        <div class="p-4 flex flex-col gap-3 bg-zinc-950/50">
+          <p class="text-xs text-zinc-500">
+            Navigate to a spot on the map above, then click <strong class="text-zinc-300">Capture position</strong>
+            to save your current map view as a location.
+          </p>
+          <div class="flex gap-2">
+            <button (click)="capturePosition()"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition-colors shrink-0">
+              Capture position
+            </button>
+          </div>
+          @if (showCaptureInput()) {
+            <div class="flex gap-2">
+              <input [value]="captureInput()"
+                     (input)="captureInput.set($any($event.target).value)"
+                     placeholder="Paste map URL here..."
+                     class="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors font-mono" />
+              <button (click)="applyCapturedUrl()"
+                class="px-4 py-2 rounded-xl bg-zinc-700 hover:bg-zinc-600 text-zinc-100 text-xs font-bold transition-colors shrink-0">
+                Use
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- Saved Locations -->
+  <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-base font-bold text-zinc-100">Saved Locations</h2>
+      <button (click)="toggleAddForm()"
+        class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-colors"
+        [class.bg-emerald-600]="!showAddForm()" [class.hover:bg-emerald-500]="!showAddForm()"
+        [class.text-white]="!showAddForm()" [class.bg-zinc-800]="showAddForm()"
+        [class.hover:bg-zinc-700]="showAddForm()" [class.text-zinc-300]="showAddForm()">
+        @if (!showAddForm()) { Add location } @else { Cancel }
+      </button>
+    </div>
+
+    @if (showAddForm()) {
+      <div class="flex flex-col gap-3 bg-zinc-800/60 border border-zinc-700 rounded-xl p-4">
+        <input [value]="newLocName()" (input)="newLocName.set($any($event.target).value)"
+          placeholder="Location name (e.g. My House)" maxlength="64"
+          class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+        <input [value]="newLocHash()" (input)="newLocHash.set($any($event.target).value)"
+          placeholder="Map link or #world:x:y:z:... fragment"
+          class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors font-mono text-xs" />
+        <input [value]="newLocDesc()" (input)="newLocDesc.set($any($event.target).value)"
+          placeholder="Description (optional)" maxlength="160"
+          class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+        <label class="flex items-center gap-3 cursor-pointer select-none">
+          <div class="relative">
+            <input type="checkbox" class="sr-only peer" [checked]="newLocPublic()" (change)="newLocPublic.set($any($event.target).checked)" />
+            <div class="w-9 h-5 bg-zinc-700 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
+            <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+          </div>
+          <span class="text-sm text-zinc-300">Show on player card <span class="text-zinc-500 text-xs">(visible to all users)</span></span>
+        </label>
+        @if (addError()) { <p class="text-xs text-red-400">{{ addError() }}</p> }
+        <button (click)="addLocation()" [disabled]="saving()"
+          class="self-end px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+          {{ saving() ? 'Saving...' : 'Save location' }}
+        </button>
+      </div>
+    }
+
+    @if (profileService.savedLocations().length === 0 && !showAddForm()) {
+      <p class="text-sm text-zinc-500 text-center py-4">No saved locations yet.</p>
+    }
+
+    @for (loc of profileService.savedLocations(); track loc.id) {
+      <div class="flex flex-col gap-2 border border-zinc-800 rounded-xl p-4">
+        @if (editingId() === loc.id) {
+          <input [value]="editName()" (input)="editName.set($any($event.target).value)" maxlength="64"
+            class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors" />
+          <input [value]="editHash()" (input)="editHash.set($any($event.target).value)"
+            class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-100 font-mono focus:outline-none focus:border-emerald-500 transition-colors" />
+          <input [value]="editDesc()" (input)="editDesc.set($any($event.target).value)" maxlength="160"
+            class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors" />
+          <label class="flex items-center gap-3 cursor-pointer select-none">
+            <div class="relative">
+              <input type="checkbox" class="sr-only peer" [checked]="editPublic()" (change)="editPublic.set($any($event.target).checked)" />
+              <div class="w-9 h-5 bg-zinc-700 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
+              <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+            </div>
+            <span class="text-sm text-zinc-300">Show on player card</span>
+          </label>
+          <div class="flex gap-2 justify-end">
+            <button (click)="cancelEdit()" class="px-3 py-1.5 text-xs font-bold text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors">Cancel</button>
+            <button (click)="saveEdit(loc.id)" [disabled]="saving()" class="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors disabled:opacity-60">{{ saving() ? 'Saving...' : 'Save' }}</button>
+          </div>
+        } @else {
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-zinc-100 truncate flex items-center gap-2">
+                {{ loc.name }}
+                @if (loc.isPublic) {
+                  <span class="text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">Public</span>
+                }
+              </p>
+              @if (loc.description) { <p class="text-xs text-zinc-400 mt-0.5">{{ loc.description }}</p> }
+            </div>
+            <div class="flex gap-1 shrink-0">
+              <button (click)="viewLocationOnMap(loc.mapHash)" class="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 transition-colors" title="Preview on map">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13"/><path d="M15 7v13"/></svg>
+              </button>
+              <a [href]="mapUrl(loc.mapHash)" target="_blank" rel="noopener" class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" title="Open in new tab">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+              </a>
+              <button (click)="startEdit(loc)" class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" title="Edit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+              </button>
+              <button (click)="deleteLocation(loc.id)" class="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors" title="Delete">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+          <p class="text-xs font-mono text-zinc-600 truncate">{{ loc.mapHash }}</p>
+        }
+      </div>
+    }
+  </section>
+
+</div>

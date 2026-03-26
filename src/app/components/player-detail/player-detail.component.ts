@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   inject,
+  signal,
   ElementRef,
   ViewChild,
   effect,
@@ -10,6 +11,8 @@ import {
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { PlayerService } from '../../services/player/player.service';
 import { SkinService } from '../../services/skin/skin.service';
+import { UserProfileService, SavedLocation } from '../../services/user-profile/user-profile.service';
+import { environment } from '../../../environments/environment';
 
 declare const skinview3d: any;
 
@@ -24,6 +27,13 @@ declare const skinview3d: any;
 export class PlayerDetailComponent implements OnDestroy {
   protected readonly service = inject(PlayerService);
   private readonly skinService = inject(SkinService);
+  private readonly userProfileService = inject(UserProfileService);
+
+  protected readonly mapBaseUrl =
+    (environment as Record<string, unknown>)['mapBaseUrl'] as string
+      ?? 'https://exvegan-minecraft-map.duckdns.org/';
+
+  protected readonly publicLocations = signal<SavedLocation[]>([]);
 
   @ViewChild('skinContainer', { static: false })
   private skinContainer!: ElementRef<HTMLDivElement>;
@@ -31,6 +41,16 @@ export class PlayerDetailComponent implements OnDestroy {
   private skinViewer: any = null;
   private currentSkinUrl: string | null = null;
   private pendingSkinUrl: string | null = null;
+
+  private readonly loadPublicLocations = effect(() => {
+    const player = this.service.selectedPlayer();
+    if (player) {
+      this.userProfileService.getPublicLocationsForPlayer(player.name)
+        .then(locs => this.publicLocations.set(locs));
+    } else {
+      this.publicLocations.set([]);
+    }
+  });
 
   private readonly updateSkinOnPlayerChange = effect(() => {
     const player = this.service.selectedPlayer();
@@ -91,5 +111,10 @@ export class PlayerDetailComponent implements OnDestroy {
       this.skinViewer.dispose();
       this.skinViewer = null;
     }
+  }
+
+  protected mapUrl(hash: string): string {
+    const base = this.mapBaseUrl.endsWith('/') ? this.mapBaseUrl : this.mapBaseUrl + '/';
+    return base + (hash.startsWith('#') ? hash : '#' + hash);
   }
 }

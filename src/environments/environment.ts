@@ -9,6 +9,7 @@ export const environment = {
   bedrockStatusApiUrl: 'https://api.mcsrvstat.us/bedrock/3/',
   playerRefreshInterval: 30_000,
   statusRefreshInterval: 60_000,
+  mapBaseUrl: '/map/',
   firebaseConfig: {
     apiKey: 'AIzaSyAeOOLsxweoOo8zwOfSJ6s4_mCmGIETzCo',
     authDomain: 'exvegan-minecraft-server.firebaseapp.com',
