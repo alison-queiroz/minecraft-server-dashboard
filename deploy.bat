@@ -19,7 +19,19 @@ set REMOTE_API_DIR=/home/opc/minecraft
 set TAR_FILE=deploy_build.tar.gz
 
 echo ==========================================================
-echo   1. BUILDING ANGULAR PROJECT
+echo   1. RUNNING UNIT TESTS
+echo ==========================================================
+call ng test --watch=false --browsers=ChromeHeadless
+if %ERRORLEVEL% NEQ 0 (
+    color 0C
+    echo [ERROR] Unit tests failed. Deployment aborted.
+    pause
+    exit /b
+)
+
+echo.
+echo ==========================================================
+echo   2. BUILDING ANGULAR PROJECT
 echo ==========================================================
 :: Using 'call' ensures the batch script doesn't exit after ng build finishes
 call ng build --configuration production
@@ -32,7 +44,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo ==========================================================
-echo   2. COMPRESSING BUILD FILES
+echo   3. COMPRESSING BUILD FILES
 echo ==========================================================
 tar -czf "%TAR_FILE%" -C "%BUILD_DIR%" .
 if %ERRORLEVEL% NEQ 0 (
@@ -44,14 +56,14 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo ==========================================================
-echo   3. CLEANING REMOTE WEB DIRECTORY
+echo   4. CLEANING REMOTE WEB DIRECTORY
 echo ==========================================================
 :: Removes all files inside the dashboard folder without deleting the folder itself
 ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/*"
 
 echo.
 echo ==========================================================
-echo   4. UPLOADING FRONT-END AND EXTRACTING
+echo   5. UPLOADING FRONT-END AND EXTRACTING
 echo ==========================================================
 scp -i %KEY_PATH% "%TAR_FILE%" %SERVER_USER%@%SERVER_IP%:"/tmp/%TAR_FILE%"
 ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo tar -xzf /tmp/%TAR_FILE% -C %REMOTE_WWW_DIR% && rm /tmp/%TAR_FILE%"
@@ -61,7 +73,7 @@ del "%TAR_FILE%"
 
 echo.
 echo ==========================================================
-echo   5. UPLOADING PYTHON API AND RESTARTING SERVICE
+echo   6. UPLOADING PYTHON API AND RESTARTING SERVICE
 echo ==========================================================
 scp -r -i %KEY_PATH% "%PROJECT_DIR%\api" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/"
 scp -i %KEY_PATH% "%PROJECT_DIR%\run.py" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/run.py"

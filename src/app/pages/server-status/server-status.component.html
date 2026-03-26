@@ -1,0 +1,355 @@
+<div class="max-w-7xl mx-auto w-full space-y-6 pb-6">
+
+  <!-- Page header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black tracking-tighter text-zinc-100 uppercase">Server Status</h1>
+      <p class="text-zinc-500 text-sm mt-1">Live server information</p>
+    </div>
+    <a routerLink="/"
+      class="text-xs font-bold text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-800">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+      Back
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Left column: server identity -->
+    <div class="lg:col-span-1 space-y-4">
+
+      <!-- Server icon + status card -->
+      <div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl">
+        <div class="bg-gradient-to-b from-zinc-800/60 to-zinc-900 p-6 flex flex-col items-center gap-4">
+          <!-- Icon -->
+          <div class="w-24 h-24 rounded-2xl overflow-hidden border-2 border-zinc-700 bg-zinc-800 shadow-2xl shadow-black/50">
+            @if (serverService.icon()) {
+              <img [src]="serverService.icon()!" class="w-full h-full pixelated" alt="Server Icon" />
+            } @else {
+              <div class="w-full h-full flex items-center justify-center text-emerald-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m10 3 5 2 5-2v12l-5 2-5-2-5 2V5l5-2Z" />
+                  <path d="M10 3v14" />
+                  <path d="M15 5v14" />
+                </svg>
+              </div>
+            }
+          </div>
+
+          <!-- Status badge -->
+          <div class="flex items-center gap-2.5 px-4 py-2 rounded-full border text-sm font-black transition-colors"
+            [ngClass]="{
+              'text-emerald-400 bg-emerald-500/10 border-emerald-500/20': serverService.status() === serverStatus.ONLINE,
+              'text-red-400 bg-red-500/10 border-red-500/20': serverService.status() === serverStatus.OFFLINE,
+              'text-yellow-400 bg-yellow-500/10 border-yellow-500/20': serverService.status() === serverStatus.LOADING
+            }">
+            <span class="relative flex h-2.5 w-2.5">
+              @if (serverService.status() === serverStatus.ONLINE) {
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              } @else {
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5"
+                  [class.bg-red-500]="serverService.status() === serverStatus.OFFLINE"
+                  [class.bg-yellow-500]="serverService.status() === serverStatus.LOADING"
+                  [class.animate-pulse]="serverService.status() === serverStatus.LOADING"></span>
+              }
+            </span>
+            {{ serverService.status() }}
+          </div>
+
+          <!-- MOTD -->
+          @if (serverService.motd().length > 0) {
+            <p class="text-xs text-zinc-400 text-center italic">"{{ serverService.motd()[0] }}"</p>
+          }
+        </div>
+
+        <!-- Software + version tags -->
+        <div class="border-t border-zinc-800 p-4 flex flex-wrap gap-2 justify-center">
+          @if (serverService.software()) {
+            <span class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-emerald-400">
+              {{ serverService.software() }}
+            </span>
+          }
+          @if (serverService.version()) {
+            <span class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
+              {{ serverService.version() }}
+            </span>
+          }
+          @if (serverService.protocol()) {
+            <span class="text-[10px] font-mono px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-500">
+              Protocol {{ serverService.protocol()!.version }}
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Players card -->
+      <div class="bg-zinc-900 rounded-3xl border border-zinc-800 p-5 shadow-xl">
+        <h3 class="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Players
+        </h3>
+        <!-- Online count -->
+        <div class="flex items-baseline gap-2 mb-3">
+          <span class="text-4xl font-black font-mono"
+            [class.text-emerald-400]="serverService.onlinePlayers() > 0"
+            [class.text-zinc-500]="serverService.onlinePlayers() === 0">
+            {{ serverService.onlinePlayers() }}
+          </span>
+          <span class="text-zinc-600 font-bold text-lg">/ {{ serverService.maxPlayers() }}</span>
+          <span class="text-xs text-zinc-600 uppercase font-black tracking-widest ml-1">online</span>
+        </div>
+        <!-- Progress bar -->
+        <div class="bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
+          <div class="h-full rounded-full transition-all duration-700 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+            [style.width.%]="playersPercent"
+            [class.bg-emerald-500]="serverService.onlinePlayers() > 0"
+            [class.bg-zinc-700]="serverService.onlinePlayers() === 0">
+          </div>
+        </div>
+        <p class="text-[10px] text-zinc-600 font-mono mt-2 text-right">
+          {{ playerService.players().length }} registered total
+        </p>
+      </div>
+    </div>
+
+    <!-- Right column: connection details -->
+    <div class="lg:col-span-2 space-y-4">
+
+      <!-- Connection info card -->
+      <div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl">
+        <div class="p-5 border-b border-zinc-800">
+          <h3 class="text-[10px] uppercase font-black tracking-widest text-zinc-500 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+              <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+              <line x1="12" x2="12.01" y1="20" y2="20"/>
+            </svg>
+            Connection Details
+          </h3>
+        </div>
+
+        <div class="divide-y divide-zinc-800">
+          <!-- Hostname row -->
+          <div class="p-5 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                  <path d="M2 12h20"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-0.5">Hostname</p>
+                <code class="font-mono text-emerald-400 text-sm">{{ serverService.hostname() || 'exvegan.duckdns.org' }}</code>
+              </div>
+            </div>
+            <button (click)="copyAddress()"
+              class="shrink-0 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl border transition-all active:scale-95"
+              [ngClass]="copied()
+                ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                : 'text-zinc-400 bg-zinc-800 border-zinc-700 hover:text-zinc-100 hover:bg-zinc-700'">
+              {{ copied() ? 'Copied!' : 'Copy' }}
+            </button>
+          </div>
+
+          <!-- IP row -->
+          @if (serverService.ip()) {
+            <div class="p-5 flex items-center justify-between gap-4">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+                    <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+                    <line x1="6" x2="6.01" y1="6" y2="6"/>
+                    <line x1="6" x2="6.01" y1="18" y2="18"/>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-0.5">IP Address</p>
+                  <code class="font-mono text-zinc-300 text-sm">{{ serverService.ip() }}</code>
+                </div>
+              </div>
+              <button (click)="copyIp()"
+                class="shrink-0 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl border transition-all active:scale-95"
+                [ngClass]="copiedIp()
+                  ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                  : 'text-zinc-400 bg-zinc-800 border-zinc-700 hover:text-zinc-100 hover:bg-zinc-700'">
+                {{ copiedIp() ? 'Copied!' : 'Copy' }}
+              </button>
+            </div>
+          }
+
+          <!-- Port row -->
+          <div class="p-5 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 3 21 3 21 8"/>
+                <line x1="4" x2="21" y1="20" y2="3"/>
+                <polyline points="21 16 21 21 16 21"/>
+                <line x1="15" x2="21" y1="15" y2="21"/>
+              </svg>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-0.5">Port</p>
+              <code class="font-mono text-zinc-300 text-sm">{{ serverService.port() ?? 25565 }}</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Server details card -->
+      <div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl">
+        <div class="p-5 border-b border-zinc-800">
+          <h3 class="text-[10px] uppercase font-black tracking-widest text-zinc-500 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+            Server Details
+          </h3>
+        </div>
+        <div class="divide-y divide-zinc-800">
+          <div class="p-5 grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-1">Software</p>
+              <p class="font-bold text-zinc-200">{{ serverService.software() || '—' }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-1">Version</p>
+              <p class="font-mono font-bold text-zinc-200">{{ serverService.version() || '—' }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-1">Protocol</p>
+              <p class="font-mono font-bold text-zinc-200">{{ serverService.protocol()?.version ?? '—' }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-1">Edition</p>
+              <p class="font-bold text-zinc-200">Java</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOTD card (if more than one line) -->
+      @if (serverService.motd().length > 0) {
+        <div class="bg-zinc-900 rounded-3xl border border-zinc-800 p-5 shadow-xl">
+          <h3 class="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Message of the Day
+          </h3>
+          @for (line of serverService.motd(); track $index) {
+            <p class="text-zinc-300 text-sm italic font-medium">"{{ line }}"</p>
+          }
+        </div>
+      }
+
+      <!-- Bedrock Edition card -->
+      <div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl">
+        <div class="p-5 border-b border-zinc-800 flex items-center justify-between gap-3">
+          <h3 class="text-[10px] uppercase font-black tracking-widest text-zinc-500 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2"/>
+              <path d="M3 9h18"/>
+              <path d="M3 15h18"/>
+              <path d="M9 3v18"/>
+              <path d="M15 3v18"/>
+            </svg>
+            Bedrock Edition
+            <span class="ml-1 text-[9px] font-black px-2 py-0.5 rounded-full border"
+              [ngClass]="{
+                'text-blue-400 bg-blue-500/10 border-blue-500/20': serverService.bedrockStatus() === serverStatus.ONLINE,
+                'text-red-400 bg-red-500/10 border-red-500/20': serverService.bedrockStatus() === serverStatus.OFFLINE,
+                'text-yellow-400 bg-yellow-500/10 border-yellow-500/20': serverService.bedrockStatus() === serverStatus.LOADING
+              }">
+              {{ serverService.bedrockStatus() }}
+            </span>
+          </h3>
+          <span class="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">via Geyser</span>
+        </div>
+
+        <div class="divide-y divide-zinc-800">
+          <div class="p-5 grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-1">Port</p>
+              <code class="font-mono font-bold text-zinc-200">{{ serverService.bedrockPort() ?? 19132 }}</code>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-1">Version</p>
+              <code class="font-mono font-bold text-zinc-200">{{ serverService.bedrockVersion() || '—' }}</code>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-1">Online</p>
+              <p class="font-mono font-bold"
+                [class.text-blue-400]="serverService.bedrockOnlinePlayers() > 0"
+                [class.text-zinc-500]="serverService.bedrockOnlinePlayers() === 0">
+                {{ serverService.bedrockOnlinePlayers() }}<span class="text-zinc-600 font-normal">/{{ serverService.bedrockMaxPlayers() }}</span>
+              </p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-1">Edition</p>
+              <p class="font-bold text-zinc-200">Bedrock</p>
+            </div>
+          </div>
+          <div class="px-5 py-3 bg-blue-500/5 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="text-blue-500 shrink-0">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+            <p class="text-[10px] text-zinc-500">
+              Mobile (iOS / Android) and console players connect via Bedrock on port
+              <code class="font-mono text-blue-400">{{ serverService.bedrockPort() ?? 19132 }}</code>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA to players -->
+      <a routerLink="/players"
+        class="flex items-center gap-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl p-5 transition-all group active:scale-[0.98] shadow-lg shadow-emerald-900/30 border border-emerald-500">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class="text-white shrink-0">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <div class="flex-1">
+          <p class="font-black text-white text-sm uppercase tracking-wide">Browse Player List</p>
+          <p class="text-emerald-200/70 text-xs mt-0.5">{{ playerService.players().length }} registered players</p>
+        </div>
+        <svg class="text-white/70 shrink-0" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>
