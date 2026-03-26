@@ -1,9 +1,23 @@
+:host {
+  display: block;
+}
+
 .resize-handle {
   resize: vertical;
   overflow: hidden;
   min-height: 240px;
   max-height: 80vh;
   height: 320px;
+
+  iframe {
+    height: 100% !important;
+  }
+}
+
+.fill-handle {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 
   iframe {
     height: 100% !important;

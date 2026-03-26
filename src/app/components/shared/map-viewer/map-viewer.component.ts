@@ -18,6 +18,7 @@ import { environment } from '../../../../environments/environment';
   selector: 'app-map-viewer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.h-full]': 'fillHeight', '[class.flex]': 'fillHeight', '[class.flex-col]': 'fillHeight' },
   templateUrl: './map-viewer.component.html',
   styleUrls: ['./map-viewer.component.scss'],
 })
@@ -33,6 +34,9 @@ export class MapViewerComponent implements OnChanges {
 
   /** Allow the user to vertically drag-resize the iframe */
   @Input() resizable = false;
+
+  /** Make the iframe fill 100% of the parent height (for use in a flex/grid column) */
+  @Input() fillHeight = false;
 
   /** Emits a normalised #world:x:y:z:... hash when the user captures a position */
   @Output() positionCaptured = new EventEmitter<string>();

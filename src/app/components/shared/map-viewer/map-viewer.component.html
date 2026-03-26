@@ -1,10 +1,10 @@
-<div class="flex flex-col">
-  <div [class.resize-handle]="resizable">
+<div class="flex flex-col" [class.h-full]="fillHeight">
+  <div [class.resize-handle]="resizable" [class.fill-handle]="fillHeight">
     <iframe
       #mapIframe
       [src]="mapSrc()"
       class="w-full border-0 block"
-      [style.height]="resizable ? '100%' : '320px'"
+      [style.height]="resizable || fillHeight ? '100%' : '320px'"
       loading="lazy"
       title="Minecraft Map"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups">

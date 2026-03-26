@@ -1,28 +1,37 @@
-﻿<div class="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
+﻿<div class="max-w-7xl mx-auto w-full pb-6">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[calc(100vh-120px)]">
 
-  <!-- Header -->
-  <div class="flex items-center gap-4">
-    <app-user-avatar size="lg"></app-user-avatar>
-    <div>
-      <h1 class="text-2xl font-black text-zinc-100">{{ auth.currentUser()?.displayName }}</h1>
-      <p class="text-sm text-zinc-400">{{ auth.currentUser()?.email }}</p>
+    <!-- Left column: header + accounts + locations -->
+    <div class="lg:col-span-4 flex flex-col gap-6 lg:overflow-y-auto lg:pr-1 custom-scrollbar">
+
+      <!-- Header -->
+      <div class="flex items-center gap-4">
+        <app-user-avatar size="lg"></app-user-avatar>
+        <div>
+          <h1 class="text-2xl font-black text-zinc-100">{{ auth.currentUser()?.displayName }}</h1>
+          <p class="text-sm text-zinc-400">{{ auth.currentUser()?.email }}</p>
+        </div>
+      </div>
+
+      <!-- Minecraft Accounts -->
+      <app-profile-accounts></app-profile-accounts>
+
+      <!-- Saved Locations -->
+      <app-profile-locations
+        [capturedHash]="capturedMapHash()"
+        (previewRequested)="mapPreviewHash.set($event)">
+      </app-profile-locations>
+
     </div>
+
+    <!-- Right column: map viewer -->
+    <div class="lg:col-span-8 lg:h-full">
+      <app-map-viewer
+        [fillHeight]="true"
+        [navigateToHash]="mapPreviewHash()"
+        (positionCaptured)="capturedMapHash.set($event)">
+      </app-map-viewer>
+    </div>
+
   </div>
-
-  <!-- Minecraft Accounts -->
-  <app-profile-accounts></app-profile-accounts>
-
-  <!-- Map Browser -->
-  <app-map-viewer
-    [resizable]="true"
-    [navigateToHash]="mapPreviewHash()"
-    (positionCaptured)="capturedMapHash.set($event)">
-  </app-map-viewer>
-
-  <!-- Saved Locations -->
-  <app-profile-locations
-    [capturedHash]="capturedMapHash()"
-    (previewRequested)="mapPreviewHash.set($event)">
-  </app-profile-locations>
-
 </div>
