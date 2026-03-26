@@ -1,11 +1,11 @@
 ﻿<div class="max-w-7xl mx-auto w-full pb-6">
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[calc(100vh-120px)]">
 
-    <!-- Left column: header + accounts + locations -->
-    <div class="lg:col-span-4 flex flex-col gap-6 lg:overflow-y-auto lg:pr-1 custom-scrollbar">
+    <!-- Left column (desktop): flex column with scroll -->
+    <!-- Mobile: contents so children participate directly in the mobile single-column stack -->
+    <div class="contents lg:flex lg:flex-col lg:col-span-4 lg:gap-6 lg:overflow-y-auto lg:pr-1 custom-scrollbar">
 
-      <!-- Header -->
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-4 order-1">
         <app-user-avatar size="lg"></app-user-avatar>
         <div>
           <h1 class="text-2xl font-black text-zinc-100">{{ auth.currentUser()?.displayName }}</h1>
@@ -13,19 +13,17 @@
         </div>
       </div>
 
-      <!-- Minecraft Accounts -->
-      <app-profile-accounts></app-profile-accounts>
+      <app-profile-accounts class="order-2"></app-profile-accounts>
 
-      <!-- Saved Locations -->
-      <app-profile-locations
+      <app-profile-locations class="order-4"
         [capturedHash]="capturedMapHash()"
         (previewRequested)="mapPreviewHash.set($event)">
       </app-profile-locations>
 
     </div>
 
-    <!-- Right column: map viewer -->
-    <div class="lg:col-span-8 lg:h-full">
+    <!-- Map — order-3 on mobile (between accounts and locations) -->
+    <div class="lg:col-span-8 lg:h-full order-3">
       <app-map-viewer
         [fillHeight]="true"
         [navigateToHash]="mapPreviewHash()"
