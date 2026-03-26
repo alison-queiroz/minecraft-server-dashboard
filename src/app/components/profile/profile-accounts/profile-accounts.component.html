@@ -18,7 +18,15 @@
               class="w-7 h-7 rounded-md border border-zinc-700 shrink-0">
             </app-player-face>
           }
-          <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().java }}</span>
+          <span class="text-sm font-bold text-zinc-200 flex-1">{{ profileService.minecraftAccounts().java }}</span>
+          <button (click)="unlink('java')" [disabled]="savingAccount() === 'java'"
+            title="Remove linked account"
+            class="p-1 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors disabled:opacity-50">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         }
       </div>
       <div class="flex gap-2">
@@ -44,7 +52,15 @@
               class="w-7 h-7 rounded-md border border-zinc-700 shrink-0">
             </app-player-face>
           }
-          <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().bedrock }}</span>
+          <span class="text-sm font-bold text-zinc-200 flex-1">{{ profileService.minecraftAccounts().bedrock }}</span>
+          <button (click)="unlink('bedrock')" [disabled]="savingAccount() === 'bedrock'"
+            title="Remove linked account"
+            class="p-1 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors disabled:opacity-50">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         }
       </div>
       <div class="flex gap-2">
@@ -70,7 +86,15 @@
               class="w-7 h-7 rounded-md border border-zinc-700 shrink-0">
             </app-player-face>
           }
-          <span class="text-sm font-bold text-zinc-200">{{ profileService.minecraftAccounts().admin }}</span>
+          <span class="text-sm font-bold text-zinc-200 flex-1">{{ profileService.minecraftAccounts().admin }}</span>
+          <button (click)="unlink('admin')" [disabled]="savingAccount() === 'admin'"
+            title="Remove linked account"
+            class="p-1 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors disabled:opacity-50">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         }
       </div>
       <div class="flex gap-2">

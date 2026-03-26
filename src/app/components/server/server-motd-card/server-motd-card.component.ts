@@ -6,6 +6,7 @@ import { ServerService } from '../../../services/server/server.service';
 @Component({
   selector: 'app-server-motd-card',
   standalone: true,
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent],
   templateUrl: './server-motd-card.component.html',

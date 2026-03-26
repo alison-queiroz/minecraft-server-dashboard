@@ -7,6 +7,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
@@ -91,6 +92,13 @@ export class UserProfileService {
 
     const updated: MinecraftAccounts = { ...current, [type]: username };
 
+    // Delete the old reverse-lookup entry so the previous player no longer
+    // resolves to this user's public locations.
+    const previousUsername = current[type];
+    if (previousUsername && previousUsername !== username) {
+      await deleteDoc(doc(this.db, 'usernames', previousUsername));
+    }
+
     if (snap.exists()) {
       await updateDoc(ref, { minecraftAccounts: updated });
     } else {
@@ -102,6 +110,26 @@ export class UserProfileService {
       await setDoc(doc(this.db, 'usernames', username), { uid, type }, { merge: true });
     }
 
+    this.profile.update(p => ({ ...p, minecraftAccounts: updated }));
+  }
+
+  async unlinkAccount(type: AccountType): Promise<void> {
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid) return;
+
+    const ref = doc(this.db, 'users', uid);
+    const snap = await getDoc(ref);
+    const current = snap.exists()
+      ? (snap.data() as UserProfile).minecraftAccounts ?? DEFAULT_ACCOUNTS
+      : DEFAULT_ACCOUNTS;
+
+    const previousUsername = current[type];
+    if (previousUsername) {
+      await deleteDoc(doc(this.db, 'usernames', previousUsername));
+    }
+
+    const updated: MinecraftAccounts = { ...current, [type]: null };
+    await updateDoc(ref, { minecraftAccounts: updated });
     this.profile.update(p => ({ ...p, minecraftAccounts: updated }));
   }
 

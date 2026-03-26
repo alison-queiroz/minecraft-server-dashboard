@@ -60,6 +60,17 @@ export class ProfileAccountsComponent implements OnInit {
     this.savingAccount.set(type);
     try {
       await this.profileService.linkAccount(type, username);
+      this.accountInputs.update(v => ({ ...v, [type]: '' }));
+    } finally {
+      this.savingAccount.set(null);
+    }
+  }
+
+  protected async unlink(type: AccountType): Promise<void> {
+    this.savingAccount.set(type);
+    try {
+      await this.profileService.unlinkAccount(type);
+      this.accountInputs.update(v => ({ ...v, [type]: '' }));
     } finally {
       this.savingAccount.set(null);
     }
