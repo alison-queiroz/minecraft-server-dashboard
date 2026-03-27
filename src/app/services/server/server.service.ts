@@ -28,7 +28,6 @@ export class ServerService {
   private readonly http = inject(HttpClient);
   private readonly statusUrl = environment.statusApiUrl;
   private readonly bedrockStatusUrl = environment.bedrockStatusApiUrl;
-  private readonly serverAddress = environment.serverAddress;
   private readonly serverIP = environment.serverIP;
   private readonly statusCheckInterval = environment.statusRefreshInterval;
 
