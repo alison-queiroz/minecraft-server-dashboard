@@ -7,6 +7,7 @@ import { IconComponent } from '../../shared/icon/icon.component';
 @Component({
   selector: 'app-home-quick-nav',
   standalone: true,
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, IconComponent],
   templateUrl: './home-quick-nav.component.html',

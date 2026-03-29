@@ -28,6 +28,16 @@ export class ProfileComponent implements OnInit {
   protected readonly capturedMapHash = signal('');
   /** Hash emitted by ProfileLocationsComponent when the user wants to preview a location */
   protected readonly mapPreviewHash = signal('');
+  protected readonly showMap = signal(false);
+
+  protected toggleMap(): void {
+    this.showMap.update(value => !value);
+  }
+
+  protected previewMap(hash: string): void {
+    this.mapPreviewHash.set(hash);
+    this.showMap.set(true);
+  }
 
   async ngOnInit(): Promise<void> {
     await this.profileService.loadProfile();
