@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideHouse, LucideServer, LucideUsers, LucideUserRound,
   LucideMap, LucideX, LucideMenu,
+  LucideDatabase,
 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ServerService } from '../../../services/server/server.service';
@@ -27,6 +28,7 @@ export class NavComponent {
   protected readonly LucideMap      = LucideMap;
   protected readonly LucideX        = LucideX;
   protected readonly LucideMenu     = LucideMenu;
+  protected readonly LucideDatabase = LucideDatabase;
 
   protected readonly serverService = inject(ServerService);
   protected readonly auth = inject(AuthService);

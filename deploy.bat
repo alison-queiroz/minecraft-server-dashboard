@@ -43,19 +43,31 @@ set REMOTE_API_DIR=/home/opc/minecraft
 set TAR_FILE=deploy_build.tar.gz
 
 echo ==========================================================
-echo   1. RUNNING UNIT TESTS
+echo   1. RUNNING ANGULAR UNIT TESTS
 echo ==========================================================
 call npx ng test --watch=false --browsers=ChromeHeadless
 if %ERRORLEVEL% NEQ 0 (
     color 0C
-    echo [ERROR] Unit tests failed. Deployment aborted.
+    echo [ERROR] Angular unit tests failed. Deployment aborted.
     pause
     exit /b
 )
 
 echo.
 echo ==========================================================
-echo   2. BUILDING ANGULAR PROJECT
+echo   2. RUNNING PYTHON API TESTS
+echo ==========================================================
+call python -m pytest tests/
+if %ERRORLEVEL% NEQ 0 (
+    color 0C
+    echo [ERROR] Python API tests failed. Deployment aborted.
+    pause
+    exit /b
+)
+
+echo.
+echo ==========================================================
+echo   3. BUILDING ANGULAR PROJECT
 echo ==========================================================
 :: Using 'call' ensures the batch script doesn't exit after ng build finishes
 call npx ng build --configuration production
@@ -68,7 +80,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo ==========================================================
-echo   3. COMPRESSING BUILD FILES
+echo   4. COMPRESSING BUILD FILES
 echo ==========================================================
 tar -czf "%TAR_FILE%" -C "%BUILD_DIR%" .
 if %ERRORLEVEL% NEQ 0 (
@@ -80,14 +92,14 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo ==========================================================
-echo   4. CLEANING REMOTE WEB DIRECTORY
+echo   5. CLEANING REMOTE WEB DIRECTORY
 echo ==========================================================
 :: Removes all files inside the dashboard folder without deleting the folder itself
 ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/*"
 
 echo.
 echo ==========================================================
-echo   5. UPLOADING FRONT-END AND EXTRACTING
+echo   6. UPLOADING FRONT-END AND EXTRACTING
 echo ==========================================================
 scp -i %KEY_PATH% "%TAR_FILE%" %SERVER_USER%@%SERVER_IP%:"/tmp/%TAR_FILE%"
 ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo tar -xzf /tmp/%TAR_FILE% -C %REMOTE_WWW_DIR% && rm /tmp/%TAR_FILE%"
@@ -97,7 +109,7 @@ del "%TAR_FILE%"
 
 echo.
 echo ==========================================================
-echo   6. UPLOADING PYTHON API AND RESTARTING SERVICE
+echo   7. UPLOADING PYTHON API AND RESTARTING SERVICE
 echo ==========================================================
 scp -r -i %KEY_PATH% "%PROJECT_DIR%\api" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/"
 scp -i %KEY_PATH% "%PROJECT_DIR%\run.py" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/run.py"
@@ -105,7 +117,7 @@ ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "pip install -q -r %REMOTE_API_DIR%/
 
 echo.
 echo ==========================================================
-echo   7. CONFIGURING NGINX MAP PROXY (idempotent)
+echo   8. CONFIGURING NGINX MAP PROXY (idempotent)
 echo ==========================================================
 scp -i %KEY_PATH% "%PROJECT_DIR%\config\setup-nginx-map.sh" %SERVER_USER%@%SERVER_IP%:"/tmp/setup-nginx-map.sh"
 ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "chmod +x /tmp/setup-nginx-map.sh && /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"

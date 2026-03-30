@@ -6,18 +6,15 @@ from flask import Flask, jsonify, request, abort
 
 from .player_data import get_players
 
+# Google Drive API imports
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# ---------------------------------------------------------------------------
-# Firebase Auth token verification
-# ---------------------------------------------------------------------------
-# Requires: pip install firebase-admin
-# Place the service account JSON at the path below (or set FIREBASE_SA_KEY env var).
-# Download it from Firebase Console → Project Settings → Service Accounts.
-# ---------------------------------------------------------------------------
 _FIREBASE_INITIALIZED = False
 
 def _init_firebase():
@@ -37,12 +34,10 @@ def _init_firebase():
 
 
 def require_auth(f):
-    """Decorator: verify Firebase ID token in Authorization: Bearer <token> header."""
     @wraps(f)
     def decorated(*args, **kwargs):
         _init_firebase()
         if not _FIREBASE_INITIALIZED:
-            # Firebase not configured — skip verification (dev fallback only).
             return f(*args, **kwargs)
         from firebase_admin import auth as firebase_auth
         auth_header = request.headers.get("Authorization", "")
@@ -62,3 +57,33 @@ def require_auth(f):
 @require_auth
 def players_endpoint():
     return jsonify(get_players())
+
+
+@app.route("/api/backups", methods=["GET"])
+@require_auth
+def backups_endpoint():
+    try:
+        creds_path = os.environ.get("DRIVE_SA_KEY", "/home/opc/minecraft/drive-service-account.json")
+        creds = service_account.Credentials.from_service_account_file(
+            creds_path,
+            scopes=['https://www.googleapis.com/auth/drive.readonly']
+        )
+        service = build('drive', 'v3', credentials=creds)
+
+        # Determine which folder to query: requested folder or root folder
+        root_folder_id = os.environ.get("DRIVE_FOLDER_ID", "YOUR_GOOGLE_DRIVE_FOLDER_ID")
+        target_folder_id = request.args.get('folderId', root_folder_id)
+
+        query = f"'{target_folder_id}' in parents and trashed = false"
+
+        results = service.files().list(
+            q=query,
+            fields="files(id, name, mimeType, createdTime, size, webContentLink)",
+            orderBy="folder, createdTime desc"
+        ).execute()
+
+        return jsonify(results.get('files', []))
+
+    except Exception as exc:
+        logger.error("Failed to fetch backups from Google Drive: %s", exc)
+        return jsonify({"error": "Failed to fetch backups"}), 500

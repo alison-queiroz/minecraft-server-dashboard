@@ -5,12 +5,16 @@ import { LucideDynamicIcon, type LucideIcon } from '@lucide/angular';
   selector: 'app-icon',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<svg [lucideIcon]="icon()" [size]="size()" [strokeWidth]="strokeWidth()"></svg>`,
+  template: `<svg
+    [lucideIcon]="icon()"
+    [size]="size()"
+    [strokeWidth]="strokeWidth()"
+  ></svg>`,
   imports: [LucideDynamicIcon],
   host: { style: 'display:contents' },
 })
 export class IconComponent {
-  readonly icon         = input.required<LucideIcon>();
-  readonly size         = input<number | string>(16);
-  readonly strokeWidth  = input<number | string>(2);
+  readonly icon = input.required<LucideIcon>();
+  readonly size = input<number | string>(16);
+  readonly strokeWidth = input<number | string>(2);
 }

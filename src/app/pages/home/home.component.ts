@@ -12,7 +12,7 @@ import { ServerBedrockCardComponent } from 'src/app/components/server/server-bed
     ServerHeroCardComponent,
     HomeConnectCardComponent,
     HomeQuickNavComponent,
-    ServerBedrockCardComponent,
+    ServerBedrockCardComponent
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],

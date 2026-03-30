@@ -38,6 +38,12 @@
         <app-icon [icon]="LucideMap" [size]="14"></app-icon>
         Map
       </a>
+      <!-- Backup -->
+      <a routerLink="/backups" routerLinkActive="!text-emerald-400 !bg-emerald-500/10 !border-emerald-500/30"
+        class="px-4 py-2 rounded-xl text-sm font-bold text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all border border-transparent flex items-center gap-2">
+        <app-icon [icon]="LucideDatabase" [size]="14"></app-icon>
+        Backups
+      </a>
     </div>
 
     <!-- Right side: status badge + hamburger -->
@@ -112,6 +118,13 @@
         class="px-4 py-3.5 rounded-xl text-sm font-bold text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-all flex items-center gap-3 border border-transparent">
         <app-icon [icon]="LucideMap" [size]="16"></app-icon>
         Map
+      </a>
+      <!-- Backup -->
+      <a routerLink="/backups" routerLinkActive="!text-emerald-400 !bg-emerald-500/10"
+        (click)="closeMenu()"
+        class="px-4 py-3.5 rounded-xl text-sm font-bold text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-all flex items-center gap-3 border border-transparent">
+        <app-icon [icon]="LucideDatabase" [size]="16"></app-icon>
+        Backups
       </a>
 
       <!-- Sign-out row (mobile) -->

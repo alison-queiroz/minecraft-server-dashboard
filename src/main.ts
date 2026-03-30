@@ -58,6 +58,14 @@ bootstrapApplication(AppComponent, {
           ),
         canActivate: [authGuard],
       },
+      {
+        path: 'backups',
+        loadComponent: () =>
+          import('./app/pages/backup-list/backup-list.component').then(
+            (m) => m.BackupListComponent,
+          ),
+        canActivate: [authGuard],
+      },
       { path: '**', redirectTo: '' },
     ]),
     provideServiceWorker('ngsw-worker.js', {
