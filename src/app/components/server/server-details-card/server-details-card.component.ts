@@ -10,6 +10,7 @@ import { IconComponent } from '../../shared/icon/icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent],
   templateUrl: './server-details-card.component.html',
+  styleUrls: ['./server-details-card.component.scss'],
 })
 export class ServerDetailsCardComponent {
   protected readonly LucideInfo = LucideInfo;

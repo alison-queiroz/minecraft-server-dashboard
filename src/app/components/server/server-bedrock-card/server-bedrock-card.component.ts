@@ -11,6 +11,7 @@ import { IconComponent } from '../../shared/icon/icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, IconComponent],
   templateUrl: './server-bedrock-card.component.html',
+  styleUrls: ['./server-bedrock-card.component.scss'],
 })
 export class ServerBedrockCardComponent {
   protected readonly LucideInfo = LucideInfo;

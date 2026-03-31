@@ -1,1 +1,71 @@
-// Profile accounts styles are driven by Tailwind utility classes
+.accounts-card {
+	@apply flex flex-col gap-5 rounded-2xl border border-zinc-800 bg-zinc-900 p-6;
+}
+
+.accounts-title {
+	@apply text-base font-bold text-zinc-100;
+}
+
+.accounts-message {
+	@apply text-sm text-zinc-500;
+}
+
+.accounts-error {
+	@apply text-xs text-red-400;
+}
+
+.account-section {
+	@apply flex flex-col gap-2;
+}
+
+.account-row {
+	@apply flex items-center gap-2;
+}
+
+.account-type {
+	@apply w-16 shrink-0 text-xs font-black uppercase tracking-widest;
+}
+
+.account-type--java {
+	@apply text-emerald-400;
+}
+
+.account-type--bedrock {
+	@apply text-blue-400;
+}
+
+.account-type--admin {
+	@apply text-orange-400;
+}
+
+.account-face {
+	@apply h-7 w-7 shrink-0 rounded-md border border-zinc-700;
+}
+
+.account-name {
+	@apply flex-1 text-sm font-bold text-zinc-200;
+}
+
+.account-remove {
+	@apply rounded-lg p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:opacity-50;
+}
+
+.account-form-row {
+	@apply flex gap-2;
+}
+
+.account-input {
+	@apply flex-1 rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 transition-colors focus:outline-none;
+}
+
+.account-input--java:focus {
+	@apply border-emerald-500;
+}
+
+.account-input--bedrock:focus {
+	@apply border-blue-500;
+}
+
+.account-input--admin:focus {
+	@apply border-orange-500;
+}

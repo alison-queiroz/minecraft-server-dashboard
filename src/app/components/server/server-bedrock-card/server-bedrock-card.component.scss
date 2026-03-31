@@ -1,0 +1,64 @@
+.bedrock-card {
+  @apply overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-xl;
+}
+
+.bedrock-header {
+  @apply flex items-center justify-between gap-3 border-b border-zinc-800 p-5;
+}
+
+.bedrock-title {
+  @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500;
+}
+
+.bedrock-status {
+  @apply ml-1 rounded-full border px-2 py-0.5 text-[9px] font-black;
+}
+
+.bedrock-via {
+  @apply font-mono text-[9px] uppercase tracking-widest text-zinc-600;
+}
+
+.bedrock-body {
+  @apply divide-y divide-zinc-800;
+}
+
+.bedrock-grid {
+  @apply grid grid-cols-2 gap-4 p-5;
+}
+
+.bedrock-label {
+  @apply mb-1 text-[10px] font-black uppercase tracking-widest text-zinc-600;
+}
+
+.bedrock-value {
+  @apply font-mono font-bold text-zinc-200;
+}
+
+.bedrock-online {
+  @apply font-mono font-bold;
+}
+
+.bedrock-online-max {
+  @apply font-normal text-zinc-600;
+}
+
+.bedrock-edition {
+  @apply font-bold text-zinc-200;
+}
+
+.bedrock-note {
+  @apply grid grid-cols-[auto_1fr] items-center gap-2 bg-blue-500/5 px-5 py-3;
+}
+
+.bedrock-note-icon {
+  @apply self-center text-blue-500;
+}
+
+.bedrock-note-copy {
+  @apply m-0 text-[10px] leading-relaxed text-zinc-500;
+}
+
+.bedrock-note-port {
+  @apply inline;
+  @apply font-mono text-blue-400;
+}

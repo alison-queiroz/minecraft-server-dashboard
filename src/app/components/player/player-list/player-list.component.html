@@ -1,21 +1,17 @@
-<div
-  class="bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden flex flex-col h-full"
->
+<div class="player-list-card">
   <!-- Search Bar -->
   <app-player-search></app-player-search>
 
   <!-- Table Header (Static) -->
-  <div
-    class="grid grid-cols-12 bg-zinc-950/50 text-[10px] uppercase font-black tracking-widest text-zinc-500 py-3 px-6 border-b border-zinc-800"
-  >
+  <div class="player-list-header">
     <div class="col-span-5">Player</div>
     <div class="col-span-2">Level</div>
     <div class="col-span-3">Dimension</div>
-    <div class="col-span-2 text-right">Last Seen</div>
+    <div class="col-span-2 header-align-right">Last Seen</div>
   </div>
 
   <!-- Virtual Scroll Viewport -->
-  <cdk-virtual-scroll-viewport itemSize="65" class="flex-1 custom-scrollbar">
+  <cdk-virtual-scroll-viewport itemSize="65" class="player-list-viewport custom-scrollbar">
     <app-player-card-row
       *cdkVirtualFor="let player of service.filteredPlayers(); trackBy: trackByUuid"
       [player]="player"

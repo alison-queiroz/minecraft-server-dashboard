@@ -1,10 +1,6 @@
-<header
-  class="max-w-7xl mx-auto w-full mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0"
->
+<header class="header-shell">
   <div>
-    <h1
-      class="text-3xl font-black tracking-tighter text-emerald-500 flex items-center gap-3"
-    >
+    <h1 class="header-title">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="32"
@@ -24,52 +20,39 @@
     </h1>
   </div>
 
-  <div
-    class="flex items-center gap-4 bg-zinc-900/80 backdrop-blur-md p-3 rounded-2xl border border-zinc-800 shadow-xl"
-  >
-    <div class="text-center px-4 border-r border-zinc-800">
-      <span class="block text-2xl font-mono font-bold text-emerald-400 leading-none">{{ playerService.players().length }}</span>
-      <span class="text-[10px] uppercase tracking-tighter text-zinc-500 font-black">Registered</span>
+  <div class="header-stats">
+    <div class="header-stat header-stat--bordered">
+      <span class="header-stat-value header-stat-value--accent">{{ playerService.players().length }}</span>
+      <span class="header-stat-label">Registered</span>
     </div>
-    <div class="text-center px-4 border-r border-zinc-800">
-      <span class="block text-2xl font-mono font-bold leading-none"
+    <div class="header-stat header-stat--bordered">
+      <span class="header-stat-value"
         [class.text-emerald-400]="serverService.onlinePlayers() > 0"
         [class.text-zinc-500]="serverService.onlinePlayers() === 0"
-      >{{ serverService.onlinePlayers() }}<span class="text-zinc-600 text-sm font-normal">/{{ serverService.maxPlayers() }}</span></span>
-      <span class="text-[10px] uppercase tracking-tighter text-zinc-500 font-black">Online Now</span>
+      >{{ serverService.onlinePlayers() }}<span class="header-stat-subvalue">/{{ serverService.maxPlayers() }}</span></span>
+      <span class="header-stat-label">Online Now</span>
     </div>
-    <div class="text-center px-4">
+    <div class="header-stat">
+      <span class="header-status-label">Status</span>
       <span
-        class="block text-[10px] text-zinc-500 uppercase font-black tracking-tighter mb-1"
-        >Status</span
-      >
-      <span
-        class="flex items-center justify-center gap-2 text-xs font-black px-2 py-1 rounded-full border transition-colors"
+        class="status-pill"
         [ngClass]="{
-          'text-emerald-400 bg-emerald-500/10 border-emerald-500/20':
+          'status-pill--online':
             serverService.status() === serverStatus.ONLINE,
-          'text-red-400 bg-red-500/10 border-red-500/20':
+          'status-pill--offline':
             serverService.status() === serverStatus.OFFLINE,
-          'text-yellow-400 bg-yellow-500/10 border-yellow-500/20':
+          'status-pill--loading':
             serverService.status() === serverStatus.LOADING,
         }"
       >
-        <span class="relative flex h-2 w-2">
+        <span class="status-dot-shell">
           @if (serverService.status() === serverStatus.ONLINE) {
-            <span
-              class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
-            ></span>
-            <span
-              class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"
-            ></span>
+            <span class="status-dot-ping"></span>
+            <span class="status-dot status-dot--online"></span>
           } @else if (serverService.status() === serverStatus.OFFLINE) {
-            <span
-              class="relative inline-flex rounded-full h-2 w-2 bg-red-500"
-            ></span>
+            <span class="status-dot status-dot--offline"></span>
           } @else {
-            <span
-              class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500 animate-pulse"
-            ></span>
+            <span class="status-dot status-dot--loading"></span>
           }
         </span>
         {{ serverService.status() }}

@@ -10,6 +10,7 @@ import { TagChipComponent } from '../../shared/tag-chip/tag-chip.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ServerIconComponent, ServerStatusBadgeComponent, TagChipComponent],
   templateUrl: './server-hero-banner.component.html',
+  styleUrls: ['./server-hero-banner.component.scss'],
 })
 export class ServerHeroBannerComponent {
   protected readonly serverService = inject(ServerService);

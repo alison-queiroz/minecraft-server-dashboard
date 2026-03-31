@@ -39,6 +39,11 @@ describe('Player model', () => {
       expect(player.avatarUrl()).toBe('https://mc-heads.net/avatar/Steve/64');
     });
 
+    it('should resize existing mc-heads avatar URLs to the requested size', () => {
+      const avatar = new Player({ ...BASE, skin_url: 'https://mc-heads.net/avatar/GM_De_Sunga/64' });
+      expect(avatar.avatarUrl(40)).toBe('https://mc-heads.net/avatar/GM_De_Sunga/40');
+    });
+
     it('should return raw skin_url unchanged when not an mc-heads skin URL', () => {
       const raw = new Player({ ...BASE, skin_url: 'https://example.com/skin.png' });
       expect(raw.avatarUrl()).toBe('https://example.com/skin.png');

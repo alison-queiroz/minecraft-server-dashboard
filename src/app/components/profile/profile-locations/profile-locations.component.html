@@ -1,95 +1,99 @@
-<section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-4">
-  <div class="flex items-center justify-between">
-    <h2 class="text-base font-bold text-zinc-100">Saved Locations</h2>
+<section class="locations-card">
+  <div class="locations-header">
+    <h2 class="locations-title">Saved Locations</h2>
     <button (click)="toggleAddForm()"
-      class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-colors"
-      [class.bg-emerald-600]="!showAddForm()" [class.hover:bg-emerald-500]="!showAddForm()"
-      [class.text-white]="!showAddForm()" [class.bg-zinc-800]="showAddForm()"
-      [class.hover:bg-zinc-700]="showAddForm()" [class.text-zinc-300]="showAddForm()">
+      class="locations-toggle"
+      [class.locations-toggle--idle]="!showAddForm()"
+      [class.locations-toggle--active]="showAddForm()">
       @if (!showAddForm()) { Add location } @else { Cancel }
     </button>
   </div>
 
   @if (showAddForm()) {
-    <div class="flex flex-col gap-3 bg-zinc-800/60 border border-zinc-700 rounded-xl p-4">
+    <div class="location-form-card">
       <input [value]="newLocName()" (input)="newLocName.set($any($event.target).value)"
         placeholder="Location name (e.g. My House)" maxlength="64"
-        class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+        class="ui-input" />
       <input [value]="newLocHash()" (input)="newLocHash.set($any($event.target).value)"
         placeholder="Map link or #world:x:y:z:... fragment"
-        class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors font-mono text-xs" />
+        class="ui-input ui-input--mono" />
       <input [value]="newLocDesc()" (input)="newLocDesc.set($any($event.target).value)"
         placeholder="Description (optional)" maxlength="160"
-        class="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" />
-      <label class="flex items-center gap-3 cursor-pointer select-none">
-        <div class="relative">
-          <input type="checkbox" class="sr-only peer" [checked]="newLocPublic()" (change)="newLocPublic.set($any($event.target).checked)" />
-          <div class="w-9 h-5 bg-zinc-700 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
-          <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+        class="ui-input" />
+      <label class="ui-toggle">
+        <div class="ui-toggle__control">
+          <input type="checkbox" class="ui-toggle__input" [checked]="newLocPublic()" (change)="newLocPublic.set($any($event.target).checked)" />
+          <div class="ui-toggle__track"></div>
+          <div class="ui-toggle__thumb"></div>
         </div>
-        <span class="text-sm text-zinc-300">Show on player card <span class="text-zinc-500 text-xs">(visible to all users)</span></span>
+        <span class="ui-toggle__text">Show on player card <span class="locations-toggle-note">(visible to all users)</span></span>
       </label>
-      @if (addError()) { <p class="text-xs text-red-400">{{ addError() }}</p> }
+      @if (addError()) { <p class="locations-error">{{ addError() }}</p> }
       <button (click)="addLocation()" [disabled]="saving()"
-        class="self-end px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+        class="ui-button ui-button--primary location-form-submit">
         {{ saving() ? 'Saving...' : 'Save location' }}
       </button>
     </div>
   }
 
   @if (profileService.savedLocations().length === 0 && !showAddForm()) {
-    <p class="text-sm text-zinc-500 text-center py-4">No saved locations yet.</p>
+    <p class="locations-empty">No saved locations yet.</p>
   }
 
+  <div class="locations-list">
   @for (loc of profileService.savedLocations(); track loc.id) {
-    <div class="flex flex-col gap-2 border border-zinc-800 rounded-xl p-4">
+    <div class="location-card">
       @if (editingId() === loc.id) {
         <input [value]="editName()" (input)="editName.set($any($event.target).value)" maxlength="64"
-          class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors" />
+          placeholder="Location name"
+          class="ui-input location-edit-input" />
         <input [value]="editHash()" (input)="editHash.set($any($event.target).value)"
-          class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-100 font-mono focus:outline-none focus:border-emerald-500 transition-colors" />
+          placeholder="Map link or fragment"
+          class="ui-input ui-input--mono location-edit-input" />
         <input [value]="editDesc()" (input)="editDesc.set($any($event.target).value)" maxlength="160"
-          class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors" />
-        <label class="flex items-center gap-3 cursor-pointer select-none">
-          <div class="relative">
-            <input type="checkbox" class="sr-only peer" [checked]="editPublic()" (change)="editPublic.set($any($event.target).checked)" />
-            <div class="w-9 h-5 bg-zinc-700 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
-            <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+          placeholder="Description"
+          class="ui-input location-edit-input" />
+        <label class="ui-toggle">
+          <div class="ui-toggle__control">
+            <input type="checkbox" class="ui-toggle__input" [checked]="editPublic()" (change)="editPublic.set($any($event.target).checked)" />
+            <div class="ui-toggle__track"></div>
+            <div class="ui-toggle__thumb"></div>
           </div>
-          <span class="text-sm text-zinc-300">Show on player card</span>
+          <span class="ui-toggle__text">Show on player card</span>
         </label>
-        <div class="flex gap-2 justify-end">
-          <button (click)="cancelEdit()" class="px-3 py-1.5 text-xs font-bold text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors">Cancel</button>
-          <button (click)="saveEdit(loc.id)" [disabled]="saving()" class="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors disabled:opacity-60">{{ saving() ? 'Saving...' : 'Save' }}</button>
+        <div class="location-edit-actions">
+          <button (click)="cancelEdit()" class="ui-button ui-button--secondary location-edit-button">Cancel</button>
+          <button (click)="saveEdit(loc.id)" [disabled]="saving()" class="ui-button ui-button--primary location-edit-button">{{ saving() ? 'Saving...' : 'Save' }}</button>
         </div>
       } @else {
-        <div class="flex items-start justify-between gap-2">
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-bold text-zinc-100 truncate flex items-center gap-2">
+        <div class="location-view">
+          <div class="location-copy">
+            <p class="location-name">
               {{ loc.name }}
               @if (loc.isPublic) {
-                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">Public</span>
+                <span class="location-public-badge">Public</span>
               }
             </p>
-            @if (loc.description) { <p class="text-xs text-zinc-400 mt-0.5">{{ loc.description }}</p> }
+            @if (loc.description) { <p class="location-description">{{ loc.description }}</p> }
           </div>
-          <div class="flex gap-1 shrink-0">
-            <button (click)="previewOnMap(loc.mapHash)" class="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 transition-colors" title="Preview on map">
+          <div class="location-actions">
+            <button (click)="previewOnMap(loc.mapHash)" class="location-action location-action--accent" title="Preview on map">
               <app-icon [icon]="LucideMap" [size]="14"></app-icon>
             </button>
-            <a [href]="mapUrl(loc.mapHash)" target="_blank" rel="noopener" class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" title="Open in new tab">
+            <a [href]="mapUrl(loc.mapHash)" target="_blank" rel="noopener" class="location-action location-action--bright" title="Open in new tab">
               <app-icon [icon]="LucideExternalLink" [size]="14"></app-icon>
             </a>
-            <button (click)="startEdit(loc)" class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" title="Edit">
+            <button (click)="startEdit(loc)" class="location-action location-action--bright" title="Edit">
               <app-icon [icon]="LucidePencil" [size]="14"></app-icon>
             </button>
-            <button (click)="deleteLocation(loc.id)" class="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors" title="Delete">
+            <button (click)="deleteLocation(loc.id)" class="location-action location-action--danger" title="Delete">
               <app-icon [icon]="LucideTrash2" [size]="14"></app-icon>
             </button>
           </div>
         </div>
-        <p class="text-xs font-mono text-zinc-600 truncate">{{ loc.mapHash }}</p>
+        <p class="location-hash">{{ loc.mapHash }}</p>
       }
     </div>
   }
+  </div>
 </section>

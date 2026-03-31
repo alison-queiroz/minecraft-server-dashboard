@@ -6,20 +6,24 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { LucideX } from '@lucide/angular';
 import { UserProfileService, AccountType } from '../../../services/user-profile/user-profile.service';
 import { PlayerService } from '../../../services/player/player.service';
 import { Player } from '../../../services/player/player.model';
 import { PlayerFaceComponent } from '../../shared/player-face/player-face.component';
+import { IconComponent } from '../../shared/icon/icon.component';
+import { ActionButtonComponent } from '../../shared/action-button/action-button.component';
 
 @Component({
   selector: 'app-profile-accounts',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PlayerFaceComponent],
+  imports: [PlayerFaceComponent, IconComponent, ActionButtonComponent],
   templateUrl: './profile-accounts.component.html',
   styleUrls: ['./profile-accounts.component.scss'],
 })
 export class ProfileAccountsComponent implements OnInit {
+  protected readonly LucideX = LucideX;
   protected readonly profileService = inject(UserProfileService);
   private readonly playerService = inject(PlayerService);
 

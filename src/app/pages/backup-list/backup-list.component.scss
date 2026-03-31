@@ -1,0 +1,90 @@
+.backup-container {
+  @apply w-full p-6 md:p-10;
+}
+.backup-card {
+  @apply bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl;
+}
+.card-header {
+  @apply p-5 border-b border-zinc-800 flex items-center justify-between;
+}
+.header-title {
+  @apply text-[10px] uppercase font-black tracking-widest text-zinc-500 flex items-center gap-2;
+}
+.breadcrumb-container {
+  @apply px-5 py-4 bg-zinc-900/50 border-b border-zinc-800 flex items-center flex-wrap gap-2;
+}
+.breadcrumb-wrapper {
+  @apply flex items-center;
+}
+.breadcrumb-separator {
+  @apply mx-3 text-zinc-700 font-bold;
+}
+.breadcrumb-btn {
+  @apply text-[10px] font-black uppercase tracking-widest focus:outline-none transition-colors;
+}
+.breadcrumb-btn.active {
+  @apply text-emerald-400 hover:text-emerald-300;
+}
+.breadcrumb-btn.inactive {
+  @apply text-zinc-500;
+}
+.list-container {
+  @apply min-h-[200px];
+}
+.list-viewport {
+  @apply h-[min(68vh,640px)] w-full;
+}
+.list-item {
+  @apply border-b border-zinc-800;
+}
+.item-content {
+  @apply block;
+}
+.list-row {
+  @apply flex min-h-[88px] items-center justify-between gap-4 px-5 hover:bg-zinc-800/30 transition-colors;
+}
+.item-content {
+  @apply flex items-center gap-4 min-w-0;
+}
+.item-actions {
+  @apply shrink-0;
+}
+.icon-box {
+  @apply w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0;
+}
+.icon-box.folder {
+  @apply text-emerald-400;
+}
+.icon-box.file {
+  @apply text-zinc-500;
+}
+.item-info {
+  @apply min-w-0;
+}
+.item-title {
+  @apply text-sm font-medium text-zinc-200 truncate cursor-pointer hover:text-emerald-400 transition-colors;
+}
+.item-meta {
+  @apply flex items-center flex-wrap gap-2 mt-1.5 text-[10px] uppercase font-black tracking-widest text-zinc-600;
+}
+.meta-dot {
+  @apply w-1 h-1 rounded-full bg-zinc-700 hidden sm:inline-block;
+}
+.meta-size {
+  @apply text-zinc-500;
+}
+.btn-action {
+  @apply inline-block px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all active:scale-95 text-center cursor-pointer;
+}
+.btn-action.primary {
+  @apply text-emerald-400 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20;
+}
+.btn-action.secondary {
+  @apply text-zinc-400 bg-zinc-800 border-zinc-700 hover:text-zinc-100 hover:bg-zinc-700;
+}
+.empty-action {
+  @apply text-zinc-700 text-[10px] font-black uppercase tracking-widest px-4 hidden sm:inline-block;
+}
+.empty-state {
+  @apply p-12 text-center text-[10px] font-black uppercase tracking-widest text-zinc-600;
+}

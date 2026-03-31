@@ -33,6 +33,9 @@ export class Player {
     if (this.skin_url?.includes('mc-heads.net/skin/')) {
       return this.skin_url.replace('/skin/', '/avatar/') + '/' + size;
     }
+    if (this.skin_url?.includes('mc-heads.net/avatar/')) {
+      return this.skin_url.replace(/\/\d+$/, '') + '/' + size;
+    }
     return this.skin_url;
   }
 

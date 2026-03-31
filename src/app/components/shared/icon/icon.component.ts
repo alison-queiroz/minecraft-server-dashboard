@@ -11,7 +11,7 @@ import { LucideDynamicIcon, type LucideIcon } from '@lucide/angular';
     [strokeWidth]="strokeWidth()"
   ></svg>`,
   imports: [LucideDynamicIcon],
-  host: { style: 'display:contents' },
+  host: { style: 'display:inline-flex;line-height:0;vertical-align:middle;' },
 })
 export class IconComponent {
   readonly icon = input.required<LucideIcon>();

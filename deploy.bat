@@ -43,88 +43,64 @@ set REMOTE_API_DIR=/home/opc/minecraft
 set TAR_FILE=deploy_build.tar.gz
 
 echo ==========================================================
-echo   1. RUNNING ANGULAR UNIT TESTS
+echo   1 AND 2. RUNNING UI AND API TESTS IN PARALLEL
 echo ==========================================================
-call npx ng test --watch=false --browsers=ChromeHeadless
+:: Runs Angular and Python tests concurrently, aborts if any fails
+call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "UI,API" -c "cyan,green" "npx ng test --watch=false --browsers=ChromeHeadless" "python -m pytest tests/"
+
 if %ERRORLEVEL% NEQ 0 (
     color 0C
-    echo [ERROR] Angular unit tests failed. Deployment aborted.
+    echo [ERROR] One or more tests failed. Deployment aborted.
     pause
-    exit /b
+    exit /b 1
 )
+
+echo ==========================================================
+echo   3. BUILDING ANGULAR ^& DEPLOYING BACKEND IN PARALLEL
+echo ==========================================================
+echo [INFO] Starting Angular Build in the background...
+
+start /b cmd /c "npx ng build --configuration production > build_log.txt 2>&1"
+
+echo [INFO] Uploading Python API and NGINX config while UI builds...
+scp -q -r -i %KEY_PATH% "%PROJECT_DIR%\api" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/"
+scp -q -i %KEY_PATH% "%PROJECT_DIR%\run.py" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/run.py"
+scp -q -i %KEY_PATH% "%PROJECT_DIR%\config\setup-nginx-map.sh" %SERVER_USER%@%SERVER_IP%:"/tmp/setup-nginx-map.sh"
+
+echo [INFO] Executing remote backend updates and cleaning WWW folder...
+ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/* && pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && sudo systemctl restart minecraft-api.service && chmod +x /tmp/setup-nginx-map.sh && /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
+
+echo [INFO] Backend deployment finished. Waiting for Angular build to complete...
+
+:wait_build
+tasklist /fi "imagename eq node.exe" | find /i "node.exe" > nul
+if not errorlevel 1 (
+    timeout /t 2 /nobreak > nul
+    goto :wait_build
+)
+
+findstr /C:"Error:" build_log.txt > nul
+if %ERRORLEVEL% EQU 0 (
+    color 0C
+    echo [ERROR] Angular build failed. Check build_log.txt.
+    pause
+    exit /b 1
+)
+del build_log.txt
 
 echo.
 echo ==========================================================
-echo   2. RUNNING PYTHON API TESTS
-echo ==========================================================
-call python -m pytest tests/
-if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] Python API tests failed. Deployment aborted.
-    pause
-    exit /b
-)
-
-echo.
-echo ==========================================================
-echo   3. BUILDING ANGULAR PROJECT
-echo ==========================================================
-:: Using 'call' ensures the batch script doesn't exit after ng build finishes
-call npx ng build --configuration production
-if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] Angular build failed. Please check the code for errors.
-    pause
-    exit /b
-)
-
-echo.
-echo ==========================================================
-echo   4. COMPRESSING BUILD FILES
+echo   4. COMPRESSING ^& UPLOADING FRONT-END
 echo ==========================================================
 tar -czf "%TAR_FILE%" -C "%BUILD_DIR%" .
-if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] Compression failed. Check if the build directory exists.
-    pause
-    exit /b
-)
+scp -q -i %KEY_PATH% "%TAR_FILE%" %SERVER_USER%@%SERVER_IP%:"/tmp/%TAR_FILE%"
 
-echo.
-echo ==========================================================
-echo   5. CLEANING REMOTE WEB DIRECTORY
-echo ==========================================================
-:: Removes all files inside the dashboard folder without deleting the folder itself
-ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/*"
-
-echo.
-echo ==========================================================
-echo   6. UPLOADING FRONT-END AND EXTRACTING
-echo ==========================================================
-scp -i %KEY_PATH% "%TAR_FILE%" %SERVER_USER%@%SERVER_IP%:"/tmp/%TAR_FILE%"
 ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo tar -xzf /tmp/%TAR_FILE% -C %REMOTE_WWW_DIR% && rm /tmp/%TAR_FILE%"
-
-:: Cleanup local archive
 del "%TAR_FILE%"
-
-echo.
-echo ==========================================================
-echo   7. UPLOADING PYTHON API AND RESTARTING SERVICE
-echo ==========================================================
-scp -r -i %KEY_PATH% "%PROJECT_DIR%\api" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/"
-scp -i %KEY_PATH% "%PROJECT_DIR%\run.py" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/run.py"
-ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && sudo systemctl restart minecraft-api.service"
-
-echo.
-echo ==========================================================
-echo   8. CONFIGURING NGINX MAP PROXY (idempotent)
-echo ==========================================================
-scp -i %KEY_PATH% "%PROJECT_DIR%\config\setup-nginx-map.sh" %SERVER_USER%@%SERVER_IP%:"/tmp/setup-nginx-map.sh"
-ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "chmod +x /tmp/setup-nginx-map.sh && /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
 
 echo.
 color 0A
 echo ==========================================================
-echo   [SUCCESS] Full deployment completed perfectly!
+echo   [SUCCESS] Full deployment completed perfectly and much faster!
 echo ==========================================================
 pause

@@ -1,1 +1,7 @@
-// Player card row styles are driven by Tailwind utility classes and host bindings
+.player-row-avatar {
+	@apply h-10 w-10 shrink-0 rounded-lg border border-zinc-700 shadow-lg transition-colors group-hover:border-emerald-500/50;
+}
+
+.player-row-level {
+	@apply rounded-md border border-zinc-700 bg-zinc-800 px-2.5 py-1 font-mono text-xs font-bold text-emerald-400;
+}

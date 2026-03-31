@@ -33,6 +33,14 @@
 }
 
 /* Dot fill for non-online states */
+.status-ping {
+  @apply absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75;
+}
+
+.status-live-dot {
+  @apply relative inline-flex h-full w-full rounded-full bg-emerald-500;
+}
+
 .dot-fill {
   @apply h-full w-full rounded-full;
 }

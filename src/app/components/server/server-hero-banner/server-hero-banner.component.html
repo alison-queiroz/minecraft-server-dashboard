@@ -1,22 +1,20 @@
-<div class="relative bg-gradient-to-br from-zinc-900 via-emerald-950/30 to-zinc-900 p-6 md:p-10 overflow-hidden">
-  <div class="absolute inset-0 opacity-5"
-    style="background-image: linear-gradient(rgba(16,185,129,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.5) 1px, transparent 1px); background-size: 40px 40px;">
-  </div>
+<div class="hero-banner">
+  <div class="hero-grid"></div>
 
-  <div class="relative flex flex-col sm:flex-row items-center sm:items-start gap-6 md:gap-8">
+  <div class="hero-content">
     <app-server-icon size="home"></app-server-icon>
 
-    <div class="flex-1 text-center sm:text-left">
-      <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 mb-2">
-        <h1 class="text-4xl md:text-5xl font-black tracking-tighter text-white uppercase">ExVegan</h1>
+    <div class="hero-copy">
+      <div class="hero-title-row">
+        <h1 class="hero-title">ExVegan</h1>
         <app-server-status-badge></app-server-status-badge>
       </div>
 
       @if (serverService.motd().length > 0) {
-        <p class="text-zinc-400 text-base md:text-lg mt-1 italic">"{{ serverService.motd()[0] }}"</p>
+        <p class="hero-motd">"{{ serverService.motd()[0] }}"</p>
       }
 
-      <div class="flex flex-wrap justify-center sm:justify-start gap-2 mt-4">
+      <div class="hero-tags">
         @if (serverService.software()) {
           <app-tag-chip color="green">{{ serverService.software() }}</app-tag-chip>
         }

@@ -8,6 +8,7 @@ import { PlayerService } from '../../../services/player/player.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [],
   templateUrl: './server-hero-stats.component.html',
+  styleUrls: ['./server-hero-stats.component.scss'],
 })
 export class ServerHeroStatsComponent {
   protected readonly serverService = inject(ServerService);

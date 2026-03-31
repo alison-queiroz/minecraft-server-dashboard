@@ -11,6 +11,7 @@ import { TagChipComponent } from '../../shared/tag-chip/tag-chip.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ServerIconComponent, ServerStatusBadgeComponent, TagChipComponent],
   templateUrl: './server-identity-card.component.html',
+  styleUrls: ['./server-identity-card.component.scss'],
 })
 export class ServerIdentityCardComponent {
   protected readonly serverService = inject(ServerService);

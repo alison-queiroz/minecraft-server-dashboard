@@ -1,53 +1,88 @@
-<div class="p-6 max-w-4xl mx-auto">
-  <h2 class="text-2xl font-bold mb-6 text-white">Server Backups</h2>
+<div class="backup-container">
+  <div class="backup-card">
 
-  <div class="bg-gray-800 rounded-lg shadow overflow-hidden">
-    <table class="min-w-full divide-y divide-gray-700">
-      <thead class="bg-gray-900">
-        <tr>
-          <th
-            class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
+    <!-- Header -->
+    <div class="card-header">
+      <h3 class="header-title">
+        <app-icon [icon]="LucideDatabase" size="14" strokeWidth="2.5"></app-icon>
+        Server Backups
+      </h3>
+    </div>
+
+    <!-- Breadcrumbs -->
+    <div class="breadcrumb-container">
+      @for (path of currentPath(); track path.id; let isLast = $last) {
+        <div class="breadcrumb-wrapper">
+          <button
+            (click)="navigateTo(path.id, path.name)"
+            [disabled]="isLast"
+            class="breadcrumb-btn"
+            [class.active]="!isLast"
+            [class.inactive]="isLast"
           >
-            Name
-          </th>
-          <th
-            class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
-          >
-            Date
-          </th>
-          <th
-            class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
-          >
-            Size
-          </th>
-          <th
-            class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
-          >
-            Action
-          </th>
-        </tr>
-      </thead>
-      <tbody class="bg-gray-800 divide-y divide-gray-700">
-        <tr *ngFor="let backup of backups">
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
-            {{ backup.name }}
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-            {{ backup.createdTime | date: "medium" }}
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-            {{ formatSize(backup.size) }}
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <a
-              [href]="backup.webContentLink"
-              class="text-blue-400 hover:text-blue-300 transition-colors"
-              target="_blank"
-              >Download</a
-            >
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            {{ path.name }}
+          </button>
+          @if (!isLast) {
+            <span class="breadcrumb-separator">/</span>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Backup List -->
+    <div class="list-container">
+      @if (isLoading()) {
+        <div class="empty-state animate-pulse">
+          Loading contents...
+        </div>
+      } @else {
+        <cdk-virtual-scroll-viewport itemSize="88" class="list-viewport custom-scrollbar">
+          <div class="list-item" *cdkVirtualFor="let backup of backups(); trackBy: trackByBackupId">
+            <div class="list-row">
+              <div class="item-content">
+                <!-- Icon Box -->
+                <div class="icon-box" [class.folder]="isFolder(backup)" [class.file]="!isFolder(backup)">
+                  <app-icon [icon]="isFolder(backup) ? LucideFolder : LucideFile" size="18"></app-icon>
+                </div>
+
+                <!-- Info -->
+                <div class="item-info">
+                  <p class="item-title" (click)="isFolder(backup) ? navigateTo(backup.id, backup.name) : null">
+                    {{ backup.name }}
+                  </p>
+                  <div class="item-meta">
+                    <span>{{ backup.createdTime | date: "medium" }}</span>
+                    @if (!isFolder(backup)) {
+                      <span class="meta-dot"></span>
+                      <span class="meta-size">{{ formatSize(backup.size) }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Button -->
+              <div class="item-actions">
+                @if (backup.webContentLink) {
+                  <a [href]="backup.webContentLink" target="_blank" class="btn-action primary">
+                    Download
+                  </a>
+                } @else if (isFolder(backup)) {
+                  <button (click)="navigateTo(backup.id, backup.name)" class="btn-action secondary">
+                    Open Folder
+                  </button>
+                } @else {
+                  <span class="empty-action">---</span>
+                }
+              </div>
+            </div>
+          </div>
+        </cdk-virtual-scroll-viewport>
+        @if (backups().length === 0) {
+          <div class="empty-state">
+            This folder is empty.
+          </div>
+        }
+      }
+    </div>
   </div>
 </div>

@@ -5,4 +5,109 @@
   .card-label {
     @apply text-[10px] uppercase font-black tracking-widest;
   }
+
+  .ui-panel {
+    @apply rounded-2xl border border-zinc-800 bg-zinc-900;
+  }
+
+  .ui-panel--padded {
+    @apply p-6;
+  }
+
+  .ui-input {
+    @apply rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 transition-colors focus:outline-none;
+  }
+
+  .ui-input:focus {
+    @apply border-emerald-500;
+  }
+
+  .ui-input--mono {
+    @apply font-mono text-xs;
+  }
+
+  .ui-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .ui-button--primary {
+    @apply bg-emerald-600 text-white hover:bg-emerald-500;
+  }
+
+  .ui-button--secondary {
+    @apply bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
+  }
+
+  .ui-button--blue {
+    @apply bg-blue-700 text-white hover:bg-blue-600;
+  }
+
+  .ui-button--orange {
+    @apply bg-orange-700 text-white hover:bg-orange-600;
+  }
+
+  .ui-icon-button {
+    @apply inline-flex items-center justify-center rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800;
+  }
+
+  .ui-icon-button--accent {
+    @apply hover:text-emerald-400;
+  }
+
+  .ui-icon-button--danger {
+    @apply hover:text-red-400;
+  }
+
+  .ui-icon-button--bright {
+    @apply hover:text-zinc-100;
+  }
+
+  .ui-badge {
+    @apply inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider;
+  }
+
+  .ui-badge--emerald {
+    @apply border-emerald-500/20 bg-emerald-500/10 text-emerald-500;
+  }
+
+  .ui-toggle {
+    @apply flex cursor-pointer items-center gap-3 select-none;
+  }
+
+  .ui-toggle__control {
+    @apply relative;
+  }
+
+  .ui-toggle__input {
+    @apply sr-only peer;
+  }
+
+  .ui-toggle__track {
+    @apply h-5 w-9 rounded-full bg-zinc-700 transition-colors peer-checked:bg-emerald-600;
+  }
+
+  .ui-toggle__thumb {
+    @apply absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4;
+  }
+
+  .ui-toggle__text {
+    @apply text-sm text-zinc-300;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
 }

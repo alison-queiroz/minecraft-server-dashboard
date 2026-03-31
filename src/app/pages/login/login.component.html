@@ -1,19 +1,19 @@
-<div class="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4">
+<div class="login-page">
 
   <!-- Card -->
-  <div class="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-8 flex flex-col items-center gap-6 shadow-2xl">
+  <div class="login-card">
 
     <!-- Server icon -->
     <app-server-icon size="login"></app-server-icon>
 
-    <div class="text-center">
-      <h1 class="text-xl font-bold text-zinc-100">Minecraft Dashboard</h1>
-      <p class="text-sm text-zinc-400 mt-1">Sign in to access the server dashboard</p>
+    <div class="login-copy">
+      <h1 class="login-title">Minecraft Dashboard</h1>
+      <p class="login-subtitle">Sign in to access the server dashboard</p>
     </div>
 
     <!-- Error -->
     @if (error()) {
-      <p class="w-full text-sm text-red-400 bg-red-900/20 border border-red-800 rounded-lg px-3 py-2 text-center">
+      <p class="login-error">
         {{ error() }}
       </p>
     }
@@ -22,18 +22,17 @@
     <button
       (click)="signIn()"
       [disabled]="signing()"
-      class="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-100 active:bg-zinc-200
-             text-zinc-900 font-medium text-sm rounded-xl px-4 py-3 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+      class="login-button">
       @if (signing()) {
         <!-- Spinner -->
-        <svg class="animate-spin w-5 h-5 text-zinc-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+        <svg class="login-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="spinner-fill" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
         </svg>
         <span>Signing in…</span>
       } @else {
         <!-- Google G logo -->
-        <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg class="login-google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
           <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
           <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
@@ -43,7 +42,7 @@
       }
     </button>
 
-    <p class="text-xs text-zinc-500 text-center">
+    <p class="login-note">
       Only authorised Google accounts can access this dashboard.
     </p>
   </div>

@@ -1,0 +1,6 @@
+<app-action-button
+  [label]="copied() ? copiedLabel : idleLabel"
+  [variant]="copied() ? 'copied' : 'copy'"
+  [uppercase]="true"
+  (pressed)="copy()"
+></app-action-button>

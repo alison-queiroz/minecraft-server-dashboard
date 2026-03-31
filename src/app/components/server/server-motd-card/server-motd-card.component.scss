@@ -1,0 +1,11 @@
+.motd-card {
+  @apply rounded-3xl border border-zinc-800 bg-zinc-900 p-5 shadow-xl;
+}
+
+.motd-title {
+  @apply mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500;
+}
+
+.motd-line {
+  @apply text-sm font-medium italic text-zinc-300;
+}

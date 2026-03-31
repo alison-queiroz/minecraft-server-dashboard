@@ -1,0 +1,43 @@
+.connection-card {
+  @apply overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-xl;
+}
+
+.connection-header {
+  @apply border-b border-zinc-800 p-5;
+}
+
+.connection-title {
+  @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500;
+}
+
+.connection-list {
+  @apply divide-y divide-zinc-800;
+}
+
+.connection-row {
+  @apply flex items-center justify-between gap-4 p-5;
+}
+
+.connection-row--compact {
+  @apply justify-start;
+}
+
+.connection-info {
+  @apply flex min-w-0 items-center gap-3;
+}
+
+.connection-icon-box {
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-500;
+}
+
+.connection-label {
+  @apply mb-0.5 text-[10px] font-black uppercase tracking-widest text-zinc-600;
+}
+
+.connection-value {
+  @apply font-mono text-sm text-zinc-300;
+}
+
+.connection-value--accent {
+  @apply text-emerald-400;
+}

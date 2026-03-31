@@ -1,25 +1,25 @@
-<div class="bg-zinc-900 rounded-3xl border border-zinc-800 p-5 shadow-xl">
-  <h3 class="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+<div class="players-card">
+  <h3 class="players-card-title">
     <app-icon [icon]="LucideUsers" [size]="12" [strokeWidth]="2.5"></app-icon>
     Players
   </h3>
-  <div class="flex items-baseline gap-2 mb-3">
-    <span class="text-4xl font-black font-mono"
+  <div class="players-card-counts">
+    <span class="players-card-count"
       [class.text-emerald-400]="serverService.onlinePlayers() > 0"
       [class.text-zinc-500]="serverService.onlinePlayers() === 0">
       {{ serverService.onlinePlayers() }}
     </span>
-    <span class="text-zinc-600 font-bold text-lg">/ {{ serverService.maxPlayers() }}</span>
-    <span class="text-xs text-zinc-600 uppercase font-black tracking-widest ml-1">online</span>
+    <span class="players-card-max">/ {{ serverService.maxPlayers() }}</span>
+    <span class="players-card-label">online</span>
   </div>
-  <div class="bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
-    <div class="h-full rounded-full transition-all duration-700 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+  <div class="players-card-track">
+    <div class="players-card-fill"
       [style.width.%]="playersPercent"
       [class.bg-emerald-500]="serverService.onlinePlayers() > 0"
       [class.bg-zinc-700]="serverService.onlinePlayers() === 0">
     </div>
   </div>
-  <p class="text-[10px] text-zinc-600 font-mono mt-2 text-right">
+  <p class="players-card-footer">
     {{ playerService.players().length }} registered total
   </p>
 </div>

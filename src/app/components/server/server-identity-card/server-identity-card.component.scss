@@ -1,0 +1,15 @@
+.identity-card {
+  @apply overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-xl;
+}
+
+.identity-hero {
+  @apply flex flex-col items-center gap-4 bg-gradient-to-b from-zinc-800/60 to-zinc-900 p-6;
+}
+
+.identity-motd {
+  @apply text-center text-xs italic text-zinc-400;
+}
+
+.identity-tags {
+  @apply flex flex-wrap justify-center gap-2 border-t border-zinc-800 p-4;
+}

@@ -1,0 +1,31 @@
+.hero-stats-grid {
+  @apply grid grid-cols-2 border-t border-zinc-800 sm:grid-cols-5;
+}
+
+.hero-stat-cell {
+  @apply p-5 text-center;
+}
+
+.hero-stat-cell--right-border {
+  @apply border-r border-zinc-800;
+}
+
+.hero-stat-cell--top-border {
+  @apply border-t border-zinc-800;
+}
+
+.hero-stat-cell--no-top-border-sm {
+  @apply sm:border-t-0;
+}
+
+.hero-stat-value {
+  @apply block font-mono text-3xl font-black leading-none;
+}
+
+.hero-stat-version {
+  @apply block truncate font-mono text-base font-black leading-none text-zinc-300;
+}
+
+.hero-stat-label {
+  @apply mt-2 block text-[10px] font-black uppercase tracking-widest text-zinc-500;
+}

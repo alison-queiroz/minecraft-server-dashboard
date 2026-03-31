@@ -1,0 +1,27 @@
+.quick-nav-list {
+  @apply flex flex-col gap-3;
+}
+
+.quick-nav-item {
+  @apply flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-4 shadow-lg transition-all hover:border-emerald-500/40 hover:bg-zinc-800/80 active:scale-[0.98];
+}
+
+.quick-nav-icon {
+  @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-800 text-zinc-500 transition-all group-hover:border-emerald-500/30 group-hover:bg-emerald-500/10 group-hover:text-emerald-400;
+}
+
+.quick-nav-copy {
+  @apply min-w-0 flex-1;
+}
+
+.quick-nav-title {
+  @apply text-sm font-bold text-zinc-100 transition-colors group-hover:text-emerald-400;
+}
+
+.quick-nav-subtitle {
+  @apply mt-0.5 text-xs text-zinc-500;
+}
+
+.quick-nav-arrow {
+  @apply shrink-0 text-zinc-700 transition-colors group-hover:text-emerald-500;
+}

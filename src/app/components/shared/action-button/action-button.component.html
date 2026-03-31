@@ -1,0 +1,16 @@
+<button
+  type="button"
+  (click)="handleClick()"
+  [disabled]="disabled"
+  class="action-button"
+  [class.action-button--primary]="variant === 'primary'"
+  [class.action-button--secondary]="variant === 'secondary'"
+  [class.action-button--blue]="variant === 'blue'"
+  [class.action-button--orange]="variant === 'orange'"
+  [class.action-button--copy]="variant === 'copy'"
+  [class.action-button--copied]="variant === 'copied'"
+  [class.action-button--compact]="compact"
+  [class.action-button--uppercase]="uppercase"
+>
+  {{ label }}
+</button>

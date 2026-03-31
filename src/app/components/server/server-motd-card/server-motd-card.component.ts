@@ -10,6 +10,7 @@ import { ServerService } from '../../../services/server/server.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent],
   templateUrl: './server-motd-card.component.html',
+  styleUrls: ['./server-motd-card.component.scss'],
 })
 export class ServerMotdCardComponent {
   protected readonly LucideMessageSquare = LucideMessageSquare;

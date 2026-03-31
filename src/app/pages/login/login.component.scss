@@ -1,3 +1,47 @@
-.pixelated {
-  image-rendering: pixelated;
+.login-page {
+  @apply flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-4;
+}
+
+.login-card {
+  @apply flex w-full max-w-sm flex-col items-center gap-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-8 shadow-2xl;
+}
+
+.login-copy {
+  @apply text-center;
+}
+
+.login-title {
+  @apply text-xl font-bold text-zinc-100;
+}
+
+.login-subtitle {
+  @apply mt-1 text-sm text-zinc-400;
+}
+
+.login-error {
+  @apply w-full rounded-lg border border-red-800 bg-red-900/20 px-3 py-2 text-center text-sm text-red-400;
+}
+
+.login-button {
+  @apply flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.login-spinner {
+  @apply h-5 w-5 animate-spin text-zinc-600;
+}
+
+.spinner-track {
+  @apply opacity-25;
+}
+
+.spinner-fill {
+  @apply opacity-75;
+}
+
+.login-google-icon {
+  @apply h-5 w-5 shrink-0;
+}
+
+.login-note {
+  @apply text-center text-xs text-zinc-500;
 }

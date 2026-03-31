@@ -2,6 +2,50 @@
   display: block;
 }
 
+.map-viewer-shell {
+  @apply flex flex-col;
+}
+
+.map-viewer-shell--fill {
+  @apply h-full;
+}
+
+.map-frame {
+  @apply block w-full border-0;
+}
+
+.map-tools {
+  @apply flex flex-col gap-3 bg-zinc-950/50 p-4;
+}
+
+.map-tools-copy {
+  @apply text-xs text-zinc-500;
+}
+
+.map-tools-strong {
+  @apply text-zinc-300;
+}
+
+.map-tools-actions {
+  @apply flex gap-2;
+}
+
+.map-capture-button {
+  @apply inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-600;
+}
+
+.map-capture-row {
+  @apply flex gap-2;
+}
+
+.map-capture-input {
+  @apply flex-1 py-2;
+}
+
+.map-capture-apply {
+  @apply shrink-0 rounded-xl bg-zinc-700 px-4 py-2 text-xs font-bold text-zinc-100 transition-colors hover:bg-zinc-600;
+}
+
 .resize-handle {
   resize: vertical;
   overflow: hidden;

@@ -1,0 +1,35 @@
+.action-button {
+  @apply inline-flex shrink-0 items-center justify-center rounded-xl px-4 py-2 text-sm font-bold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.action-button--uppercase {
+  @apply text-xs font-black uppercase tracking-widest;
+}
+
+.action-button--compact {
+  @apply px-3 py-1.5 text-xs;
+}
+
+.action-button--primary {
+  @apply bg-emerald-600 hover:bg-emerald-500;
+}
+
+.action-button--secondary {
+  @apply bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
+}
+
+.action-button--blue {
+  @apply bg-blue-700 hover:bg-blue-600;
+}
+
+.action-button--orange {
+  @apply bg-orange-700 hover:bg-orange-600;
+}
+
+.action-button--copy {
+  @apply border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100;
+}
+
+.action-button--copied {
+  @apply border border-emerald-500/30 bg-emerald-500/10 text-emerald-400;
+}

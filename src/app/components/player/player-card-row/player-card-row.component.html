@@ -1,6 +1,6 @@
 <div class="col-span-5 flex items-center gap-4">
     <app-player-face [player]="player" [size]="40" [showBadge]="true"
-      class="w-10 h-10 rounded-lg border border-zinc-700 group-hover:border-emerald-500/50 transition-colors shadow-lg shrink-0">
+      class="player-row-avatar">
     </app-player-face>
     <div class="flex flex-col">
       <span class="font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">{{ player.name }}</span>
@@ -9,7 +9,7 @@
   </div>
 
   <div class="col-span-2">
-    <span class="bg-zinc-800 px-2.5 py-1 rounded-md text-emerald-400 font-mono text-xs font-bold border border-zinc-700">
+    <span class="player-row-level">
       LVL {{ player.level }}
     </span>
   </div>

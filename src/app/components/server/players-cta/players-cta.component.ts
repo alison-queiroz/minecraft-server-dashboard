@@ -11,6 +11,7 @@ import { PlayerService } from '../../../services/player/player.service';
   imports: [RouterLink, IconComponent],
   host: { class: 'block' },
   templateUrl: './players-cta.component.html',
+  styleUrls: ['./players-cta.component.scss'],
 })
 export class PlayersCta {
   protected readonly LucideUsers        = LucideUsers;

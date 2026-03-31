@@ -1,3 +1,91 @@
 :host {
   display: block;
 }
+
+.nav-shell {
+  @apply mx-auto w-full max-w-7xl shrink-0;
+}
+
+.nav-bar {
+  @apply flex items-center justify-between gap-4 py-4;
+}
+
+.logo-link {
+  @apply flex shrink-0 items-center gap-3;
+}
+
+.logo-text {
+  @apply hidden text-lg font-black uppercase tracking-tighter text-zinc-100 transition-colors sm:block;
+}
+
+.logo-link:hover .logo-text {
+  @apply text-emerald-400;
+}
+
+.desktop-links {
+  @apply hidden flex-1 items-center justify-center gap-1 md:flex;
+}
+
+.nav-link {
+  @apply flex items-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-bold text-zinc-400 transition-all hover:bg-zinc-800 hover:text-zinc-100;
+}
+
+.nav-link.is-active {
+  @apply border-emerald-500/30 bg-emerald-500/10 text-emerald-400;
+}
+
+.nav-actions {
+  @apply flex shrink-0 items-center gap-3;
+}
+
+.player-count-badge {
+  @apply hidden items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-400 md:flex;
+}
+
+.player-count-current {
+  @apply font-mono text-emerald-400;
+}
+
+.player-count-divider {
+  @apply text-zinc-600;
+}
+
+.player-count-max {
+  @apply font-mono;
+}
+
+.desktop-user-actions {
+  @apply hidden items-center gap-2 md:flex;
+}
+
+.signout-button {
+  @apply rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-bold text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-100;
+}
+
+.menu-toggle {
+  @apply rounded-xl border border-zinc-700 bg-zinc-800 p-2 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-100 active:scale-95 md:hidden;
+}
+
+.mobile-menu {
+  @apply mb-4 flex flex-col gap-1 rounded-2xl border border-zinc-800 bg-zinc-900/95 p-2 backdrop-blur-md md:hidden;
+}
+
+.mobile-link {
+  @apply flex items-center gap-3 rounded-xl border border-transparent px-4 py-3.5 text-sm font-bold text-zinc-300 transition-all hover:bg-zinc-800 hover:text-zinc-100;
+}
+
+.mobile-link.is-active {
+  @apply bg-emerald-500/10 text-emerald-400;
+}
+
+.mobile-player-count {
+  @apply ml-auto rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-400;
+}
+
+.mobile-user-row {
+  @apply mt-1 flex items-center gap-3 border-t border-zinc-800 px-2 pb-1 pt-2;
+}
+
+.mobile-user-name {
+  @apply flex-1 truncate text-sm font-medium text-zinc-300;
+}

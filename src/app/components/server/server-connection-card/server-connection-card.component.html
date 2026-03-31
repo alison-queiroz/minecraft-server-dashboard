@@ -1,65 +1,55 @@
-<div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl">
-  <div class="p-5 border-b border-zinc-800">
-    <h3 class="text-[10px] uppercase font-black tracking-widest text-zinc-500 flex items-center gap-2">
+<div class="connection-card">
+  <div class="connection-header">
+    <h3 class="connection-title">
       <app-icon [icon]="LucideWifi" [size]="12" [strokeWidth]="2.5"></app-icon>
       Connection Details
     </h3>
   </div>
-  <div class="divide-y divide-zinc-800">
+  <div class="connection-list">
     <!-- Hostname -->
-    <div class="p-5 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
+    <div class="connection-row">
+      <div class="connection-info">
+        <div class="connection-icon-box">
           <app-icon [icon]="LucideGlobe" [size]="16"></app-icon>
         </div>
         <div>
-          <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-0.5">Hostname</p>
-          <code class="font-mono text-emerald-400 text-sm">{{ serverService.hostname() || 'exvegan.duckdns.org' }}</code>
+          <p class="connection-label">Hostname</p>
+          <code class="connection-value connection-value--accent">{{ serverService.hostname() || 'exvegan.duckdns.org' }}</code>
         </div>
       </div>
-      <button (click)="copyAddress()"
-        class="shrink-0 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl border transition-all active:scale-95"
-        [ngClass]="copied()
-          ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-          : 'text-zinc-400 bg-zinc-800 border-zinc-700 hover:text-zinc-100 hover:bg-zinc-700'">
-        {{ copied() ? 'Copied!' : 'Copy' }}
-      </button>
+      <app-copy-button [value]="serverService.hostname() || 'exvegan.duckdns.org'"></app-copy-button>
     </div>
     <!-- IP -->
     @if (serverService.ip()) {
-      <div class="p-5 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
-          <app-icon [icon]="LucideServer" [size]="16"></app-icon>
+      <div class="connection-row">
+        <div class="connection-info">
+          <div class="connection-icon-box">
+            <app-icon [icon]="LucideServer" [size]="16"></app-icon>
           </div>
           <div>
-            <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-0.5">IP Address</p>
-            <code class="font-mono text-zinc-300 text-sm">{{ serverService.ip() }}</code>
+            <p class="connection-label">IP Address</p>
+            <code class="connection-value">{{ serverService.ip() }}</code>
           </div>
         </div>
-        <button (click)="copyIp()"
-          class="shrink-0 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl border transition-all active:scale-95"
-          [ngClass]="copiedIp()
-            ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-            : 'text-zinc-400 bg-zinc-800 border-zinc-700 hover:text-zinc-100 hover:bg-zinc-700'">
-          {{ copiedIp() ? 'Copied!' : 'Copy' }}
-        </button>
+        <app-copy-button [value]="serverService.ip() || ''"></app-copy-button>
       </div>
     }
     <!-- Port -->
-    <div class="p-5 flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="16 3 21 3 21 8"/>
-          <line x1="4" x2="21" y1="20" y2="3"/>
-          <polyline points="21 16 21 21 16 21"/>
-          <line x1="15" x2="21" y1="15" y2="21"/>
-        </svg>
-      </div>
-      <div>
-        <p class="text-[10px] uppercase font-black tracking-widest text-zinc-600 mb-0.5">Port</p>
-        <code class="font-mono text-zinc-300 text-sm">{{ serverService.port() ?? 25565 }}</code>
+    <div class="connection-row connection-row--compact">
+      <div class="connection-info">
+        <div class="connection-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 3 21 3 21 8"/>
+            <line x1="4" x2="21" y1="20" y2="3"/>
+            <polyline points="21 16 21 21 16 21"/>
+            <line x1="15" x2="21" y1="15" y2="21"/>
+          </svg>
+        </div>
+        <div>
+          <p class="connection-label">Port</p>
+          <code class="connection-value">{{ serverService.port() ?? 25565 }}</code>
+        </div>
       </div>
     </div>
   </div>

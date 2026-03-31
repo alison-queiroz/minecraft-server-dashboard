@@ -1,3 +1,23 @@
 :host {
   display: contents;
 }
+
+.footer-shell {
+  @apply mx-auto mt-6 flex w-full max-w-7xl shrink-0 items-center justify-between border-t border-zinc-900 py-4;
+}
+
+.footer-copy {
+  @apply text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700;
+}
+
+.footer-bars {
+  @apply flex gap-4;
+}
+
+.footer-bar {
+  @apply h-1 w-8 rounded-full bg-zinc-800;
+}
+
+.footer-bar--active {
+  @apply bg-emerald-500/50;
+}

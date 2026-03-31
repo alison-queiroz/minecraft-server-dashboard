@@ -1,1 +1,12 @@
-// Skin viewer styles are driven by Tailwind utility classes on the host template
+.skin-canvas {
+	@apply relative z-20 mt-0 flex h-44 cursor-grab items-center justify-center drop-shadow-[0_25px_40px_rgba(16,185,129,0.4)] active:cursor-grabbing;
+}
+
+.skin-image {
+	@apply relative z-20 mt-0 h-44 transition-transform duration-500 hover:scale-105;
+	filter: drop-shadow(0 25px 40px rgba(16, 185, 129, 0.4));
+}
+
+.pixelated {
+	image-rendering: pixelated;
+}

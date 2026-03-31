@@ -1,28 +1,27 @@
-<div class="max-w-7xl mx-auto w-full space-y-6 pb-6">
+<div class="status-page">
 
   <!-- Page header -->
-  <div class="flex items-center justify-between">
+  <div class="status-header">
     <div>
-      <h1 class="text-2xl font-black tracking-tighter text-zinc-100 uppercase">Server Status</h1>
-      <p class="text-zinc-500 text-sm mt-1">Live server information</p>
+      <h1 class="status-title">Server Status</h1>
+      <p class="status-subtitle">Live server information</p>
     </div>
-    <a routerLink="/"
-      class="text-xs font-bold text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-800">
+    <a routerLink="/" class="status-back-link">
       <app-icon [icon]="LucideChevronLeft" [size]="14"></app-icon>
       Back
     </a>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="status-grid">
 
     <!-- Left column: server identity -->
-    <div class="lg:col-span-1 space-y-4">
+    <div class="status-column status-column--sidebar">
       <app-server-identity-card></app-server-identity-card>
       <app-server-players-card></app-server-players-card>
     </div>
 
     <!-- Right column: connection details -->
-    <div class="lg:col-span-2 space-y-4">
+    <div class="status-column status-column--main">
       <app-server-connection-card></app-server-connection-card>
       <app-server-bedrock-card></app-server-bedrock-card>
       <app-server-details-card></app-server-details-card>

@@ -1,109 +1,75 @@
 @if (service.selectedPlayer(); as player) {
-  <div
-    class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-2xl flex flex-col lg:h-full animate-profile"
-  >
+  <div class="detail-card animate-profile">
     <!-- Skin Display Area -->
-    <div
-      class="bg-zinc-800 h-48 relative flex items-center justify-center overflow-hidden shrink-0"
-    >
-      <div
-        class="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent z-10 pointer-events-none"
-      ></div>
-      <div
-        class="skin-grid-bg absolute inset-0 opacity-10 pointer-events-none"
-      ></div>
+    <div class="detail-hero">
+      <div class="detail-hero-overlay"></div>
+      <div class="skin-grid-bg detail-grid-bg"></div>
       <app-skin-viewer
         [skinUrl]="player.skin_url"
         [isRaw]="player.is_raw_skin ?? false"
       ></app-skin-viewer>
     </div>
 
-    <div
-      class="p-5 pt-8 relative flex-1 flex flex-col overflow-y-auto min-h-0 custom-scrollbar"
-    >
-      <div class="text-center mb-4">
-        <h3 class="text-3xl font-black text-white tracking-tighter uppercase">
+    <div class="detail-body custom-scrollbar">
+      <div class="detail-header">
+        <h3 class="detail-name">
           {{ player.name }}
         </h3>
-        <div
-          class="inline-block mt-2 px-3 py-1 bg-zinc-950 rounded-full border border-zinc-800"
-        >
-          <span class="text-[9px] font-mono text-zinc-500 break-all">{{
+        <div class="detail-uuid-pill">
+          <span class="detail-uuid">{{
             player.uuid
           }}</span>
         </div>
       </div>
 
       <!-- Stats Grid -->
-      <div class="grid grid-cols-2 gap-3 mb-4">
-        <div
-          class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 hover:border-emerald-500/30 transition-colors"
-        >
-          <span
-            class="text-[10px] uppercase font-black text-zinc-500 tracking-widest block mb-2"
-            >Vitality</span
-          >
-          <div class="flex items-center gap-3">
-            <div
-              class="flex-1 bg-zinc-900 h-2.5 rounded-full overflow-hidden border border-zinc-800"
-            >
+      <div class="detail-stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Vitality</span>
+          <div class="stat-value-row">
+            <div class="health-track">
               <div
-                class="bg-red-500 h-full rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                class="health-fill"
                 [style.width.%]="player.healthPercent()"
               ></div>
             </div>
-            <span class="text-sm font-black text-red-400">{{
+            <span class="health-value">{{
               player.health
             }}</span>
           </div>
         </div>
 
-        <div
-          class="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 hover:border-emerald-500/30 transition-colors"
-        >
-          <span
-            class="text-[10px] uppercase font-black text-zinc-500 tracking-widest block mb-2"
-            >Experience</span
-          >
-          <div class="text-2xl font-black text-emerald-400 italic">
+        <div class="stat-card">
+          <span class="stat-label">Experience</span>
+          <div class="experience-value">
             {{ player.level
-            }}<span class="text-[10px] text-zinc-600 not-italic ml-1">LVL</span>
+            }}<span class="experience-unit">LVL</span>
           </div>
         </div>
       </div>
 
       <!-- Attributes List -->
-      <div class="space-y-3 mb-4">
-        <div
-          class="flex justify-between items-center p-4 bg-zinc-950/50 rounded-2xl border border-zinc-800"
-        >
-          <div class="flex items-center gap-3">
-            <div
-              class="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-500"
-            >
+      <div class="detail-attributes">
+        <div class="attribute-row">
+          <div class="attribute-label-group">
+            <div class="attribute-icon-box">
               <app-icon [icon]="LucideClock" [size]="16"></app-icon>
             </div>
-            <span class="text-sm font-bold text-zinc-400">Last Seen</span>
+            <span class="attribute-label">Last Seen</span>
           </div>
-          <span class="text-sm font-mono text-zinc-300">{{
+          <span class="attribute-value">{{
             player.last_seen
           }}</span>
         </div>
 
-        <div
-          class="flex justify-between items-center p-4 bg-zinc-950/50 rounded-2xl border border-zinc-800"
-        >
-          <div class="flex items-center gap-3">
-            <div
-              class="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-500"
-            >
+        <div class="attribute-row">
+          <div class="attribute-label-group">
+            <div class="attribute-icon-box">
               <app-icon [icon]="LucideMapPin" [size]="16"></app-icon>
             </div>
-            <span class="text-sm font-bold text-zinc-400">Player Location</span>
+            <span class="attribute-label">Player Location</span>
           </div>
-          <span
-            class="text-xs font-mono bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800 text-emerald-400"
-          >
+          <span class="location-coordinates">
             {{ player.pos[0] | number: "1.0-0" }}
             {{ player.pos[1] | number: "1.0-0" }}
             {{ player.pos[2] | number: "1.0-0" }}
@@ -113,22 +79,22 @@
 
       <!-- Public Saved Locations -->
       @if (publicLocations().length > 0) {
-        <div class="mb-4">
-          <p class="text-[10px] uppercase font-black text-zinc-500 tracking-widest mb-2">Saved Locations</p>
-          <div class="flex flex-col gap-2">
+        <div class="detail-locations-section">
+          <p class="detail-section-label">Saved Locations</p>
+          <div class="detail-locations-list">
             @for (loc of publicLocations(); track loc.id) {
               <a [routerLink]="['/map']" [fragment]="locFragment(loc.mapHash)"
-                 class="flex items-center gap-3 p-3 bg-zinc-950/50 rounded-xl border border-zinc-800 hover:border-emerald-500/30 transition-colors group">
+                class="detail-location-link group">
                 <app-icon [icon]="LucideMap" [size]="14"
-                     class="text-zinc-500 group-hover:text-emerald-400 transition-colors shrink-0"></app-icon>
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs font-bold text-zinc-200 truncate group-hover:text-emerald-400 transition-colors">{{ loc.name }}</p>
+                     class="detail-location-icon"></app-icon>
+                <div class="detail-location-copy">
+                  <p class="detail-location-name">{{ loc.name }}</p>
                   @if (loc.description) {
-                    <p class="text-xs text-zinc-500 truncate">{{ loc.description }}</p>
+                    <p class="detail-location-description">{{ loc.description }}</p>
                   }
                 </div>
                 <app-icon [icon]="LucideExternalLink" [size]="12"
-                     class="text-zinc-600 shrink-0"></app-icon>
+                     class="detail-location-arrow"></app-icon>
               </a>
             }
           </div>
@@ -136,12 +102,12 @@
       }
 
       <!-- Action Buttons -->
-      <div class="mt-auto flex gap-3">
+      <div class="detail-actions">
         @if (player.houseUrl) {
           <a
             [routerLink]="['/map']"
             [fragment]="houseFragment(player.houseUrl)"
-            class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white text-center rounded-2xl font-black text-xs uppercase tracking-widest transition-all border border-emerald-500 active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20"
+            class="detail-action detail-action--primary"
           >
             <app-icon [icon]="LucideHouse" [size]="16"></app-icon>
             House Map
@@ -149,7 +115,7 @@
         }
         <button
           (click)="service.selectedPlayerName.set(null)"
-          class="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border border-zinc-700 active:scale-95"
+          class="detail-action detail-action--secondary"
         >
           Close
         </button>
@@ -157,18 +123,14 @@
     </div>
   </div>
 } @else {
-  <div
-    class="bg-zinc-900/40 rounded-3xl border-2 border-dashed border-zinc-800 p-12 text-center h-full flex flex-col items-center justify-center"
-  >
-    <div
-      class="bg-zinc-800 w-20 h-20 rounded-3xl flex items-center justify-center mb-6 text-zinc-600 rotate-12"
-    >
+  <div class="detail-empty-state">
+    <div class="detail-empty-icon">
       <app-icon [icon]="LucideUser" [size]="32"></app-icon>
     </div>
-    <h3 class="text-zinc-400 font-black text-lg uppercase tracking-tight">
+    <h3 class="detail-empty-title">
       System Ready
     </h3>
-    <p class="text-sm text-zinc-600 mt-2 max-w-[200px]">
+    <p class="detail-empty-copy">
       Select a player from the list.
     </p>
   </div>

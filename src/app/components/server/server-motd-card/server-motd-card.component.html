@@ -1,11 +1,11 @@
 @if (serverService.motd().length > 0) {
-  <div class="bg-zinc-900 rounded-3xl border border-zinc-800 p-5 shadow-xl">
-    <h3 class="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-3 flex items-center gap-2">
+  <div class="motd-card">
+    <h3 class="motd-title">
       <app-icon [icon]="LucideMessageSquare" [size]="12" [strokeWidth]="2.5"></app-icon>
       Message of the Day
     </h3>
     @for (line of serverService.motd(); track $index) {
-      <p class="text-zinc-300 text-sm italic font-medium">"{{ line }}"</p>
+      <p class="motd-line">"{{ line }}"</p>
     }
   </div>
 }

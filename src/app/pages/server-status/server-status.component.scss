@@ -1,3 +1,39 @@
 :host {
   display: block;
 }
+
+.status-page {
+  @apply mx-auto w-full max-w-7xl space-y-6 pb-6;
+}
+
+.status-header {
+  @apply flex items-center justify-between;
+}
+
+.status-title {
+  @apply text-2xl font-black uppercase tracking-tighter text-zinc-100;
+}
+
+.status-subtitle {
+  @apply mt-1 text-sm text-zinc-500;
+}
+
+.status-back-link {
+  @apply flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300;
+}
+
+.status-grid {
+  @apply grid grid-cols-1 gap-6 lg:grid-cols-3;
+}
+
+.status-column {
+  @apply space-y-4;
+}
+
+.status-column--sidebar {
+  @apply lg:col-span-1;
+}
+
+.status-column--main {
+  @apply lg:col-span-2;
+}

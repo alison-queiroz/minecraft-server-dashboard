@@ -11,6 +11,7 @@ import { IconComponent } from '../../shared/icon/icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, IconComponent],
   templateUrl: './home-quick-nav.component.html',
+  styleUrls: ['./home-quick-nav.component.scss'],
 })
 export class HomeQuickNavComponent {
   protected readonly LucideUsers        = LucideUsers;

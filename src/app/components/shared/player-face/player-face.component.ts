@@ -9,6 +9,7 @@ import { PlayerService } from '../../../services/player/player.service';
   host: { class: 'block relative overflow-hidden pixelated bg-zinc-800' },
   imports: [],
   templateUrl: './player-face.component.html',
+  styleUrls: ['./player-face.component.scss'],
 })
 export class PlayerFaceComponent {
   private readonly playerService = inject(PlayerService);
@@ -17,12 +18,21 @@ export class PlayerFaceComponent {
   readonly size      = input<number>(40);
   readonly showBadge = input<boolean>(false);
 
-  /** Shifts the 8×-scaled skin texture so the face tile is visible.
-   *  x uses a 0.925 factor (empirically -37px at size 40) to align correctly. */
+  protected readonly useRawSkin = computed(() => {
+    const player = this.player();
+    if (player.skin_url?.includes('mc-heads.net/avatar/')) {
+      return false;
+    }
+
+    return player.is_raw_skin ?? player.isRawAvatar();
+  });
+
+  protected readonly rawSkinUrl = computed(() => this.player().skin_url || this.player().avatarUrl());
+
   protected readonly bgPosition = computed(() => {
-    const s = this.size();
-    const x = Math.round(s * 0.925);
-    return `-${x}px -${s}px`;
+    const size = this.size();
+    const x = Math.round(size * 0.925);
+    return `-${x}px -${size}px`;
   });
 
   protected readonly avatarSrc = computed(() =>

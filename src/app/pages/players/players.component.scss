@@ -1,3 +1,31 @@
 :host {
   display: block;
 }
+
+.players-page {
+  @apply mx-auto w-full max-w-7xl pb-6;
+}
+
+.players-header {
+  @apply mb-5;
+}
+
+.players-title {
+  @apply text-2xl font-black uppercase tracking-tighter text-zinc-100;
+}
+
+.players-subtitle {
+  @apply mt-1 text-sm text-zinc-500;
+}
+
+.players-layout {
+  @apply grid grid-cols-1 gap-6 lg:grid-cols-12 lg:overflow-hidden;
+}
+
+.players-list-panel {
+  @apply flex h-[65vh] min-h-[400px] flex-col lg:col-span-8 lg:h-[calc(100vh-240px)];
+}
+
+.players-detail-panel {
+  @apply flex flex-col gap-6 lg:col-span-4 lg:h-[calc(100vh-240px)] lg:overflow-y-auto;
+}
