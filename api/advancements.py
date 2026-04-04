@@ -11,11 +11,22 @@ logger = logging.getLogger(__name__)
 _ADVANCEMENTS_DIR = os.path.join("world", "advancements")
 
 _LABELS_FILE = os.path.join(os.path.dirname(__file__), "advancement_labels.json")
-with open(_LABELS_FILE, "r", encoding="utf-8") as _f:
-    _LABELS_DATA = json.load(_f)
+try:
+    with open(_LABELS_FILE, "r", encoding="utf-8") as _f:
+        _LABELS_DATA = json.load(_f)
+except (OSError, json.JSONDecodeError) as _e:
+    logger.error("Failed to load advancement_labels.json: %s", _e)
+    _LABELS_DATA = {}
 
-_LABELS: dict[str, dict[str, str]] = _LABELS_DATA["labels"]
-_CATEGORY_LABELS: dict[str, str] = _LABELS_DATA["categories"]
+_LABELS: dict[str, dict[str, str]] = _LABELS_DATA.get("labels", {})
+_CATEGORY_LABELS: dict[str, str] = _LABELS_DATA.get("categories", {})
+_DESCRIPTIONS: dict[str, str] = _LABELS_DATA.get("descriptions", {})
+
+
+def _description(adv_id: str) -> str:
+    """Return a short description for a Minecraft advancement ID."""
+    # Strip leading 'minecraft:' for key lookup (key format: 'minecraft:story/mine_stone')
+    return _DESCRIPTIONS.get(adv_id, "")
 
 
 def _label(adv_id: str) -> str:
@@ -75,6 +86,7 @@ def get_advancements(uuid: str) -> dict[str, Any]:
         else:
             cat_label = "Other"
 
+        # description omitted from list response — fetched lazily on demand
         completed.append({"id": adv_id, "label": label, "category": cat_label})
         by_category.setdefault(cat_label, []).append(label)
 
@@ -83,3 +95,8 @@ def get_advancements(uuid: str) -> dict[str, Any]:
         "total": len(completed),
         "by_category": by_category,
     }
+
+
+def get_description(adv_id: str) -> str:
+    """Return the description for a single advancement ID."""
+    return _DESCRIPTIONS.get(adv_id, "")

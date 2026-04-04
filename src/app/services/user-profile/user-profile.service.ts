@@ -94,9 +94,16 @@ export class UserProfileService {
 
     // Delete the old reverse-lookup entry so the previous player no longer
     // resolves to this user's public locations.
+    // Guard: only delete if the existing doc actually belongs to this user
+    // (stale docs written before the uid field was added may not have it).
     const previousUsername = current[type];
     if (previousUsername && previousUsername !== username) {
-      await deleteDoc(doc(this.db, 'usernames', previousUsername));
+      try {
+        const prevSnap = await getDoc(doc(this.db, 'usernames', previousUsername));
+        if (!prevSnap.exists() || prevSnap.data()?.['uid'] === uid) {
+          await deleteDoc(doc(this.db, 'usernames', previousUsername));
+        }
+      } catch { /* ignore — old/stale data or missing permissions */ }
     }
 
     if (snap.exists()) {
@@ -125,11 +132,20 @@ export class UserProfileService {
 
     const previousUsername = current[type];
     if (previousUsername) {
-      await deleteDoc(doc(this.db, 'usernames', previousUsername));
+      try {
+        const prevSnap = await getDoc(doc(this.db, 'usernames', previousUsername));
+        if (!prevSnap.exists() || prevSnap.data()?.['uid'] === uid) {
+          await deleteDoc(doc(this.db, 'usernames', previousUsername));
+        }
+      } catch { /* ignore — stale data */ }
     }
 
     const updated: MinecraftAccounts = { ...current, [type]: null };
-    await updateDoc(ref, { minecraftAccounts: updated });
+    if (snap.exists()) {
+      await updateDoc(ref, { minecraftAccounts: updated });
+    } else {
+      await setDoc(ref, { ...DEFAULT_PROFILE, minecraftAccounts: updated });
+    }
     this.profile.update(p => ({ ...p, minecraftAccounts: updated }));
   }
 

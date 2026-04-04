@@ -32,7 +32,30 @@
 }
 
 .profile-panel {
-  @apply flex flex-col gap-4;
+  @apply flex flex-col gap-4 flex-1 min-h-[40vh];
+  overflow: hidden;
+}
+
+.profile-panel-spring {
+  transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+.slide-in-from-right {
+  animation: slide-in-right 0.3s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+.slide-in-from-left {
+  animation: slide-in-left 0.3s cubic-bezier(0.2, 0, 0, 1) forwards;
 }
 
 /* Fullscreen map overlay */

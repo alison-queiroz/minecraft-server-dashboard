@@ -2,6 +2,31 @@
   display: block;
 }
 
+/** Applied to <main> while finger is lifted but no navigation triggered — springs back */
+.swipe-spring {
+  transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/** Incoming page slides in from the right (forward navigation) */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/** Incoming page slides in from the left (backward navigation) */
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+.slide-in-from-right {
+  animation: slide-in-right 0.3s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+.slide-in-from-left {
+  animation: slide-in-left 0.3s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }

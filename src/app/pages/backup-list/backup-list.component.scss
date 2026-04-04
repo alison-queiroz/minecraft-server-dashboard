@@ -1,5 +1,5 @@
 .backup-container {
-  @apply w-full p-6 md:p-10;
+  @apply mx-auto w-full max-w-7xl pb-6;
 }
 .backup-card {
   @apply bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl;

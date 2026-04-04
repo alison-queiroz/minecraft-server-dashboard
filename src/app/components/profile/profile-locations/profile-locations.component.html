@@ -11,6 +11,13 @@
 
   @if (showAddForm()) {
     <div class="location-form-card">
+      <!-- Inline map for picking a location -->
+      <div class="location-map-wrap">
+        <app-map-viewer
+          [navigateToHash]="newLocMapHash()"
+          (positionCaptured)="onMapCapture($event)">
+        </app-map-viewer>
+      </div>
       <input [value]="newLocName()" (input)="newLocName.set($any($event.target).value)"
         placeholder="Location name (e.g. My House)" maxlength="64"
         class="ui-input" />

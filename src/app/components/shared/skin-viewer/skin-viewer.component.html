@@ -1,7 +1,9 @@
 @if (isRaw) {
   <div
     #skinContainer
-    class="skin-canvas">
+    class="skin-canvas"
+    (touchstart)="$event.stopPropagation()"
+    (touchmove)="$event.stopPropagation()">
   </div>
 } @else {
   <img

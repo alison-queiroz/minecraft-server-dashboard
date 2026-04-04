@@ -97,16 +97,27 @@ export class ProfileAccountsComponent implements OnInit {
     try {
       await this.profileService.linkAccount(type, username);
       this.accountInputs.update(v => ({ ...v, [type]: '' }));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.accountError.set(msg.includes('permission') || msg.includes('insufficient')
+        ? 'Permission denied. Check your Firestore rules or try again.'
+        : 'Failed to save. Please try again.');
     } finally {
       this.savingAccount.set(null);
     }
   }
 
   protected async unlink(type: AccountType): Promise<void> {
+    this.accountError.set(null);
     this.savingAccount.set(type);
     try {
       await this.profileService.unlinkAccount(type);
       this.accountInputs.update(v => ({ ...v, [type]: '' }));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.accountError.set(msg.includes('permission') || msg.includes('insufficient')
+        ? 'Permission denied. Check your Firestore rules or try again.'
+        : 'Failed to unlink. Please try again.');
     } finally {
       this.savingAccount.set(null);
     }

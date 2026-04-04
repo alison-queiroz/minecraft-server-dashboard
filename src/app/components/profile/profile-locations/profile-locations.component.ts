@@ -12,13 +12,14 @@ import {
 import { UserProfileService, SavedLocation } from '../../../services/user-profile/user-profile.service';
 import { LucideMap, LucideExternalLink, LucidePencil, LucideTrash2 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
 import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-profile-locations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent],
+  imports: [IconComponent, MapViewerComponent],
   templateUrl: './profile-locations.component.html',
   styleUrls: ['./profile-locations.component.scss'],
 })
@@ -43,6 +44,7 @@ export class ProfileLocationsComponent implements OnChanges {
   protected readonly showAddForm = signal(false);
   protected readonly newLocName = signal('');
   protected readonly newLocHash = signal('');
+  protected readonly newLocMapHash = signal('');  // drives the map iframe
   protected readonly newLocDesc = signal('');
   protected readonly newLocPublic = signal(false);
   protected readonly addError = signal<string | null>(null);
@@ -66,8 +68,13 @@ export class ProfileLocationsComponent implements OnChanges {
     this.addError.set(null);
     this.newLocName.set('');
     this.newLocHash.set('');
+    this.newLocMapHash.set('');
     this.newLocDesc.set('');
     this.newLocPublic.set(false);
+  }
+
+  protected onMapCapture(hash: string): void {
+    this.newLocHash.set(hash);
   }
 
   protected async addLocation(): Promise<void> {

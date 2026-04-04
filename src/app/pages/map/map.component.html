@@ -2,67 +2,24 @@
 
   <!-- Header -->
   <div class="map-header">
+    <button class="map-back-btn" (click)="location.back()">
+      <app-icon [icon]="LucideArrowLeft" [size]="16"></app-icon>
+      Back
+    </button>
     <h1 class="map-title">
       <app-icon [icon]="LucideMap" [size]="22" class="map-title-icon"></app-icon>
       World Map
     </h1>
-    @if (saved()) {
-      <span class="map-saved-badge">
-        Location saved!
-      </span>
-    }
   </div>
 
   <!-- Map viewer (resizable, tall) -->
   <div class="map-viewer-card">
     <app-map-viewer
       [resizable]="true"
+      [showCapture]="false"
       [navigateToHash]="navigateToHash()"
-      class="map-full-height"
-      (positionCaptured)="onPositionCaptured($event)">
+      class="map-full-height">
     </app-map-viewer>
   </div>
-
-  <!-- Save form (appears after capture) -->
-  @if (showSaveForm()) {
-    <div class="map-save-card">
-      <div class="map-save-header">
-        <p class="map-save-title">Save captured location</p>
-        <button (click)="cancelSave()" class="map-close-button" title="Close save form">
-          <app-icon [icon]="LucideX" [size]="16"></app-icon>
-        </button>
-      </div>
-
-      <p class="map-captured-hash">{{ capturedHash() }}</p>
-
-      <input [value]="saveName()" (input)="saveName.set($any($event.target).value)"
-        placeholder="Location name..." maxlength="64"
-        class="ui-input" />
-      <input [value]="saveDesc()" (input)="saveDesc.set($any($event.target).value)"
-        placeholder="Description (optional)" maxlength="160"
-        class="ui-input" />
-
-      <label class="ui-toggle">
-        <div class="ui-toggle__control">
-          <input type="checkbox" class="ui-toggle__input" [checked]="savePublic()" (change)="savePublic.set($any($event.target).checked)" />
-          <div class="ui-toggle__track"></div>
-          <div class="ui-toggle__thumb"></div>
-        </div>
-        <span class="ui-toggle__text">Show on player card <span class="map-toggle-note">(visible to all users)</span></span>
-      </label>
-
-      @if (saveError()) { <p class="map-error">{{ saveError() }}</p> }
-
-      <div class="map-actions">
-        <button (click)="cancelSave()" class="ui-button ui-button--secondary">
-          Cancel
-        </button>
-        <button (click)="saveLocation()" [disabled]="saving()"
-          class="ui-button ui-button--primary">
-          {{ saving() ? 'Saving...' : 'Save' }}
-        </button>
-      </div>
-    </div>
-  }
 
 </div>

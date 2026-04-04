@@ -46,7 +46,7 @@ echo ==========================================================
 echo   1 AND 2. RUNNING UI AND API TESTS IN PARALLEL
 echo ==========================================================
 :: Runs Angular and Python tests concurrently, aborts if any fails
-call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "UI,API" -c "cyan,green" "npx ng test --watch=false --browsers=ChromeHeadless" "python -m pytest tests/"
+call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "UI,API" -c "cyan,green" "npx ng test --watch=false --browsers=ChromeHeadless" ".venv\Scripts\python.exe -m pytest tests/"
 
 if %ERRORLEVEL% NEQ 0 (
     color 0C

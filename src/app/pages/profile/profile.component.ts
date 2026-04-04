@@ -9,6 +9,7 @@ import {
 import { UserProfileService } from '../../services/user-profile/user-profile.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { PlayerService } from '../../services/player/player.service';
+import { Router } from '@angular/router';
 import { ProfileAccountsComponent } from '../../components/profile/profile-accounts/profile-accounts.component';
 import { MapViewerComponent } from '../../components/shared/map-viewer/map-viewer.component';
 import { ProfileLocationsComponent } from '../../components/profile/profile-locations/profile-locations.component';
@@ -31,6 +32,7 @@ export class ProfileComponent implements OnInit {
   protected readonly profileService = inject(UserProfileService);
   protected readonly auth = inject(AuthService);
   private readonly playerService = inject(PlayerService);
+  private readonly router = inject(Router);
 
   protected readonly LucideUser      = LucideUser;
   protected readonly LucideTrophy    = LucideTrophy;
@@ -39,10 +41,18 @@ export class ProfileComponent implements OnInit {
 
   protected readonly activeTab = signal<ProfileTab>('account');
   protected readonly capturedMapHash = signal('');
-  protected readonly mapPreviewHash  = signal('');
+  protected readonly mapPreviewHash  = signal('');  
   protected readonly showMap = signal(false);
 
+  /** Tab drag offset for swipe animation */
+  protected readonly dragTabX = signal(0);
+  protected readonly isTabDragging = signal(false);
+  /** Drives slide-in keyframe after tab commit (mirrors global enterFrom) */
+  protected readonly enterTab = signal<'left' | 'right' | null>(null);
+
   private touchStartX = 0;
+  private touchStartY = 0;
+  private isDraggingHorizontal = false;
 
   protected readonly linkedJavaPlayer = computed(() => {
     const javaName = this.profileService.minecraftAccounts().java;
@@ -57,15 +67,60 @@ export class ProfileComponent implements OnInit {
 
   protected onTouchStart(e: TouchEvent): void {
     this.touchStartX = e.touches[0].clientX;
+    this.touchStartY = e.touches[0].clientY;
+    this.isDraggingHorizontal = false;
+  }
+
+  protected onTouchMove(e: TouchEvent): void {
+    const dx = e.touches[0].clientX - this.touchStartX;
+    const dy = e.touches[0].clientY - this.touchStartY;
+    if (!this.isDraggingHorizontal) {
+      if (Math.abs(dx) < 8) return;
+      if (Math.abs(dy) > Math.abs(dx)) return;
+      this.isDraggingHorizontal = true;
+    }
+    const tabs = this.tabOrder();
+    const idx = tabs.indexOf(this.activeTab());
+    // At left edge swiping right, or at right edge swiping left — let global handle it
+    if (dx > 0 && idx === 0) return;
+    if (dx < 0 && idx === tabs.length - 1) return;
+    e.stopPropagation();
+    this.isTabDragging.set(true);
+    this.dragTabX.set(dx);
   }
 
   protected onTouchEnd(e: TouchEvent): void {
+    const wasDragging = this.isDraggingHorizontal;
+    this.isTabDragging.set(false);
+    this.dragTabX.set(0);
+
+    if (!wasDragging) return;
+
     const dx = e.changedTouches[0].clientX - this.touchStartX;
-    if (Math.abs(dx) < 50) return;
+    const dy = e.changedTouches[0].clientY - this.touchStartY;
+    const threshold = window.innerWidth * 0.5;
+    if (Math.abs(dx) < threshold || Math.abs(dy) > Math.abs(dx)) return;
+
     const tabs = this.tabOrder();
     const idx = tabs.indexOf(this.activeTab());
-    if (dx < 0 && idx < tabs.length - 1) this.setTab(tabs[idx + 1]);
-    else if (dx > 0 && idx > 0) this.setTab(tabs[idx - 1]);
+
+    if (dx < 0) {
+      if (idx < tabs.length - 1) {
+        e.stopPropagation();
+        this.enterTab.set('right');
+        this.setTab(tabs[idx + 1]);
+        setTimeout(() => this.enterTab.set(null), 350);
+      }
+      // else: at right edge — don't stop propagation, let global navigate to /map
+    } else {
+      if (idx > 0) {
+        e.stopPropagation();
+        this.enterTab.set('left');
+        this.setTab(tabs[idx - 1]);
+        setTimeout(() => this.enterTab.set(null), 350);
+      }
+      // else: at left edge — don't stop propagation, let global navigate to /players
+    }
   }
 
   private tabOrder(): ProfileTab[] {

@@ -24,12 +24,20 @@
           <p class="adv-empty">No advancements found.</p>
         } @else {
           <div class="adv-categories">
-            @for (cat of objectKeys(result().by_category); track cat) {
+            @for (entry of byCategory() | keyvalue; track entry.key) {
               <div class="adv-category">
-                <p class="adv-cat-label">{{ cat }}</p>
+                <p class="adv-cat-label">{{ entry.key }}</p>
                 <div class="adv-chips">
-                  @for (label of result().by_category[cat]; track label) {
-                    <span class="adv-chip">{{ label }}</span>
+                  @for (adv of entry.value; track adv.id) {
+                    <span class="adv-chip"
+                      (mouseenter)="onChipEnter(adv, $event)"
+                      (mouseleave)="onChipLeave()"
+                      (focus)="onChipEnter(adv, $any($event))"
+                      (blur)="onChipLeave()"
+                      tabindex="0"
+                      [attr.aria-label]="adv.label">
+                      {{ adv.label }}
+                    </span>
                   }
                 </div>
               </div>
@@ -39,4 +47,13 @@
       </div>
     }
   </div>
+
+  <!-- Floating tooltip -->
+  @if (tooltip(); as tip) {
+    <div class="adv-tooltip"
+         [style.left.px]="tip.x"
+         [style.top.px]="tip.y">
+      {{ tip.text }}
+    </div>
+  }
 }

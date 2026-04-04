@@ -263,3 +263,15 @@ def advancements_endpoint(uuid: str):
         return jsonify({"error": "Invalid UUID"}), 400
     from .advancements import get_advancements
     return jsonify(get_advancements(uuid))
+
+
+@app.route("/api/advancements/description", methods=["GET"])
+@require_auth
+def advancement_description_endpoint():
+    """Return the description for a single advancement id (e.g. minecraft:story/mine_stone).
+    Fetched lazily by the frontend only when the user hovers / focuses a chip."""
+    adv_id = request.args.get("id", "").strip()
+    if not adv_id:
+        return jsonify({"error": "Missing id"}), 400
+    from .advancements import get_description
+    return jsonify({"description": get_description(adv_id)})

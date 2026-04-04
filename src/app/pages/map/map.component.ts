@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { MapViewerComponent } from '../../components/shared/map-viewer/map-viewer.component';
 import { UserProfileService, SavedLocation } from '../../services/user-profile/user-profile.service';
 import { FormsModule } from '@angular/forms';
-import { LucideMap, LucideX } from '@lucide/angular';
+import { LucideMap, LucideX, LucideArrowLeft } from '@lucide/angular';
 import { IconComponent } from '../../components/shared/icon/icon.component';
 import { AuthService } from '../../services/auth/auth.service';
 
@@ -19,12 +20,14 @@ import { AuthService } from '../../services/auth/auth.service';
   styleUrls: ['./map.component.scss'],
 })
 export class MapComponent {
-  protected readonly LucideMap = LucideMap;
-  protected readonly LucideX   = LucideX;
+  protected readonly LucideMap       = LucideMap;
+  protected readonly LucideX         = LucideX;
+  protected readonly LucideArrowLeft = LucideArrowLeft;
 
   private readonly profileService = inject(UserProfileService);
   protected readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  protected readonly location = inject(Location);
 
   /** Fragment from the URL (#mapId:x:z:zoom) — set synchronously so the iframe
    * loads with the correct position on first render (avoids same-doc hash nav). */
