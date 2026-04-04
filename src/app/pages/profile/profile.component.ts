@@ -1,11 +1,12 @@
+import type {
+  OnInit} from '@angular/core';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
-  signal,
-  OnInit,
+  signal
 } from '@angular/core';
 import { UserProfileService } from '../../services/user-profile/user-profile.service';
 import { AuthService } from '../../services/auth/auth.service';
@@ -18,14 +19,25 @@ import { UserAvatarComponent } from '../../components/shared/user-avatar/user-av
 import { PlayerAdvancementsComponent } from '../../components/player/player-advancements/player-advancements.component';
 import { LucideUser, LucideTrophy, LucideMapPin, LucideArrowLeft } from '@lucide/angular';
 import { IconComponent } from '../../components/shared/icon/icon.component';
+import { SwipeNavigateModule } from '../../directives/swipe-navigate.module';
+import { SWIPE_ANIMATION_RESET_MS } from '../../constants/ui.constants';
 
 type ProfileTab = 'account' | 'advancements' | 'locations';
+const PROFILE_TABS: readonly ProfileTab[] = ['account', 'advancements', 'locations'];
 
 @Component({
   selector: 'app-profile',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProfileAccountsComponent, MapViewerComponent, ProfileLocationsComponent, UserAvatarComponent, PlayerAdvancementsComponent, IconComponent],
+  imports: [
+    ProfileAccountsComponent,
+    MapViewerComponent,
+    ProfileLocationsComponent,
+    UserAvatarComponent,
+    PlayerAdvancementsComponent,
+    IconComponent,
+    SwipeNavigateModule,
+  ],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
 })
@@ -52,9 +64,16 @@ export class ProfileComponent implements OnInit {
   /** Drives slide-in keyframe after tab commit (mirrors global enterFrom) */
   protected readonly enterTab = signal<'left' | 'right' | null>(null);
 
-  private touchStartX = 0;
-  private touchStartY = 0;
-  private isDraggingHorizontal = false;
+  protected readonly tabOrder = computed<ProfileTab[]>(() => {
+    const tabs: ProfileTab[] = ['account'];
+    if (this.linkedJavaPlayer()) {
+      tabs.push('advancements');
+    }
+    tabs.push('locations');
+    return tabs;
+  });
+
+  protected readonly activeTabIndex = computed(() => this.tabOrder().indexOf(this.activeTab()));
 
   protected readonly linkedJavaPlayer = computed(() => {
     const javaName = this.profileService.minecraftAccounts().java;
@@ -66,7 +85,7 @@ export class ProfileComponent implements OnInit {
     // Keep the URL query param in sync with the active tab so refresh restores state
     effect(() => {
       const tab = this.activeTab();
-      this.router.navigate([], {
+      void this.router.navigate([], {
         replaceUrl: true,
         queryParams: tab !== 'account' ? { tab } : {},
       });
@@ -78,79 +97,27 @@ export class ProfileComponent implements OnInit {
     this.showMap.set(false);
   }
 
-  protected onTouchStart(e: TouchEvent): void {
-    const touch = e.touches.item(0);
-    if (!touch) return;
-    this.touchStartX = touch.clientX;
-    this.touchStartY = touch.clientY;
-    this.isDraggingHorizontal = false;
+  protected onTabDragXChange(value: number): void {
+    this.dragTabX.set(value);
   }
 
-  protected onTouchMove(e: TouchEvent): void {
-    const touch = e.touches.item(0);
-    if (!touch) return;
-    const dx = touch.clientX - this.touchStartX;
-    const dy = touch.clientY - this.touchStartY;
-    if (!this.isDraggingHorizontal) {
-      if (Math.abs(dx) < 8) return;
-      if (Math.abs(dy) > Math.abs(dx)) return;
-      this.isDraggingHorizontal = true;
-    }
-    const tabs = this.tabOrder();
-    const idx = tabs.indexOf(this.activeTab());
-    // At left edge swiping right, or at right edge swiping left — let global handle it
-    if (dx > 0 && idx === 0) return;
-    if (dx < 0 && idx === tabs.length - 1) return;
-    e.stopPropagation();
-    this.isTabDragging.set(true);
-    this.dragTabX.set(dx);
+  protected onTabDraggingChange(value: boolean): void {
+    this.isTabDragging.set(value);
   }
 
-  protected onTouchEnd(e: TouchEvent): void {
-    const wasDragging = this.isDraggingHorizontal;
-    this.isTabDragging.set(false);
+  protected onTabNavigateDirection(direction: 'left' | 'right'): void {
     this.dragTabX.set(0);
+    this.enterTab.set(direction);
 
-    if (!wasDragging) return;
-
-    const touch = e.changedTouches.item(0);
-    if (!touch) return;
-    const dx = touch.clientX - this.touchStartX;
-    const dy = touch.clientY - this.touchStartY;
-    const threshold = window.innerWidth * 0.5;
-    if (Math.abs(dx) < threshold || Math.abs(dy) > Math.abs(dx)) return;
-
-    const tabs = this.tabOrder();
-    const idx = tabs.indexOf(this.activeTab());
-
-    if (dx < 0) {
-      if (idx < tabs.length - 1) {
-        e.stopPropagation();
-        this.enterTab.set('right');
-        const nextTab = tabs[idx + 1];
-        if (!nextTab) return;
-        this.setTab(nextTab);
-        setTimeout(() => this.enterTab.set(null), 350);
-      }
-      // else: at right edge — don't stop propagation, let global navigate to /map
-    } else {
-      if (idx > 0) {
-        e.stopPropagation();
-        this.enterTab.set('left');
-        const prevTab = tabs[idx - 1];
-        if (!prevTab) return;
-        this.setTab(prevTab);
-        setTimeout(() => this.enterTab.set(null), 350);
-      }
-      // else: at left edge — don't stop propagation, let global navigate to /players
+    const currentIndex = this.activeTabIndex();
+    const nextIndex = direction === 'right' ? currentIndex + 1 : currentIndex - 1;
+    const nextTab = this.tabOrder()[nextIndex];
+    if (!nextTab) {
+      return;
     }
-  }
 
-  private tabOrder(): ProfileTab[] {
-    const t: ProfileTab[] = ['account'];
-    if (this.linkedJavaPlayer()) t.push('advancements');
-    t.push('locations');
-    return t;
+    this.setTab(nextTab);
+    setTimeout(() => this.enterTab.set(null), SWIPE_ANIMATION_RESET_MS);
   }
 
   protected previewMap(hash: string): void {
@@ -165,7 +132,7 @@ export class ProfileComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     // Restore tab from URL query param on refresh
     const tab = this.route.snapshot.queryParamMap.get('tab') as ProfileTab | null;
-    if (tab && ['account', 'advancements', 'locations'].includes(tab)) {
+    if (tab && PROFILE_TABS.includes(tab)) {
       this.activeTab.set(tab);
     }
     await this.profileService.loadProfile();

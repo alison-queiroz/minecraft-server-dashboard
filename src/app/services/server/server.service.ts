@@ -63,22 +63,9 @@ export class ServerService {
 
   private fetchStatus() {
     this.http.get<ServerStatusResponse>(this.statusUrl).pipe(
-      tap(res => {
-        this.status.set(res.online ? SERVER_STATUS.ONLINE : SERVER_STATUS.OFFLINE);
-        this.onlinePlayers.set(res.players?.online ?? 0);
-        this.maxPlayers.set(res.players?.max ?? 0);
-        this.version.set(res.version ?? null);
-        this.motd.set(res.motd?.clean ?? []);
-        this.software.set(res.software ?? null);
-        this.hostname.set(res.hostname ?? null);
-        this.ip.set(res.ip ?? null);
-        this.port.set(res.port ?? null);
-        this.protocol.set(res.protocol ?? null);
-      }),
+      tap(res => this.applyJavaStatus(res)),
       catchError(() => {
-        this.status.set(SERVER_STATUS.OFFLINE);
-        this.onlinePlayers.set(0);
-        this.maxPlayers.set(0);
+        this.setJavaOffline();
         return of(null);
       }),
     ).subscribe();
@@ -100,6 +87,37 @@ export class ServerService {
         return of(null);
       }),
     ).subscribe();
+  }
+
+  private applyJavaStatus(res: ServerStatusResponse): void {
+    this.applyJavaOnlineState(res);
+    this.applyJavaPlayerState(res);
+    this.applyJavaMetadataState(res);
+  }
+
+  private setJavaOffline(): void {
+    this.status.set(SERVER_STATUS.OFFLINE);
+    this.onlinePlayers.set(0);
+    this.maxPlayers.set(0);
+  }
+
+  private applyJavaOnlineState(res: ServerStatusResponse): void {
+    this.status.set(res.online ? SERVER_STATUS.ONLINE : SERVER_STATUS.OFFLINE);
+  }
+
+  private applyJavaPlayerState(res: ServerStatusResponse): void {
+    this.onlinePlayers.set(res.players?.online ?? 0);
+    this.maxPlayers.set(res.players?.max ?? 0);
+  }
+
+  private applyJavaMetadataState(res: ServerStatusResponse): void {
+    this.version.set(res.version ?? null);
+    this.motd.set(res.motd?.clean ?? []);
+    this.software.set(res.software ?? null);
+    this.hostname.set(res.hostname ?? null);
+    this.ip.set(res.ip ?? null);
+    this.port.set(res.port ?? null);
+    this.protocol.set(res.protocol ?? null);
   }
 
 }

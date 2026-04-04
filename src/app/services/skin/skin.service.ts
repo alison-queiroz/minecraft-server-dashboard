@@ -1,4 +1,5 @@
-import { Injectable, inject, OnDestroy } from '@angular/core';
+import type { OnDestroy } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 

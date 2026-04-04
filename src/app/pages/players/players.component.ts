@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject } from '@angular/core';
+import type { OnInit} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PlayerService } from '../../services/player/player.service';
 import { PlayerListComponent } from '../../components/player/player-list/player-list.component';
@@ -25,7 +26,7 @@ export class PlayersComponent implements OnInit {
     // Keep the URL query param in sync with the selected player so refresh restores state
     effect(() => {
       const name = this.playerService.selectedPlayerName();
-      this.router.navigate([], {
+      void this.router.navigate([], {
         replaceUrl: true,
         queryParams: name ? { player: name } : {},
       });

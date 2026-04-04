@@ -9,14 +9,15 @@ import { RouterLink } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap, of } from 'rxjs';
 import { PlayerService } from '../../../services/player/player.service';
-import { UserProfileService, SavedLocation } from '../../../services/user-profile/user-profile.service';
+import type { SavedLocation } from '../../../services/user-profile/user-profile.service';
+import { UserProfileService } from '../../../services/user-profile/user-profile.service';
 import { SkinViewerComponent } from '../../shared/skin-viewer/skin-viewer.component';
 import { PlayerAdvancementsComponent } from '../player-advancements/player-advancements.component';
 import {
   LucideClock, LucideMapPin, LucideMap, LucideExternalLink, LucideHouse, LucideUser, LucideTimer, LucideShare2,
 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
-import { Player } from '../../../services/player/player.model';
+import type { Player } from '../../../services/player/player.model';
 import { environment } from '../../../../environments/environment';
 
 /** Maps the API dimension name to the BlueMap world ID used in URL fragments. */
@@ -50,8 +51,7 @@ export class PlayerDetailComponent {
   protected readonly linkCopied = signal(false);
 
   protected readonly mapBaseUrl =
-    (environment as Record<string, unknown>)['mapBaseUrl'] as string
-      ?? 'https://exvegan-minecraft-map.duckdns.org/';
+    environment.mapBaseUrl ?? 'https://exvegan-minecraft-map.duckdns.org/';
 
   protected readonly publicLocations = toSignal(
     toObservable(this.service.selectedPlayer).pipe(
@@ -88,7 +88,7 @@ export class PlayerDetailComponent {
   /** Copies a shareable link for this player card to the clipboard. */
   protected share(player: Player): void {
     const url = `${window.location.origin}/players?player=${encodeURIComponent(player.name)}`;
-    navigator.clipboard.writeText(url).then(() => {
+    void navigator.clipboard.writeText(url).then(() => {
       this.linkCopied.set(true);
       setTimeout(() => this.linkCopied.set(false), 2000);
     });

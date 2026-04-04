@@ -1,15 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  effect,
   EventEmitter,
   Input,
-  OnChanges,
   Output,
-  SimpleChanges,
   inject,
   signal,
 } from '@angular/core';
-import { UserProfileService, SavedLocation } from '../../../services/user-profile/user-profile.service';
+import type { SavedLocation } from '../../../services/user-profile/user-profile.service';
+import { UserProfileService } from '../../../services/user-profile/user-profile.service';
 import { LucideMap, LucideExternalLink, LucidePencil, LucideTrash2 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
@@ -23,7 +23,7 @@ import { environment } from '../../../../environments/environment';
   templateUrl: './profile-locations.component.html',
   styleUrls: ['./profile-locations.component.scss'],
 })
-export class ProfileLocationsComponent implements OnChanges {
+export class ProfileLocationsComponent {
   protected readonly LucideMap         = LucideMap;
   protected readonly LucideExternalLink = LucideExternalLink;
   protected readonly LucidePencil      = LucidePencil;
@@ -32,11 +32,13 @@ export class ProfileLocationsComponent implements OnChanges {
   protected readonly profileService = inject(UserProfileService);
 
   protected readonly mapBaseUrl =
-    (environment as Record<string, unknown>)['mapBaseUrl'] as string
-      ?? '/map/';
+    environment.mapBaseUrl ?? '/map/';
 
   /** Pre-fill the add form with a captured map hash */
-  @Input() capturedHash = '';
+  @Input()
+  set capturedHash(value: string) {
+    this.capturedHashInput.set(value);
+  }
 
   /** Emits a hash when the user wants to preview a location on the embedded map */
   @Output() previewRequested = new EventEmitter<string>();
@@ -54,13 +56,19 @@ export class ProfileLocationsComponent implements OnChanges {
   protected readonly editHash = signal('');
   protected readonly editDesc = signal('');
   protected readonly editPublic = signal(false);
+  private readonly capturedHashInput = signal('');
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['capturedHash'] && this.capturedHash) {
-      this.newLocHash.set(this.capturedHash);
+  constructor() {
+    effect(() => {
+      const capturedHash = this.capturedHashInput();
+      if (!capturedHash) {
+        return;
+      }
+
+      this.newLocHash.set(capturedHash);
       this.showAddForm.set(true);
       this.addError.set(null);
-    }
+    });
   }
 
   protected toggleAddForm(): void {

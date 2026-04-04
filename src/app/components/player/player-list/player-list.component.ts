@@ -1,9 +1,10 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, ViewChild, computed, inject, signal } from '@angular/core';
+import type { AfterViewInit, OnDestroy} from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { LucideChevronUp, LucideChevronDown } from '@lucide/angular';
-import { Player } from '../../../services/player/player.model';
+import type { Player } from '../../../services/player/player.model';
 import { PlayerService } from '../../../services/player/player.service';
 import { PlayerSearchComponent } from '../player-search/player-search.component';
 import { PlayerCardRowComponent } from '../player-card-row/player-card-row.component';
@@ -22,7 +23,7 @@ type SortDir = 'asc' | 'desc';
 })
 export class PlayerListComponent implements AfterViewInit, OnDestroy {
   protected readonly service = inject(PlayerService);
-  private readonly hostRef = inject(ElementRef<HTMLElement>);
+  private readonly hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
   @ViewChild(CdkVirtualScrollViewport) private readonly viewport!: CdkVirtualScrollViewport;
 

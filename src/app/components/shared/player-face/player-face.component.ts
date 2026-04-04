@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { Player } from '../../../services/player/player.model';
+import type { Player } from '../../../services/player/player.model';
 import { PlayerService } from '../../../services/player/player.service';
 
 @Component({

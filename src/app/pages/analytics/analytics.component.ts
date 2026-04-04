@@ -1,9 +1,10 @@
-import {
+import type {
   AfterViewInit,
+  ElementRef,
+  OnDestroy} from '@angular/core';
+import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
-  OnDestroy,
   ViewChild,
   inject,
   signal,
@@ -58,8 +59,10 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.buildChart();
-    this.loadData();
-    this.refreshTimer = setInterval(() => this.loadData(), 60_000);
+    void this.loadData();
+    this.refreshTimer = setInterval(() => {
+      void this.loadData();
+    }, 60_000);
   }
 
   ngOnDestroy(): void {
@@ -69,7 +72,7 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
   protected setPeriod(p: Period): void {
     this.period.set(p);
-    this.loadData();
+    void this.loadData();
   }
 
   private buildChart(): void {

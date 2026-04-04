@@ -1,16 +1,17 @@
+import type {
+  OnDestroy,
+  OnInit} from '@angular/core';
 import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
   EventEmitter,
   Input,
-  OnDestroy,
-  OnInit,
   Output,
   inject,
 } from '@angular/core';
 import { NgClass, DecimalPipe } from '@angular/common';
-import { Player } from '../../../services/player/player.model';
+import type { Player } from '../../../services/player/player.model';
 import { PlayerService } from '../../../services/player/player.service';
 import { PlayerFaceComponent } from '../../shared/player-face/player-face.component';
 
@@ -29,7 +30,7 @@ import { PlayerFaceComponent } from '../../shared/player-face/player-face.compon
 })
 export class PlayerCardRowComponent implements OnInit, OnDestroy {
   protected readonly playerService = inject(PlayerService);
-  private readonly elementRef = inject(ElementRef);
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
   @Input({ required: true }) player!: Player;
   @Input() isSelected = false;

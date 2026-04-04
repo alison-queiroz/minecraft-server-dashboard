@@ -1,22 +1,35 @@
+import type {
+  ElementRef,
+  OnDestroy,
+  OnInit} from '@angular/core';
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
+  effect,
   EventEmitter,
   Input,
-  OnChanges,
-  OnDestroy,
-  OnInit,
   Output,
-  SimpleChanges,
   ViewChild,
   inject,
   signal,
 } from '@angular/core';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import type { SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer } from '@angular/platform-browser';
 import { LucideMapPin } from '@lucide/angular';
 import { IconComponent } from '../icon/icon.component';
 import { environment } from '../../../../environments/environment';
+
+interface MapMessagePayload {
+  type?: string;
+  href?: string;
+}
+
+function asMapMessagePayload(data: unknown): MapMessagePayload | null {
+  if (!data || typeof data !== 'object') {
+    return null;
+  }
+  return data as MapMessagePayload;
+}
 
 @Component({
   selector: 'app-map-viewer',
@@ -27,20 +40,22 @@ import { environment } from '../../../../environments/environment';
   templateUrl: './map-viewer.component.html',
   styleUrls: ['./map-viewer.component.scss'],
 })
-export class MapViewerComponent implements OnInit, OnChanges, OnDestroy {
+export class MapViewerComponent implements OnInit, OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
   protected readonly LucideMapPin = LucideMapPin;
 
   protected readonly mapBaseUrl =
-    (environment as Record<string, unknown>)['mapBaseUrl'] as string
-      ?? '/map/';
+    environment.mapBaseUrl ?? '/map/';
 
   /** A per-instance cache-bust nonce appended as ?_r=<timestamp> so Android Chrome
    *  bypasses any BlueMap service-worker cache on every dashboard load. */
   private readonly cacheBust = '?_r=' + Date.now();
 
   /** Navigate the embedded map to this position hash when it changes */
-  @Input() navigateToHash = '';
+  @Input()
+  set navigateToHash(value: string) {
+    this.navigateToHashInput.set(value);
+  }
 
   /** Allow the user to vertically drag-resize the iframe */
   @Input() resizable = false;
@@ -65,11 +80,13 @@ export class MapViewerComponent implements OnInit, OnChanges, OnDestroy {
   /** Last known href from the map iframe, received via postMessage from BlueMap */
   private lastKnownHref = '';
   private urlPollInterval: ReturnType<typeof setInterval> | null = null;
+  private readonly navigateToHashInput = signal('');
 
   /** Bound postMessage listener — stored so we can removeEventListener correctly */
   private readonly onMessage = (e: MessageEvent) => {
-    if (e.data?.type !== 'bluemap-url') return;
-    const href = e.data.href as string;
+    const payload = asMapMessagePayload(e.data);
+    if (payload?.type !== 'bluemap-url') return;
+    const href = payload.href;
     if (!href) return;
     this.lastKnownHref = href;
   };
@@ -78,17 +95,22 @@ export class MapViewerComponent implements OnInit, OnChanges, OnDestroy {
     window.addEventListener('message', this.onMessage);
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['navigateToHash'] && this.navigateToHash) {
-      const base = this.mapBaseUrl.endsWith('/') ? this.mapBaseUrl : this.mapBaseUrl + '/';
-      const url = base + this.cacheBust + (this.navigateToHash.startsWith('#') ? this.navigateToHash : '#' + this.navigateToHash);
-      this.mapSrc.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
-    }
-  }
-
   ngOnDestroy(): void {
     window.removeEventListener('message', this.onMessage);
     this.stopUrlPoller();
+  }
+
+  constructor() {
+    effect(() => {
+      const hash = this.navigateToHashInput();
+      if (!hash) {
+        return;
+      }
+
+      const base = this.mapBaseUrl.endsWith('/') ? this.mapBaseUrl : this.mapBaseUrl + '/';
+      const url = base + this.cacheBust + (hash.startsWith('#') ? hash : '#' + hash);
+      this.mapSrc.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+    });
   }
 
   protected capturePosition(): void {

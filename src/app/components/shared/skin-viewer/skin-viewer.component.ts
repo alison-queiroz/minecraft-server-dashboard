@@ -1,15 +1,17 @@
+import type {
+  ElementRef,
+  OnDestroy} from '@angular/core';
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
+  effect,
   Input,
-  OnChanges,
-  OnDestroy,
-  SimpleChanges,
+  signal,
   ViewChild,
   inject,
 } from '@angular/core';
 import { SkinService } from '../../../services/skin/skin.service';
+import { RAW_SKIN_RENDER_DELAY_MS } from '../../../constants/ui.constants';
 
 interface SkinViewerLike {
   canvas: HTMLCanvasElement;
@@ -28,11 +30,18 @@ interface SkinViewerLike {
   templateUrl: './skin-viewer.component.html',
   styleUrls: ['./skin-viewer.component.scss'],
 })
-export class SkinViewerComponent implements OnChanges, OnDestroy {
+export class SkinViewerComponent implements OnDestroy {
   private readonly skinService = inject(SkinService);
 
-  @Input({ required: true }) skinUrl!: string;
-  @Input() isRaw = false;
+  @Input({ required: true })
+  set skinUrl(value: string) {
+    this.skinUrlInput.set(value);
+  }
+
+  @Input()
+  set isRaw(value: boolean) {
+    this.isRawInput.set(value);
+  }
 
   @ViewChild('skinContainer', { static: false })
   private skinContainer!: ElementRef<HTMLDivElement>;
@@ -41,18 +50,35 @@ export class SkinViewerComponent implements OnChanges, OnDestroy {
   private currentSkinUrl: string | null = null;
   private pendingSkinUrl: string | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private readonly skinUrlInput = signal('');
+  private readonly isRawInput = signal(false);
+  private pendingRenderTimer: ReturnType<typeof setTimeout> | null = null;
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['skinUrl'] || changes['isRaw']) {
-      if (this.isRaw && this.skinUrl) {
-        setTimeout(() => this.loadAndRender(this.skinUrl), 50);
+  constructor() {
+    effect(() => {
+      const skinUrl = this.skinUrlInput();
+      const isRaw = this.isRawInput();
+
+      if (this.pendingRenderTimer != null) {
+        clearTimeout(this.pendingRenderTimer);
+        this.pendingRenderTimer = null;
+      }
+
+      if (isRaw && skinUrl) {
+        this.pendingRenderTimer = setTimeout(() => {
+          void this.loadAndRender(skinUrl);
+        }, RAW_SKIN_RENDER_DELAY_MS);
       } else {
         this.disposeSkinViewer();
       }
-    }
+    });
   }
 
   ngOnDestroy(): void {
+    if (this.pendingRenderTimer != null) {
+      clearTimeout(this.pendingRenderTimer);
+      this.pendingRenderTimer = null;
+    }
     this.disposeSkinViewer();
   }
 
@@ -60,7 +86,7 @@ export class SkinViewerComponent implements OnChanges, OnDestroy {
     this.pendingSkinUrl = url;
     const blobUrl = await this.skinService.getBlobUrl(url);
     if (this.pendingSkinUrl !== url) return;
-    this.render3D(blobUrl, url);
+    await this.render3D(blobUrl, url);
   }
 
   private async render3D(blobUrl: string, originalUrl: string): Promise<void> {

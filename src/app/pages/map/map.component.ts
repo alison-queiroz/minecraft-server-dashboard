@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';

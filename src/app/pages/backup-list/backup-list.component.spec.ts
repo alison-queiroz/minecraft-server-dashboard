@@ -1,14 +1,12 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick, type ComponentFixture } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { throwError } from 'rxjs';
-import { BackupService } from '../../services/backup/backup.service';
+import { BackupService, type BackupFile } from '../../services/backup/backup.service';
 import {
   provideHttpClientTesting,
   HttpTestingController,
 } from '@angular/common/http/testing';
-import { BackupListComponent } from './backup-list.component';
-import { BackupFile } from '../../services/backup/backup.service';
-import { NavigationPath } from './backup-list.component';
+import { BackupListComponent, type NavigationPath } from './backup-list.component';
 
 type WritableSignalLike<T> = (() => T) & {
   set(value: T): void;

@@ -7,6 +7,17 @@ import { getApps, initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
 
+interface ApiPlayerLiveData {
+  name: string;
+  level?: number;
+  health?: number;
+  dimension?: string;
+  pos?: number[];
+  last_seen?: string;
+  play_hours?: number;
+  advancement_count?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PlayerService {
   private readonly http = inject(HttpClient);
@@ -98,23 +109,23 @@ export class PlayerService {
    * Live data wins for volatile fields (position, dimension, health, level);
    * Firestore data is kept for non-volatile fields not returned by the API fallback. */
   private enrichFromApi(): void {
-    this.http.get<Record<string, unknown>[]>('/api/players').pipe(
-      catchError(() => of([] as Record<string, unknown>[])),
+    this.http.get<ApiPlayerLiveData[]>('/api/players').pipe(
+      catchError(() => of([] as ApiPlayerLiveData[])),
       tap(data => {
         if (!data.length) return;
-        const byName = new Map(data.map(p => [p['name'] as string, p]));
+        const byName = new Map(data.map(p => [p.name, p]));
         this.rawPlayers.update(players => players.map(p => {
           const api = byName.get(p.name);
           if (!api) return p;
           return new Player({
             ...p,
-            level:             (api['level']             as number)  ?? p.level,
-            health:            (api['health']            as number)  ?? p.health,
-            dimension:         (api['dimension']         as string)  ?? p.dimension,
-            pos:               (api['pos']               as number[]) ?? p.pos,
-            last_seen:         (api['last_seen']         as string)  ?? p.last_seen,
-            play_hours:        (api['play_hours']        as number)  ?? p.play_hours,
-            advancement_count: (api['advancement_count'] as number)  ?? p.advancement_count,
+            level:             api.level ?? p.level,
+            health:            api.health ?? p.health,
+            dimension:         api.dimension ?? p.dimension,
+            pos:               api.pos ?? p.pos,
+            last_seen:         api.last_seen ?? p.last_seen,
+            play_hours:        api.play_hours ?? p.play_hours,
+            advancement_count: api.advancement_count ?? p.advancement_count,
           });
         }));
       }),

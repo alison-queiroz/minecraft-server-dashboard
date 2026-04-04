@@ -1,8 +1,9 @@
+import type {
+  OnDestroy} from '@angular/core';
 import {
   ChangeDetectionStrategy,
   Component,
   Input,
-  OnDestroy,
   signal,
 } from '@angular/core';
 import { ActionButtonComponent } from '../action-button/action-button.component';

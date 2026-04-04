@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 
-import { BackupService, BackupFile } from './backup.service';
+import type { BackupFile } from './backup.service';
+import { BackupService } from './backup.service';
 
 const MOCK_BACKUPS: BackupFile[] = [
   {

@@ -1,4 +1,4 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import type { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { from, switchMap } from 'rxjs';

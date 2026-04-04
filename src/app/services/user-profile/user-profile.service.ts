@@ -36,6 +36,10 @@ export interface UserProfile {
   savedLocations: SavedLocation[];
 }
 
+interface UsernameLookup {
+  uid?: string;
+}
+
 const DEFAULT_ACCOUNTS: MinecraftAccounts = { java: null, bedrock: null, admin: null };
 const DEFAULT_PROFILE: UserProfile = { minecraftAccounts: DEFAULT_ACCOUNTS, savedLocations: [] };
 
@@ -92,19 +96,7 @@ export class UserProfileService {
 
     const updated: MinecraftAccounts = { ...current, [type]: username };
 
-    // Delete the old reverse-lookup entry so the previous player no longer
-    // resolves to this user's public locations.
-    // Guard: only delete if the existing doc actually belongs to this user
-    // (stale docs written before the uid field was added may not have it).
-    const previousUsername = current[type];
-    if (previousUsername && previousUsername !== username) {
-      try {
-        const prevSnap = await getDoc(doc(this.db, 'usernames', previousUsername));
-        if (!prevSnap.exists() || prevSnap.data()?.['uid'] === uid) {
-          await deleteDoc(doc(this.db, 'usernames', previousUsername));
-        }
-      } catch { /* ignore — old/stale data or missing permissions */ }
-    }
+    await this.removePreviousUsernameMapping(uid, current[type], username);
 
     if (snap.exists()) {
       await updateDoc(ref, { minecraftAccounts: updated });
@@ -134,7 +126,7 @@ export class UserProfileService {
     if (previousUsername) {
       try {
         const prevSnap = await getDoc(doc(this.db, 'usernames', previousUsername));
-        if (!prevSnap.exists() || prevSnap.data()?.['uid'] === uid) {
+        if (!prevSnap.exists() || this.belongsToUser(prevSnap.data(), uid)) {
           await deleteDoc(doc(this.db, 'usernames', previousUsername));
         }
       } catch { /* ignore — stale data */ }
@@ -226,5 +218,32 @@ export class UserProfileService {
     } else {
       await setDoc(ref, { ...DEFAULT_PROFILE, savedLocations: locations });
     }
+  }
+
+  private async removePreviousUsernameMapping(
+    uid: string,
+    previousUsername: string | null,
+    nextUsername: string,
+  ): Promise<void> {
+    // Delete old reverse-lookup so the previous player no longer maps to this user.
+    // Only remove entries that belong to this user (or legacy entries without uid).
+    if (!previousUsername || previousUsername === nextUsername) {
+      return;
+    }
+
+    try {
+      const previousRef = doc(this.db, 'usernames', previousUsername);
+      const previousSnap = await getDoc(previousRef);
+      if (!previousSnap.exists() || this.belongsToUser(previousSnap.data(), uid)) {
+        await deleteDoc(previousRef);
+      }
+    } catch {
+      // Ignore stale/missing reverse-lookup docs or permission edge cases.
+    }
+  }
+
+  private belongsToUser(data: unknown, uid: string): boolean {
+    const lookup = data as UsernameLookup | undefined;
+    return !lookup?.uid || lookup.uid === uid;
   }
 }

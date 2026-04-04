@@ -1,8 +1,9 @@
-import {
+import type {
   AfterViewInit,
-  Component,
   OnInit,
-  OnDestroy,
+  OnDestroy} from '@angular/core';
+import {
+  Component,
   inject,
   signal,
   ChangeDetectionStrategy,
@@ -12,9 +13,10 @@ import {
 import { CommonModule } from '@angular/common';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { LucideDatabase, LucideFolder, LucideFile } from '@lucide/angular';
+import type {
+  BackupFile} from '../../services/backup/backup.service';
 import {
-  BackupService,
-  BackupFile,
+  BackupService
 } from '../../services/backup/backup.service';
 import { of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -38,7 +40,7 @@ export class BackupListComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly LucideFolder = LucideFolder;
   protected readonly LucideFile = LucideFile;
 
-  private readonly hostRef = inject(ElementRef<HTMLElement>);
+  private readonly hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly backups = signal<BackupFile[]>([]);
   protected readonly isLoading = signal<boolean>(true);
   protected readonly currentPath = signal<NavigationPath[]>([

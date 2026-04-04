@@ -2,18 +2,19 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  effect,
   Input,
-  OnChanges,
-  SimpleChanges,
   computed,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { CommonModule, KeyValuePipe } from '@angular/common';
 import { of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { LucideTrophy, LucideChevronDown } from '@lucide/angular';
-import { AdvancementsService, AdvancementsResult, Advancement } from '../../../services/advancements/advancements.service';
+import type { AdvancementsResult, Advancement } from '../../../services/advancements/advancements.service';
+import { AdvancementsService } from '../../../services/advancements/advancements.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 
 @Component({
@@ -24,13 +25,26 @@ import { IconComponent } from '../../shared/icon/icon.component';
   templateUrl: './player-advancements.component.html',
   styleUrls: ['./player-advancements.component.scss'],
 })
-export class PlayerAdvancementsComponent implements OnChanges {
-  @Input({ required: true }) uuid = '';
-  @Input() isBedrock = false;
-  @Input() set initialCount(v: number | undefined) { this._initialCount.set(v ?? 0); }
-  @Input() set startOpen(v: boolean) { this._startOpen = v; }
+export class PlayerAdvancementsComponent {
+  @Input({ required: true })
+  set uuid(value: string) {
+    this.uuidInput.set(value);
+  }
 
-  private _startOpen = false;
+  @Input()
+  set isBedrock(value: boolean) {
+    this.isBedrockInput.set(value);
+  }
+
+  @Input()
+  set initialCount(value: number | undefined) {
+    this.initialCountInput.set(value ?? 0);
+  }
+
+  @Input()
+  set startOpen(value: boolean) {
+    this.startOpenInput.set(value);
+  }
 
   private readonly advancementsService = inject(AdvancementsService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -38,13 +52,16 @@ export class PlayerAdvancementsComponent implements OnChanges {
   protected readonly LucideTrophy     = LucideTrophy;
   protected readonly LucideChevronDown = LucideChevronDown;
 
-  private readonly _initialCount = signal(0);
+  private readonly uuidInput = signal('');
+  private readonly isBedrockInput = signal(false);
+  private readonly initialCountInput = signal(0);
+  private readonly startOpenInput = signal(false);
   protected readonly collapsed = signal(true);
   protected readonly isLoading = signal(false);
   protected readonly result    = signal<AdvancementsResult>({ completed: [], total: 0, by_category: {} });
   /** Shows the loaded total when available, otherwise falls back to the Firestore-cached count. */
   protected readonly displayCount = computed(() =>
-    this.result().total > 0 ? this.result().total : this._initialCount());
+    this.result().total > 0 ? this.result().total : this.initialCountInput());
 
   /** Advancements grouped by category, preserving order from API */
   protected readonly byCategory = computed(() => {
@@ -61,25 +78,30 @@ export class PlayerAdvancementsComponent implements OnChanges {
 
   private loaded = false;
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['uuid'] || changes['isBedrock']) {
+  constructor() {
+    effect(() => {
+      const uuid = this.uuidInput();
+      const isBedrock = this.isBedrockInput();
+
       this.loaded = false;
       this.result.set({ completed: [], total: 0, by_category: {} });
       this.tooltip.set(null);
-      if (this._startOpen && !this.isBedrock && this.uuid) {
+
+      const startOpen = untracked(() => this.startOpenInput());
+      if (startOpen && !isBedrock && uuid) {
         // startOpen was requested — expand and fetch immediately
         this.collapsed.set(false);
         this.fetch();
       } else {
         this.collapsed.set(true);
       }
-    }
+    });
   }
 
   protected toggle(): void {
     const opening = this.collapsed();
     this.collapsed.set(!opening);
-    if (opening && !this.loaded && !this.isBedrock && this.uuid) {
+    if (opening && !this.loaded && !this.isBedrockInput() && this.uuidInput()) {
       this.fetch();
     }
   }
@@ -108,7 +130,7 @@ export class PlayerAdvancementsComponent implements OnChanges {
 
   private fetch(): void {
     this.isLoading.set(true);
-    this.advancementsService.getAdvancements(this.uuid).pipe(
+    this.advancementsService.getAdvancements(this.uuidInput()).pipe(
       tap(r => {
         this.result.set(r);
         this.isLoading.set(false);

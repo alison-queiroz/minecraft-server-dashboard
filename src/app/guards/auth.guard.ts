@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import type { CanActivateFn} from '@angular/router';
+import { Router } from '@angular/router';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { filter, map, take } from 'rxjs/operators';
 import { AuthService } from '../services/auth/auth.service';
@@ -14,7 +15,7 @@ export const authGuard: CanActivateFn = () => {
     take(1),
     map(() => {
       if (auth.currentUser()) return true;
-      router.navigate(['/login']);
+      void router.navigate(['/login']);
       return false;
     }),
   );

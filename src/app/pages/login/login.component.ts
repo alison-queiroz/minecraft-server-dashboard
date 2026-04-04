@@ -25,7 +25,7 @@ export class LoginComponent {
     this.signing.set(true);
     try {
       await this.auth.signInWithGoogle();
-      this.router.navigate(['/']);
+      void this.router.navigate(['/']);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Sign-in failed. Please try again.';
       this.error.set(msg);

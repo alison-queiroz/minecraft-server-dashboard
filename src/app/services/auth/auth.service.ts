@@ -1,13 +1,14 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { initializeApp, getApps } from 'firebase/app';
+import type {
+  User} from 'firebase/auth';
 import {
   getAuth,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
-  onAuthStateChanged,
-  User,
+  onAuthStateChanged
 } from 'firebase/auth';
 import { environment } from '../../../environments/environment';
 
@@ -51,12 +52,12 @@ export class AuthService {
       this.isLoading.set(false);
       delete (globalThis as { __E2E_AUTH_USER__?: User }).__E2E_AUTH_USER__;
       sessionStorage.setItem('__E2E_FORCE_SIGNED_OUT__', '1');
-      this.router.navigate(['/login']);
+      void this.router.navigate(['/login']);
       return;
     }
 
     await signOut(this.auth);
-    this.router.navigate(['/login']);
+    void this.router.navigate(['/login']);
   }
 
   /** Returns the current Firebase ID token, refreshing it if expired. */

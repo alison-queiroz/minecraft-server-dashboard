@@ -48,9 +48,14 @@
 
     <!-- Tab panels -->
     <div class="profile-panel"
-         (touchstart)="onTouchStart($event)"
-         (touchmove)="onTouchMove($event)"
-         (touchend)="onTouchEnd($event)">
+          appSwipeNavigate
+          [appSwipeNavigateCurrentIndex]="activeTabIndex()"
+          [appSwipeNavigateItemCount]="tabOrder().length"
+          [appSwipeNavigateUseRouter]="false"
+          [appSwipeNavigateStopPropagation]="true"
+          (dragXChange)="onTabDragXChange($event)"
+          (draggingChange)="onTabDraggingChange($event)"
+          (navigateDirection)="onTabNavigateDirection($event)">
       <div [style.transform]="dragTabX() ? 'translateX(' + dragTabX() + 'px)' : ''"
            [class.swipe-spring]="!isTabDragging() && !enterTab()"
            [class.slide-in-from-right]="enterTab() === 'right'"

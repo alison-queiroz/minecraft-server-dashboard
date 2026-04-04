@@ -1,7 +1,6 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { signal } from '@angular/core';
 
 import { NavComponent } from './nav.component';
 import { ServerService } from '../../../services/server/server.service';

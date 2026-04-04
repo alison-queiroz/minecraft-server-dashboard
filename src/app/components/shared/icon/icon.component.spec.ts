@@ -1,4 +1,5 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture} from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { IconComponent } from './icon.component';
 import { LucideHouse, LucideServer } from '@lucide/angular';
 

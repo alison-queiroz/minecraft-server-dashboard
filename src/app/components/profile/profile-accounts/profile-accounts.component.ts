@@ -1,15 +1,17 @@
+import type {
+  OnInit} from '@angular/core';
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
 import { LucideX } from '@lucide/angular';
-import { UserProfileService, AccountType } from '../../../services/user-profile/user-profile.service';
+import type { AccountType } from '../../../services/user-profile/user-profile.service';
+import { UserProfileService } from '../../../services/user-profile/user-profile.service';
 import { PlayerService } from '../../../services/player/player.service';
-import { Player } from '../../../services/player/player.model';
+import type { Player } from '../../../services/player/player.model';
 import { PlayerFaceComponent } from '../../shared/player-face/player-face.component';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ActionButtonComponent } from '../../shared/action-button/action-button.component';

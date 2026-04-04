@@ -26,8 +26,9 @@ module.exports = defineConfig(
     processor: angular.processInlineTemplates,
     rules: {
       // Import hygiene
-      'no-duplicate-imports': 'warn',
+      'no-duplicate-imports': 'off',
       '@typescript-eslint/consistent-type-imports': ['warn', { prefer: 'type-imports' }],
+      '@typescript-eslint/dot-notation': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
