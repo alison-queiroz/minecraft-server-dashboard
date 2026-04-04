@@ -3,8 +3,13 @@ import { signal } from '@angular/core';
 import { UserAvatarComponent } from './user-avatar.component';
 import { AuthService } from '../../../services/auth/auth.service';
 
+interface AuthUserStub {
+  photoURL?: string;
+  displayName: string;
+}
+
 const makeAuthStub = (photoURL?: string) => ({
-  currentUser: signal(photoURL ? { photoURL, displayName: 'Test User' } as any : null),
+  currentUser: signal<AuthUserStub | null>(photoURL ? { photoURL, displayName: 'Test User' } : null),
   isLoading: signal(false),
   getIdToken: jasmine.createSpy('getIdToken').and.resolveTo(null),
   signInWithGoogle: jasmine.createSpy('signInWithGoogle').and.resolveTo(undefined),

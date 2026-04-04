@@ -56,7 +56,7 @@ const MOCK_HOUSE_MAPPING = {
 @Injectable()
 class PlayerServiceHarness extends PlayerService {
   /** Override to skip actual Firebase connection in tests. */
-  protected override subscribeToFirestorePlayers(): void {}
+  protected override subscribeToFirestorePlayers(): void { return; }
 
   /** Push a batch of players as if Firestore sent a snapshot. */
   pushPlayers(players: Partial<Player>[] = MOCK_PLAYERS): void {
@@ -73,12 +73,12 @@ class PlayerServiceHarness extends PlayerService {
 
   /** Expose fetchPlayersFromApi for direct testing */
   callFetchPlayersFromApi(): void {
-    (this as any).fetchPlayersFromApi();
+    (this as unknown as { fetchPlayersFromApi(): void }).fetchPlayersFromApi();
   }
 
   /** Expose enrichFromApi for direct testing */
   callEnrichFromApi(): void {
-    (this as any).enrichFromApi();
+    (this as unknown as { enrichFromApi(): void }).enrichFromApi();
   }
 }
 
@@ -321,7 +321,7 @@ describe('PlayerService', () => {
       });
 
       const warnSpy = spyOn(console, 'warn');
-      const freshService = TestBed.inject(PlayerService) as PlayerServiceHarness;
+      TestBed.inject(PlayerService) as PlayerServiceHarness;
       const freshHttp = TestBed.inject(HttpTestingController);
 
       freshHttp.expectOne('assets/player-houses-mapping.json')

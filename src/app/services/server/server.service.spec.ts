@@ -153,8 +153,7 @@ describe('ServerService', () => {
   describe('setInterval triggers a refresh of both statuses', () => {
     it('calls fetchStatus and fetchBedrockStatus again after the interval fires', () => {
       let intervalCallback: (() => void) | undefined;
-      const origSetInterval = window.setInterval;
-      spyOn(window, 'setInterval').and.callFake((fn: TimerHandler, _delay?: number): ReturnType<typeof setInterval> => {
+      spyOn(window, 'setInterval').and.callFake((fn: TimerHandler): ReturnType<typeof setInterval> => {
         intervalCallback = fn as () => void;
         return 0 as unknown as ReturnType<typeof setInterval>;
       });

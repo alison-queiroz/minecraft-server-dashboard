@@ -34,6 +34,16 @@ const makeAuthStub = () => ({
   getIdToken: jasmine.createSpy('getIdToken').and.resolveTo(null),
 });
 
+type SignalGetter<T> = () => T;
+
+interface NavTestAccess {
+  menuOpen: SignalGetter<boolean>;
+}
+
+function asNavTestAccess(component: NavComponent): NavTestAccess {
+  return component as unknown as NavTestAccess;
+}
+
 describe('NavComponent', () => {
   let fixture: ComponentFixture<NavComponent>;
   let component: NavComponent;
@@ -62,30 +72,30 @@ describe('NavComponent', () => {
   });
 
   it('menuOpen starts false', () => {
-    expect((component as any).menuOpen()).toBeFalse();
+    expect(asNavTestAccess(component).menuOpen()).toBeFalse();
   });
 
   it('toggleMenu flips menuOpen true', () => {
     component.toggleMenu();
-    expect((component as any).menuOpen()).toBeTrue();
+    expect(asNavTestAccess(component).menuOpen()).toBeTrue();
   });
 
   it('toggleMenu flips menuOpen back to false', () => {
     component.toggleMenu();
     component.toggleMenu();
-    expect((component as any).menuOpen()).toBeFalse();
+    expect(asNavTestAccess(component).menuOpen()).toBeFalse();
   });
 
   it('closeMenu sets menuOpen to false', () => {
     component.toggleMenu(); // set true first
     component.closeMenu();
-    expect((component as any).menuOpen()).toBeFalse();
+    expect(asNavTestAccess(component).menuOpen()).toBeFalse();
   });
 
   it('signOut closes menu and calls auth.signOut()', async () => {
     component.toggleMenu();
     await component.signOut();
-    expect((component as any).menuOpen()).toBeFalse();
+    expect(asNavTestAccess(component).menuOpen()).toBeFalse();
     expect(authStub.signOut).toHaveBeenCalled();
   });
 });

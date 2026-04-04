@@ -5,7 +5,7 @@ import { Location } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { MapViewerComponent } from '../../components/shared/map-viewer/map-viewer.component';
-import { UserProfileService, SavedLocation } from '../../services/user-profile/user-profile.service';
+import { UserProfileService } from '../../services/user-profile/user-profile.service';
 import { FormsModule } from '@angular/forms';
 import { LucideMap, LucideX, LucideArrowLeft } from '@lucide/angular';
 import { IconComponent } from '../../components/shared/icon/icon.component';

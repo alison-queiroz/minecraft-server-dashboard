@@ -24,7 +24,7 @@ import { PlayerFaceComponent } from '../../shared/player-face/player-face.compon
   host: {
     class: 'grid grid-cols-12 items-center py-3 px-6 hover:bg-emerald-500/5 cursor-pointer transition-all border-b border-zinc-800/50 group',
     '[class.bg-emerald-500/10]': 'isSelected',
-    '(click)': 'select.emit()',
+    '(click)': 'selected.emit()',
   },
 })
 export class PlayerCardRowComponent implements OnInit, OnDestroy {
@@ -33,7 +33,7 @@ export class PlayerCardRowComponent implements OnInit, OnDestroy {
 
   @Input({ required: true }) player!: Player;
   @Input() isSelected = false;
-  @Output() select = new EventEmitter<void>();
+  @Output() selected = new EventEmitter<void>();
 
   private observer?: IntersectionObserver;
 

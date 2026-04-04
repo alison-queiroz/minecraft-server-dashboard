@@ -33,6 +33,14 @@ const makeAuthStub = () => ({
   getIdToken: jasmine.createSpy('getIdToken').and.resolveTo(null),
 });
 
+interface ServerStatusTestAccess {
+  serverStatus: typeof SERVER_STATUS;
+}
+
+function asServerStatusTestAccess(component: ServerStatusComponent): ServerStatusTestAccess {
+  return component as unknown as ServerStatusTestAccess;
+}
+
 describe('ServerStatusComponent', () => {
   let httpMock: HttpTestingController;
 
@@ -63,7 +71,7 @@ describe('ServerStatusComponent', () => {
 
   it('exposes SERVER_STATUS constant on the component', () => {
     const fixture = TestBed.createComponent(ServerStatusComponent);
-    const comp = fixture.componentInstance as any;
+    const comp = asServerStatusTestAccess(fixture.componentInstance);
     expect(comp.serverStatus).toBe(SERVER_STATUS);
   });
 

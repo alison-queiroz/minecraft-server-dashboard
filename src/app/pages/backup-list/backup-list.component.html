@@ -47,9 +47,13 @@
 
                 <!-- Info -->
                 <div class="item-info">
-                  <p class="item-title" (click)="isFolder(backup) ? navigateTo(backup.id, backup.name) : null">
+                  <button
+                    type="button"
+                    class="item-title"
+                    (click)="isFolder(backup) ? navigateTo(backup.id, backup.name) : null"
+                  >
                     {{ backup.name }}
-                  </p>
+                  </button>
                   <div class="item-meta">
                     <span>{{ backup.createdTime | date: "medium" }}</span>
                     @if (!isFolder(backup)) {

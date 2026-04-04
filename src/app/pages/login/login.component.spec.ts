@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, HttpClient } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 
@@ -101,7 +101,7 @@ describe('LoginComponent', () => {
     button.click();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect((comp as any).signing()).toBeFalse();
+    expect(comp.signing()).toBeFalse();
   });
 
   it('shows error message when signInWithGoogle rejects', async () => {
@@ -117,7 +117,6 @@ describe('LoginComponent', () => {
   });
 
   it('clears the error and resets signing on subsequent sign-in attempt', async () => {
-    const { signal: angularSignal } = await import('@angular/core');
     authStub.signInWithGoogle.and.rejectWith(new Error('first error'));
     const fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();

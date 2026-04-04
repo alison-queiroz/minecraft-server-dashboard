@@ -6,6 +6,14 @@ import { Component } from '@angular/core';
 @Component({ standalone: true, template: '' })
 class BlankComponent {}
 
+interface AuthServiceTestAccess {
+  auth: Record<string, unknown>;
+}
+
+function asAuthServiceTestAccess(service: AuthService): AuthServiceTestAccess {
+  return service as unknown as AuthServiceTestAccess;
+}
+
 describe('AuthService', () => {
   let service: AuthService;
   let router: Router;
@@ -42,11 +50,11 @@ describe('AuthService', () => {
     // Firebase signInWithPopup will hang waiting for a real popup window.
     // Directly stub the private auth object's internal call path via the service
     // private property to make it resolve instantly.
-    const privateAuth = (service as any).auth as { [key: string]: unknown };
+    const privateAuth = asAuthServiceTestAccess(service).auth;
 
     // Override the auth object temporarily so signInWithPopup resolves
     const origAuth = privateAuth;
-    (service as any).auth = {
+    asAuthServiceTestAccess(service).auth = {
       ...origAuth,
       currentUser: null,
     };
@@ -58,7 +66,7 @@ describe('AuthService', () => {
 
     // Simplest: create a fake auth instance and replace the service's private field
     const fakeAuth: Record<string, unknown> = { currentUser: null };
-    (service as any).auth = fakeAuth;
+    asAuthServiceTestAccess(service).auth = fakeAuth;
 
     // Now signInWithGoogle will call signInWithPopup(fakeAuth, provider)
     // signInWithPopup is a module function — it will fail because fakeAuth is not a real Auth
@@ -71,10 +79,10 @@ describe('AuthService', () => {
   });
 
   it('signOut traverses the function body (covers signOut + navigate lines)', async () => {
-    const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    spyOn(router, 'navigate').and.resolveTo(true);
 
     // Replace the auth object so Firebase signOut resolves immediately
-    (service as any).auth = { currentUser: null };
+    asAuthServiceTestAccess(service).auth = { currentUser: null };
 
     try {
       await service.signOut();

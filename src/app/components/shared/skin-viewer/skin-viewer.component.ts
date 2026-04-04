@@ -11,6 +11,16 @@ import {
 } from '@angular/core';
 import { SkinService } from '../../../services/skin/skin.service';
 
+interface SkinViewerLike {
+  canvas: HTMLCanvasElement;
+  controls?: { enablePan: boolean };
+  animation: unknown;
+  width: number;
+  height: number;
+  loadSkin(url: string): void;
+  dispose(): void;
+}
+
 @Component({
   selector: 'app-skin-viewer',
   standalone: true,
@@ -27,7 +37,7 @@ export class SkinViewerComponent implements OnChanges, OnDestroy {
   @ViewChild('skinContainer', { static: false })
   private skinContainer!: ElementRef<HTMLDivElement>;
 
-  private skinViewer: any = null;
+  private skinViewer: SkinViewerLike | null = null;
   private currentSkinUrl: string | null = null;
   private pendingSkinUrl: string | null = null;
   private resizeObserver?: ResizeObserver;

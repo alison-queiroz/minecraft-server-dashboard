@@ -61,7 +61,7 @@ describe('Player model', () => {
     });
 
     it('should return false when skin_url is falsy', () => {
-      const noSkin = new Player({ ...BASE, skin_url: undefined as any });
+      const noSkin = new Player({ ...BASE, skin_url: undefined });
       expect(noSkin.isRawAvatar()).toBeFalse();
     });
   });

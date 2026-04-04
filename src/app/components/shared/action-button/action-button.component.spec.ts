@@ -1,6 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActionButtonComponent } from './action-button.component';
 
+interface ActionButtonTestAccess {
+  handleClick(): void;
+}
+
+function asActionButtonTestAccess(component: ActionButtonComponent): ActionButtonTestAccess {
+  return component as unknown as ActionButtonTestAccess;
+}
+
 describe('ActionButtonComponent', () => {
   let fixture: ComponentFixture<ActionButtonComponent>;
   let component: ActionButtonComponent;
@@ -21,14 +29,14 @@ describe('ActionButtonComponent', () => {
 
   it('handleClick emits pressed when not disabled', () => {
     const emitSpy = spyOn(component.pressed, 'emit');
-    (component as any).handleClick();
+    asActionButtonTestAccess(component).handleClick();
     expect(emitSpy).toHaveBeenCalled();
   });
 
   it('handleClick does NOT emit pressed when disabled', () => {
     component.disabled = true;
     const emitSpy = spyOn(component.pressed, 'emit');
-    (component as any).handleClick();
+    asActionButtonTestAccess(component).handleClick();
     expect(emitSpy).not.toHaveBeenCalled();
   });
 
