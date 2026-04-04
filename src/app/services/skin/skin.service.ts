@@ -6,21 +6,6 @@ import { firstValueFrom } from 'rxjs';
 export class SkinService implements OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly blobCache = new Map<string, string>();
-
-  private scriptInjected = false;
-
-  ensureSkinView3dLoaded(): void {
-    if (this.scriptInjected || document.getElementById('skinview3d-script')) {
-      this.scriptInjected = true;
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = 'skinview3d-script';
-    script.src = 'https://unpkg.com/skinview3d@3.0.0/bundles/skinview3d.bundle.js';
-    document.head.appendChild(script);
-    this.scriptInjected = true;
-  }
-
   async getBlobUrl(url: string): Promise<string> {
     const cached = this.blobCache.get(url);
     if (cached) return cached;

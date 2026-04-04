@@ -11,6 +11,17 @@
   @apply grid grid-cols-12 border-b border-zinc-800 bg-zinc-950/50 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-500;
 }
 
+.sort-btn {
+  @apply flex items-center gap-0.5 bg-transparent border-none text-zinc-500
+         uppercase tracking-widest text-[10px] font-black cursor-pointer
+         transition-colors hover:text-zinc-300 focus:outline-none
+         min-w-0 overflow-hidden whitespace-nowrap;
+}
+
+.sort-btn--active {
+  @apply text-emerald-400;
+}
+
 .header-align-right {
   @apply text-right;
 }

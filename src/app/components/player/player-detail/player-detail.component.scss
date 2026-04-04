@@ -19,7 +19,7 @@
 }
 
 .detail-body {
-  @apply relative flex min-h-0 flex-1 flex-col overflow-y-auto p-5 pt-8;
+  @apply relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-5 pt-8;
 }
 
 .detail-body::-webkit-scrollbar {
@@ -119,6 +119,15 @@
   @apply rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-emerald-400;
 }
 
+.location-coordinates--link {
+  @apply flex items-center gap-1 no-underline transition-colors
+         hover:border-emerald-500/50 hover:text-emerald-300;
+}
+
+.location-map-icon {
+  @apply ml-0.5 shrink-0 opacity-60;
+}
+
 .detail-locations-section {
   @apply mb-4;
 }
@@ -171,6 +180,14 @@
   @apply border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
 }
 
+.detail-action--share {
+  @apply border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
+}
+
+.detail-action--copied {
+  @apply border-emerald-600/50 bg-emerald-900/30 text-emerald-400;
+}
+
 .detail-empty-state {
   @apply flex h-full flex-col items-center justify-center rounded-3xl border-2 border-dashed border-zinc-800 bg-zinc-900/40 p-12 text-center;
 }
@@ -207,3 +224,4 @@
 .animate-profile {
   animation: profile-entry 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+

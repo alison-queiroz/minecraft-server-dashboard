@@ -71,7 +71,7 @@
 }
 
 .location-name {
-	@apply flex items-center gap-2 truncate text-sm font-bold text-zinc-100;
+	@apply flex items-center gap-2 overflow-hidden text-sm font-bold text-zinc-100;
 }
 
 .location-public-badge {

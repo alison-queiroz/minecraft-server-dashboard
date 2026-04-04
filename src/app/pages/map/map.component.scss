@@ -57,9 +57,17 @@
 .map-full-height {
   display: block;
 
+  /* !important is required to override the component-scoped .resize-handle rule */
   ::ng-deep .resize-handle {
-    height: calc(100vh - 280px);
-    min-height: 400px;
-    max-height: calc(100vh - 180px);
+    height: calc(100dvh - 280px) !important;
+    min-height: 360px !important;
+    max-height: calc(100dvh - 160px) !important;
+
+    @media (max-width: 767px) {
+      /* On mobile, leave enough room below the map for the tools section */
+      height: calc(100dvh - 360px) !important;
+      min-height: 200px !important;
+      max-height: calc(100dvh - 260px) !important;
+    }
   }
 }

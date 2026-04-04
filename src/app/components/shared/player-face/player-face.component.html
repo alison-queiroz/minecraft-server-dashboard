@@ -1,8 +1,8 @@
-@if (player().isRawAvatar()) {
+@if (useRawSkin()) {
   <div
     class="w-full h-full bg-no-repeat"
     style="background-size: 800%"
-    [style.background-image]="'url(' + player().avatarUrl() + ')'"
+    [style.background-image]="'url(' + rawSkinUrl() + ')'"
     [style.background-position]="bgPosition()"
   ></div>
 } @else {

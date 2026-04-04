@@ -1,0 +1,55 @@
+<div class="analytics-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h2 class="page-title">
+      <app-icon [icon]="LucideChartLine" [size]="18" [strokeWidth]="2"></app-icon>
+      Server Analytics
+    </h2>
+    <p class="page-subtitle">Player activity over time</p>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="stat-cards">
+    <div class="stat-card">
+      <span class="stat-label">Peak online</span>
+      <span class="stat-value">{{ peakOnline() }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Avg online</span>
+      <span class="stat-value">{{ avgOnline() }}</span>
+    </div>
+  </div>
+
+  <!-- Chart card -->
+  <div class="chart-card">
+    <!-- Period pills -->
+    <div class="period-tabs">
+      @for (p of periods; track p.key) {
+        <button
+          (click)="setPeriod(p.key)"
+          [class.active]="period() === p.key"
+          class="period-btn">
+          {{ p.label }}
+        </button>
+      }
+    </div>
+
+    <!-- Canvas / loading -->
+    <div class="chart-wrapper">
+      @if (isLoading()) {
+        <div class="chart-loading">
+          <span class="loading-dot"></span>
+          <span class="loading-dot"></span>
+          <span class="loading-dot"></span>
+        </div>
+      } @else if (!hasData()) {
+        <div class="chart-empty">
+          No data yet &mdash; snapshots are recorded every minute while the server is running.
+        </div>
+      }
+      <canvas #chartCanvas [style.opacity]="hasData() ? 1 : 0"></canvas>
+    </div>
+  </div>
+
+</div>

@@ -16,6 +16,8 @@ import {
   BackupService,
   BackupFile,
 } from '../../services/backup/backup.service';
+import { of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { IconComponent } from 'src/app/components/shared/icon/icon.component';
 
 export interface NavigationPath {
@@ -84,16 +86,17 @@ export class BackupListComponent implements OnInit, AfterViewInit, OnDestroy {
     const path = this.currentPath();
     const currentFolderId = path[path.length - 1].id;
 
-    this.backupService.getBackups(currentFolderId).subscribe({
-      next: (data) => {
+    this.backupService.getBackups(currentFolderId).pipe(
+      tap(data => {
         this.backups.set(data);
         this.isLoading.set(false);
-      },
-      error: (err) => {
+      }),
+      catchError(err => {
         console.error('Failed to parse backups', err);
         this.isLoading.set(false);
-      },
-    });
+        return of([]);
+      }),
+    ).subscribe();
   }
 
   protected isFolder(file: BackupFile) {

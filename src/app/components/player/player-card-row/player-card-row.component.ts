@@ -9,7 +9,7 @@ import {
   Output,
   inject,
 } from '@angular/core';
-import { NgClass } from '@angular/common';
+import { NgClass, DecimalPipe } from '@angular/common';
 import { Player } from '../../../services/player/player.model';
 import { PlayerService } from '../../../services/player/player.service';
 import { PlayerFaceComponent } from '../../shared/player-face/player-face.component';
@@ -18,7 +18,7 @@ import { PlayerFaceComponent } from '../../shared/player-face/player-face.compon
   selector: 'app-player-card-row',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, PlayerFaceComponent],
+  imports: [NgClass, DecimalPipe, PlayerFaceComponent],
   templateUrl: './player-card-row.component.html',
   styleUrls: ['./player-card-row.component.scss'],
   host: {

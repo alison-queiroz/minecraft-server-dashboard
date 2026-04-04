@@ -1,5 +1,7 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export const SERVER_STATUS = {
@@ -60,8 +62,8 @@ export class ServerService {
   }
 
   private fetchStatus() {
-    this.http.get<ServerStatusResponse>(`${this.statusUrl}${this.serverIP}`).subscribe({
-      next: (res) => {
+    this.http.get<ServerStatusResponse>(this.statusUrl).pipe(
+      tap(res => {
         this.status.set(res.online ? SERVER_STATUS.ONLINE : SERVER_STATUS.OFFLINE);
         this.onlinePlayers.set(res.players?.online ?? 0);
         this.maxPlayers.set(res.players?.max ?? 0);
@@ -72,30 +74,32 @@ export class ServerService {
         this.ip.set(res.ip ?? null);
         this.port.set(res.port ?? null);
         this.protocol.set(res.protocol ?? null);
-      },
-      error: () => {
+      }),
+      catchError(() => {
         this.status.set(SERVER_STATUS.OFFLINE);
         this.onlinePlayers.set(0);
         this.maxPlayers.set(0);
-      },
-    });
+        return of(null);
+      }),
+    ).subscribe();
   }
 
   private fetchBedrockStatus() {
-    this.http.get<ServerStatusResponse>(`${this.bedrockStatusUrl}${this.serverIP}`).subscribe({
-      next: (res) => {
+    this.http.get<ServerStatusResponse>(this.bedrockStatusUrl).pipe(
+      tap(res => {
         this.bedrockStatus.set(res.online ? SERVER_STATUS.ONLINE : SERVER_STATUS.OFFLINE);
         this.bedrockOnlinePlayers.set(res.players?.online ?? 0);
         this.bedrockMaxPlayers.set(res.players?.max ?? 0);
         this.bedrockVersion.set(res.version ?? null);
         this.bedrockPort.set(res.port ?? null);
-      },
-      error: () => {
+      }),
+      catchError(() => {
         this.bedrockStatus.set(SERVER_STATUS.OFFLINE);
         this.bedrockOnlinePlayers.set(0);
         this.bedrockMaxPlayers.set(0);
-      },
-    });
+        return of(null);
+      }),
+    ).subscribe();
   }
 
 }

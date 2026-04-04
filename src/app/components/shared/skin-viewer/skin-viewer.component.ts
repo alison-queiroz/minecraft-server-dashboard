@@ -11,8 +11,6 @@ import {
 } from '@angular/core';
 import { SkinService } from '../../../services/skin/skin.service';
 
-declare const skinview3d: any;
-
 @Component({
   selector: 'app-skin-viewer',
   standalone: true,
@@ -32,11 +30,11 @@ export class SkinViewerComponent implements OnChanges, OnDestroy {
   private skinViewer: any = null;
   private currentSkinUrl: string | null = null;
   private pendingSkinUrl: string | null = null;
+  private resizeObserver?: ResizeObserver;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['skinUrl'] || changes['isRaw']) {
       if (this.isRaw && this.skinUrl) {
-        this.skinService.ensureSkinView3dLoaded();
         setTimeout(() => this.loadAndRender(this.skinUrl), 50);
       } else {
         this.disposeSkinViewer();
@@ -55,25 +53,47 @@ export class SkinViewerComponent implements OnChanges, OnDestroy {
     this.render3D(blobUrl, url);
   }
 
-  private render3D(blobUrl: string, originalUrl: string): void {
+  private async render3D(blobUrl: string, originalUrl: string): Promise<void> {
     if (!this.skinContainer) return;
-    if (typeof skinview3d === 'undefined') {
-      setTimeout(() => this.render3D(blobUrl, originalUrl), 100);
-      return;
-    }
     if (originalUrl === this.currentSkinUrl) return;
     this.currentSkinUrl = originalUrl;
+
+    const containerEl = this.skinContainer.nativeElement;
+
     if (!this.skinViewer) {
-      this.skinViewer = new skinview3d.SkinViewer({
+      const { SkinViewer, IdleAnimation } = await import('skinview3d');
+
+      // Guard: component may have been destroyed while awaiting the import
+      if (!this.skinContainer) return;
+
+      const initW = Math.max(containerEl.clientWidth  || 220, 60);
+      const initH = Math.max(containerEl.clientHeight || 192, 60);
+
+      this.skinViewer = new SkinViewer({
         canvas: document.createElement('canvas'),
-        width: 220,
-        height: 300,
-        zoom: 0.62,
+        width: initW,
+        height: initH,
+        zoom: 0.85,
         skin: blobUrl,
       });
-      this.skinViewer.animation = new skinview3d.IdleAnimation();
-      this.skinContainer.nativeElement.innerHTML = '';
-      this.skinContainer.nativeElement.appendChild(this.skinViewer.canvas);
+      this.skinViewer.animation = new IdleAnimation();
+      if (this.skinViewer.controls) {
+        this.skinViewer.controls.enablePan = true;
+      }
+      containerEl.innerHTML = '';
+      containerEl.appendChild(this.skinViewer.canvas);
+
+      // Keep canvas in sync with container dimensions
+      this.resizeObserver?.disconnect();
+      this.resizeObserver = new ResizeObserver(([entry]) => {
+        if (!this.skinViewer) return;
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          this.skinViewer.width  = width;
+          this.skinViewer.height = height;
+        }
+      });
+      this.resizeObserver.observe(containerEl);
     } else {
       this.skinViewer.loadSkin(blobUrl);
     }
@@ -82,9 +102,12 @@ export class SkinViewerComponent implements OnChanges, OnDestroy {
   private disposeSkinViewer(): void {
     this.pendingSkinUrl = null;
     this.currentSkinUrl = null;
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = undefined;
     if (this.skinViewer) {
       this.skinViewer.dispose();
       this.skinViewer = null;
     }
   }
 }
+

@@ -1,13 +1,15 @@
 :host {
   display: block;
+  height: 100%;
+  overflow: hidden;
 }
 
 .players-page {
-  @apply mx-auto w-full max-w-7xl pb-6;
+  @apply mx-auto w-full max-w-7xl flex flex-col h-full;
 }
 
 .players-header {
-  @apply mb-5;
+  @apply mb-5 shrink-0;
 }
 
 .players-title {
@@ -18,14 +20,25 @@
   @apply mt-1 text-sm text-zinc-500;
 }
 
+.players-back-btn {
+  @apply inline-flex items-center gap-2 text-sm font-bold text-zinc-400 hover:text-zinc-100 transition-colors;
+}
+
 .players-layout {
-  @apply grid grid-cols-1 gap-6 lg:grid-cols-12 lg:overflow-hidden;
+  @apply flex-1 min-h-0 grid grid-cols-1 gap-6 lg:grid-cols-12 overflow-hidden;
 }
 
 .players-list-panel {
-  @apply flex h-[65vh] min-h-[400px] flex-col lg:col-span-8 lg:h-[calc(100vh-240px)];
+  @apply flex min-h-0 flex-col lg:col-span-8;
 }
 
 .players-detail-panel {
-  @apply flex flex-col gap-6 lg:col-span-4 lg:h-[calc(100vh-240px)] lg:overflow-y-auto;
+  @apply flex flex-col gap-6 lg:col-span-4 min-h-0 lg:overflow-y-auto;
+}
+
+/* Mobile: hide the panel that is not in focus */
+@media (max-width: 1023px) {
+  .players-panel--hidden {
+    display: none;
+  }
 }

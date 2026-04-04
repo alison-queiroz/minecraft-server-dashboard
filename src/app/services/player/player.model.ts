@@ -11,6 +11,8 @@ export class Player {
   skin_url!: string;
   is_raw_skin?: boolean;
   houseUrl?: string;
+  play_hours?: number;
+  advancement_count?: number;
 
   constructor(data: Partial<Player>) {
     this.name = data.name!;
@@ -23,6 +25,8 @@ export class Player {
     this.skin_url = data.skin_url!;
     this.is_raw_skin = data.is_raw_skin;
     this.houseUrl = data.houseUrl;
+    this.play_hours = data.play_hours;
+    this.advancement_count = data.advancement_count;
   }
 
   isBedrock(): boolean {

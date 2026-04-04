@@ -13,7 +13,7 @@
       <div class="account-row">
         <span class="account-type account-type--java">Java</span>
         @if (profileService.minecraftAccounts().java) {
-          @if (findPlayer(profileService.minecraftAccounts().java); as player) {
+          @if (findJavaPlayer(profileService.minecraftAccounts().java); as player) {
             <app-player-face [player]="player" [size]="28"
               class="account-face">
             </app-player-face>
@@ -29,7 +29,7 @@
       <div class="account-form-row">
         <input [value]="accountInputs().java"
                (input)="updateInput('java', $any($event.target).value)"
-               list="available-players"
+               list="java-players"
                placeholder="Java username..."
                class="account-input account-input--java" />
         <app-action-button
@@ -46,7 +46,7 @@
       <div class="account-row">
         <span class="account-type account-type--bedrock">Bedrock</span>
         @if (profileService.minecraftAccounts().bedrock) {
-          @if (findPlayer(profileService.minecraftAccounts().bedrock); as player) {
+          @if (findBedrockPlayer(profileService.minecraftAccounts().bedrock); as player) {
             <app-player-face [player]="player" [size]="28"
               class="account-face">
             </app-player-face>
@@ -62,7 +62,7 @@
       <div class="account-form-row">
         <input [value]="accountInputs().bedrock"
                (input)="updateInput('bedrock', $any($event.target).value)"
-               list="available-players"
+               list="bedrock-players"
                placeholder="Bedrock username..."
                class="account-input account-input--bedrock" />
         <app-action-button
@@ -79,7 +79,7 @@
       <div class="account-row">
         <span class="account-type account-type--admin">Admin</span>
         @if (profileService.minecraftAccounts().admin) {
-          @if (findPlayer(profileService.minecraftAccounts().admin); as player) {
+          @if (findBedrockPlayer(profileService.minecraftAccounts().admin) ?? findJavaPlayer(profileService.minecraftAccounts().admin); as player) {
             <app-player-face [player]="player" [size]="28"
               class="account-face">
             </app-player-face>
@@ -95,7 +95,7 @@
       <div class="account-form-row">
         <input [value]="accountInputs().admin"
                (input)="updateInput('admin', $any($event.target).value)"
-               list="available-players"
+               list="admin-players"
                placeholder="Admin username..."
                class="account-input account-input--admin" />
         <app-action-button
@@ -107,8 +107,18 @@
       </div>
     </div>
 
-    <datalist id="available-players">
-      @for (name of availablePlayers(); track name) {
+    <datalist id="java-players">
+      @for (name of availableJavaPlayers(); track name) {
+        <option [value]="name">{{ name }}</option>
+      }
+    </datalist>
+    <datalist id="bedrock-players">
+      @for (name of availableBedrockPlayers(); track name) {
+        <option [value]="name">{{ name }}</option>
+      }
+    </datalist>
+    <datalist id="admin-players">
+      @for (name of availableAdminPlayers(); track name) {
         <option [value]="name">{{ name }}</option>
       }
     </datalist>

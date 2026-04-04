@@ -2,18 +2,50 @@
   <!-- Search Bar -->
   <app-player-search></app-player-search>
 
-  <!-- Table Header (Static) -->
+  <!-- Table Header (sortable) -->
   <div class="player-list-header">
-    <div class="col-span-5">Player</div>
-    <div class="col-span-2">Level</div>
-    <div class="col-span-3">Dimension</div>
-    <div class="col-span-2 header-align-right">Last Seen</div>
+    <button class="col-span-4 sort-btn" [class.sort-btn--active]="sortField() === 'name'" (click)="toggleSort('name')">
+      Player
+      @if (sortField() === 'name') {
+        <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
+      }
+    </button>
+    <button class="col-span-1 sort-btn" [class.sort-btn--active]="sortField() === 'level'" (click)="toggleSort('level')">
+      LVL
+      @if (sortField() === 'level') {
+        <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
+      }
+    </button>
+    <button class="col-span-2 sort-btn" [class.sort-btn--active]="sortField() === 'play_hours'" (click)="toggleSort('play_hours')">
+      Time
+      @if (sortField() === 'play_hours') {
+        <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
+      }
+    </button>
+    <button class="col-span-2 sort-btn" [class.sort-btn--active]="sortField() === 'dimension'" (click)="toggleSort('dimension')">
+      Dim.
+      @if (sortField() === 'dimension') {
+        <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
+      }
+    </button>
+    <button class="col-span-1 sort-btn" [class.sort-btn--active]="sortField() === 'advancement_count'" (click)="toggleSort('advancement_count')">
+      Adv.
+      @if (sortField() === 'advancement_count') {
+        <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
+      }
+    </button>
+    <button class="col-span-2 sort-btn header-align-right" [class.sort-btn--active]="sortField() === 'last_seen'" (click)="toggleSort('last_seen')">
+      @if (sortField() === 'last_seen') {
+        <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
+      }
+      Seen
+    </button>
   </div>
 
   <!-- Virtual Scroll Viewport -->
   <cdk-virtual-scroll-viewport itemSize="65" class="player-list-viewport custom-scrollbar">
     <app-player-card-row
-      *cdkVirtualFor="let player of service.filteredPlayers(); trackBy: trackByUuid"
+      *cdkVirtualFor="let player of displayedPlayers(); trackBy: trackByUuid"
       [player]="player"
       [isSelected]="service.selectedPlayerName() === player.name"
       (select)="service.selectedPlayerName.set(player.name)">

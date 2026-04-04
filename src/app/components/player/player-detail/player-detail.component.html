@@ -16,9 +16,7 @@
           {{ player.name }}
         </h3>
         <div class="detail-uuid-pill">
-          <span class="detail-uuid">{{
-            player.uuid
-          }}</span>
+          <span class="detail-uuid">{{ player.uuid }}</span>
         </div>
       </div>
 
@@ -28,22 +26,15 @@
           <span class="stat-label">Vitality</span>
           <div class="stat-value-row">
             <div class="health-track">
-              <div
-                class="health-fill"
-                [style.width.%]="player.healthPercent()"
-              ></div>
+              <div class="health-fill" [style.width.%]="player.healthPercent()"></div>
             </div>
-            <span class="health-value">{{
-              player.health
-            }}</span>
+            <span class="health-value">{{ player.health }}</span>
           </div>
         </div>
-
         <div class="stat-card">
           <span class="stat-label">Experience</span>
           <div class="experience-value">
-            {{ player.level
-            }}<span class="experience-unit">LVL</span>
+            {{ player.level }}<span class="experience-unit">LVL</span>
           </div>
         </div>
       </div>
@@ -57,11 +48,22 @@
             </div>
             <span class="attribute-label">Last Seen</span>
           </div>
-          <span class="attribute-value">{{
-            player.last_seen
-          }}</span>
+          <span class="attribute-value">{{ player.last_seen }}</span>
         </div>
 
+        @if (player.play_hours !== undefined) {
+          <div class="attribute-row">
+            <div class="attribute-label-group">
+              <div class="attribute-icon-box">
+                <app-icon [icon]="LucideTimer" [size]="16"></app-icon>
+              </div>
+              <span class="attribute-label">Time Played</span>
+            </div>
+            <span class="attribute-value">{{ player.play_hours | number:'1.0-1' }} h</span>
+          </div>
+        }
+
+        <!-- Clickable location → opens map at player's position -->
         <div class="attribute-row">
           <div class="attribute-label-group">
             <div class="attribute-icon-box">
@@ -69,11 +71,14 @@
             </div>
             <span class="attribute-label">Player Location</span>
           </div>
-          <span class="location-coordinates">
+          <a [routerLink]="['/map']" [fragment]="playerMapFragment(player)"
+             class="location-coordinates location-coordinates--link"
+             title="View on map">
             {{ player.pos[0] | number: "1.0-0" }}
             {{ player.pos[1] | number: "1.0-0" }}
             {{ player.pos[2] | number: "1.0-0" }}
-          </span>
+            <app-icon [icon]="LucideMap" [size]="11" class="location-map-icon"></app-icon>
+          </a>
         </div>
       </div>
 
@@ -85,38 +90,45 @@
             @for (loc of publicLocations(); track loc.id) {
               <a [routerLink]="['/map']" [fragment]="locFragment(loc.mapHash)"
                 class="detail-location-link group">
-                <app-icon [icon]="LucideMap" [size]="14"
-                     class="detail-location-icon"></app-icon>
+                <app-icon [icon]="LucideMap" [size]="14" class="detail-location-icon"></app-icon>
                 <div class="detail-location-copy">
                   <p class="detail-location-name">{{ loc.name }}</p>
                   @if (loc.description) {
                     <p class="detail-location-description">{{ loc.description }}</p>
                   }
                 </div>
-                <app-icon [icon]="LucideExternalLink" [size]="12"
-                     class="detail-location-arrow"></app-icon>
+                <app-icon [icon]="LucideExternalLink" [size]="12" class="detail-location-arrow"></app-icon>
               </a>
             }
           </div>
         </div>
       }
 
+      <!-- Advancements (Java only, collapsible) -->
+      <app-player-advancements
+        [uuid]="player.uuid"
+        [isBedrock]="player.isBedrock()"
+        [initialCount]="player.advancement_count">
+      </app-player-advancements>
+
       <!-- Action Buttons -->
       <div class="detail-actions">
         @if (player.houseUrl) {
-          <a
-            [routerLink]="['/map']"
-            [fragment]="houseFragment(player.houseUrl)"
-            class="detail-action detail-action--primary"
-          >
+          <a [routerLink]="['/map']" [fragment]="houseFragment(player.houseUrl)"
+            class="detail-action detail-action--primary">
             <app-icon [icon]="LucideHouse" [size]="16"></app-icon>
             House Map
           </a>
         }
-        <button
-          (click)="service.selectedPlayerName.set(null)"
-          class="detail-action detail-action--secondary"
-        >
+        <!-- Share button -->
+        <button (click)="share(player)" class="detail-action detail-action--share"
+          [class.detail-action--copied]="linkCopied()"
+          title="Copy shareable link">
+          <app-icon [icon]="LucideShare2" [size]="16"></app-icon>
+          {{ linkCopied() ? 'Copied!' : 'Share' }}
+        </button>
+        <button (click)="service.selectedPlayerName.set(null)"
+          class="detail-action detail-action--secondary hidden lg:flex">
           Close
         </button>
       </div>
@@ -127,11 +139,8 @@
     <div class="detail-empty-icon">
       <app-icon [icon]="LucideUser" [size]="32"></app-icon>
     </div>
-    <h3 class="detail-empty-title">
-      System Ready
-    </h3>
-    <p class="detail-empty-copy">
-      Select a player from the list.
-    </p>
+    <h3 class="detail-empty-title">System Ready</h3>
+    <p class="detail-empty-copy">Select a player from the list.</p>
   </div>
 }
+

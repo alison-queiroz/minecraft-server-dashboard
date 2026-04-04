@@ -39,9 +39,41 @@ export class ProfileAccountsComponent implements OnInit {
     return this.playerService.players().map(p => p.name).filter(n => !linked.has(n));
   });
 
+  protected readonly availableJavaPlayers = computed(() =>
+    this.playerService.players()
+      .filter(p => !p.isBedrock())
+      .map(p => p.name)
+      .filter(n => !this.profileService.minecraftAccounts().java || this.profileService.minecraftAccounts().java !== n)
+  );
+
+  protected readonly availableBedrockPlayers = computed(() =>
+    this.playerService.players()
+      .filter(p => p.isBedrock())
+      .map(p => p.name)
+      .filter(n => !this.profileService.minecraftAccounts().bedrock || this.profileService.minecraftAccounts().bedrock !== n)
+  );
+
+  protected readonly availableAdminPlayers = computed(() =>
+    this.playerService.players()
+      .map(p => p.name)
+      .filter(n => !this.profileService.minecraftAccounts().admin || this.profileService.minecraftAccounts().admin !== n)
+  );
+
   protected findPlayer(username: string | null | undefined): Player | null {
     if (!username) return null;
     return this.playerService.players().find(p => p.name === username) ?? null;
+  }
+
+  /** Finds a Java (non-Bedrock) player by username. */
+  protected findJavaPlayer(username: string | null | undefined): Player | null {
+    if (!username) return null;
+    return this.playerService.players().find(p => p.name === username && !p.isBedrock()) ?? null;
+  }
+
+  /** Finds a Bedrock player by username. */
+  protected findBedrockPlayer(username: string | null | undefined): Player | null {
+    if (!username) return null;
+    return this.playerService.players().find(p => p.name === username && p.isBedrock()) ?? null;
   }
 
   ngOnInit(): void {

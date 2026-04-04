@@ -7,6 +7,7 @@
       [style.height]="resizable || fillHeight ? '100%' : '320px'"
       loading="lazy"
       title="Minecraft Map"
+      (load)="onIframeLoad()"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
     </iframe>
   </div>

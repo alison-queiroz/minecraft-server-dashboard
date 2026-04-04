@@ -1,5 +1,11 @@
 .skin-canvas {
-	@apply relative z-20 mt-0 flex h-44 cursor-grab items-center justify-center drop-shadow-[0_25px_40px_rgba(16,185,129,0.4)] active:cursor-grabbing;
+  @apply relative z-20 w-full h-full cursor-grab flex items-center justify-center drop-shadow-[0_25px_40px_rgba(16,185,129,0.4)] active:cursor-grabbing;
+
+  canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
 }
 
 .skin-image {

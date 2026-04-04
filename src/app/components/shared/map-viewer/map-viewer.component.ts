@@ -87,4 +87,21 @@ export class MapViewerComponent implements OnChanges {
       return input.startsWith('#') ? input : '#' + input;
     }
   }
+
+  /**
+   * Called when the iframe finishes loading. Briefly nudges the iframe width by
+   * 1 px so the iframe viewport fires a resize event, which causes BlueMap/
+   * Leaflet to call invalidateSize() and clear grey tiles.
+   */
+  protected onIframeLoad(): void {
+    const nudge = () => {
+      const el = this.mapIframe?.nativeElement;
+      if (!el) return;
+      el.style.width = 'calc(100% - 1px)';
+      requestAnimationFrame(() => { el.style.width = ''; });
+    };
+    nudge();
+    setTimeout(nudge, 250);
+    setTimeout(nudge, 900);
+  }
 }

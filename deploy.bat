@@ -60,7 +60,15 @@ echo   3. BUILDING ANGULAR ^& DEPLOYING BACKEND IN PARALLEL
 echo ==========================================================
 echo [INFO] Starting Angular Build in the background...
 
-start /b cmd /c "npx ng build --configuration production > build_log.txt 2>&1"
+:: Clean up any stale artefacts from a previous run
+if exist build_log.txt del /q build_log.txt
+if exist build_ok.sentinel del /q build_ok.sentinel
+if exist build_fail.sentinel del /q build_fail.sentinel
+
+:: Run the build; write a SEPARATE sentinel file for success vs failure.
+:: Do NOT use "echo 0>file" — cmd.exe parses 0> as an fd-0 (stdin) redirect,
+:: which silently creates an empty file instead of writing "0" to it.
+start /b cmd /c "npx ng build --configuration production > build_log.txt 2>&1 && type nul > build_ok.sentinel || type nul > build_fail.sentinel"
 
 echo [INFO] Uploading Python API and NGINX config while UI builds...
 scp -q -r -i %KEY_PATH% "%PROJECT_DIR%\api" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/"
@@ -68,21 +76,29 @@ scp -q -i %KEY_PATH% "%PROJECT_DIR%\run.py" %SERVER_USER%@%SERVER_IP%:"%REMOTE_A
 scp -q -i %KEY_PATH% "%PROJECT_DIR%\config\setup-nginx-map.sh" %SERVER_USER%@%SERVER_IP%:"/tmp/setup-nginx-map.sh"
 
 echo [INFO] Executing remote backend updates and cleaning WWW folder...
-ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/* && pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && sudo systemctl restart minecraft-api.service && chmod +x /tmp/setup-nginx-map.sh && /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
+ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/* && pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && find %REMOTE_API_DIR%/api -name '*.pyc' -delete && find %REMOTE_API_DIR%/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null; sudo systemctl restart minecraft-api.service && chmod +x /tmp/setup-nginx-map.sh && /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
 
 echo [INFO] Backend deployment finished. Waiting for Angular build to complete...
 
 :wait_build
-tasklist /fi "imagename eq node.exe" | find /i "node.exe" > nul
-if not errorlevel 1 (
+if not exist build_ok.sentinel if not exist build_fail.sentinel (
     timeout /t 2 /nobreak > nul
     goto :wait_build
 )
 
+if exist build_fail.sentinel (
+    del /q build_fail.sentinel
+    color 0C
+    echo [ERROR] Angular build failed. Check build_log.txt.
+    pause
+    exit /b 1
+)
+del /q build_ok.sentinel
+
 findstr /C:"Error:" build_log.txt > nul
 if %ERRORLEVEL% EQU 0 (
     color 0C
-    echo [ERROR] Angular build failed. Check build_log.txt.
+    echo [ERROR] Angular build reported errors. Check build_log.txt.
     pause
     exit /b 1
 )

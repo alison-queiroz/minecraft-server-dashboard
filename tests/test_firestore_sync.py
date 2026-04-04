@@ -1,4 +1,5 @@
 import pytest
+import api.firestore_sync as fs_module
 from api.firestore_sync import _to_native, sync_players
 
 def test_to_native_conversion():
@@ -29,6 +30,7 @@ def test_to_native_conversion():
 
 def test_sync_players_success(mocker):
     """Ensure players are successfully batched and synced to Firestore."""
+    mocker.patch.object(fs_module, "_ensure_firebase", return_value=True)
     mock_client = mocker.patch("firebase_admin.firestore.client")
     mock_db = mock_client.return_value
     mock_batch = mock_db.batch.return_value
@@ -39,11 +41,13 @@ def test_sync_players_success(mocker):
     sync_players(players)
 
     assert mock_db.batch.called
-    assert mock_batch.set.call_count == 2
+    # 2 player documents + 1 analytics snapshot
+    assert mock_batch.set.call_count == 3
     mock_batch.commit.assert_called_once()
 
 def test_sync_players_exception(mocker):
     """Ensure the sync process handles exceptions gracefully without crashing."""
+    mocker.patch.object(fs_module, "_ensure_firebase", return_value=True)
     mock_client = mocker.patch("firebase_admin.firestore.client", side_effect=Exception("Firestore offline"))
     mock_logger = mocker.patch("api.firestore_sync.logger.warning")
 

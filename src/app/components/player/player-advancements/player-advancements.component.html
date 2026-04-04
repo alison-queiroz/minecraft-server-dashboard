@@ -1,0 +1,42 @@
+@if (!isBedrock) {
+  <div class="adv-section">
+    <button class="adv-header" (click)="toggle()" [attr.aria-expanded]="!collapsed()">
+      <span class="adv-header-left">
+        <app-icon [icon]="LucideTrophy" [size]="13"></app-icon>
+        Advancements
+        @if (displayCount() > 0) {
+          <span class="adv-count">{{ displayCount() }}</span>
+        }
+      </span>
+      <app-icon [icon]="LucideChevronDown" [size]="14"
+        [class.rotate-180]="!collapsed()" class="adv-chevron"></app-icon>
+    </button>
+
+    @if (!collapsed()) {
+      <div class="adv-body">
+        @if (isLoading()) {
+          <div class="adv-loading">
+            <span class="adv-dot"></span>
+            <span class="adv-dot"></span>
+            <span class="adv-dot"></span>
+          </div>
+        } @else if (result().total === 0) {
+          <p class="adv-empty">No advancements found.</p>
+        } @else {
+          <div class="adv-categories">
+            @for (cat of objectKeys(result().by_category); track cat) {
+              <div class="adv-category">
+                <p class="adv-cat-label">{{ cat }}</p>
+                <div class="adv-chips">
+                  @for (label of result().by_category[cat]; track label) {
+                    <span class="adv-chip">{{ label }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+}

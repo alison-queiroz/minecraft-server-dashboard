@@ -1,17 +1,9 @@
-.profile-container {
-  @apply max-w-7xl mx-auto w-full pb-6;
-}
-
-.profile-grid {
-  @apply grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[calc(100vh-120px)];
-}
-
-.profile-sidebar {
-  @apply contents lg:flex lg:flex-col lg:col-span-4 lg:gap-6 lg:overflow-y-auto lg:pr-1 custom-scrollbar;
+.profile-page {
+  @apply max-w-2xl mx-auto w-full pb-6 flex flex-col gap-4;
 }
 
 .profile-header {
-  @apply flex items-center gap-4 order-1;
+  @apply flex items-center gap-4 pt-2;
 }
 
 .profile-name {
@@ -22,52 +14,42 @@
   @apply text-sm text-zinc-400;
 }
 
-.map-section {
-  @apply lg:col-span-8 lg:h-full order-3;
+.profile-tabs {
+  @apply flex gap-1 border-b border-zinc-800 pb-0 overflow-x-auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
-.map-card {
-  @apply bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden;
+.profile-tab {
+  @apply flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest
+         text-zinc-500 border-b-2 border-transparent transition-colors -mb-px
+         hover:text-zinc-200 focus:outline-none cursor-pointer bg-transparent;
 }
 
-.map-toggle-btn {
-  @apply w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-800/60 transition-colors;
+.profile-tab--active {
+  @apply text-emerald-400 border-emerald-400;
 }
 
-.map-toggle-text {
-  @apply flex flex-col gap-1;
+.profile-panel {
+  @apply flex flex-col gap-4;
 }
 
-.map-toggle-title {
-  @apply text-sm font-bold text-zinc-100;
+/* Fullscreen map overlay */
+.profile-map-overlay {
+  @apply fixed inset-0 z-50 flex flex-col bg-zinc-950;
 }
 
-.map-toggle-subtitle {
-  @apply text-xs text-zinc-500;
+.profile-map-back {
+  @apply flex items-center gap-2 px-4 py-3 text-xs font-bold text-zinc-400
+         hover:text-zinc-100 transition-colors bg-zinc-900 border-b border-zinc-800 shrink-0
+         cursor-pointer;
 }
 
-.map-toggle-icon {
-  @apply text-zinc-500 transition-transform;
-}
-
-.map-viewer-wrapper {
-  @apply border-t border-zinc-800 lg:h-[calc(100vh-190px)];
+.profile-map-fill {
+  @apply flex-1 min-h-0;
 }
 
 .pixelated {
   image-rendering: pixelated;
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: theme("colors.zinc.700");
-  border-radius: 2px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: theme("colors.zinc.600");
 }

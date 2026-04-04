@@ -3,8 +3,8 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { ServerService, SERVER_STATUS } from './server.service';
 import { environment } from '../../../environments/environment';
 
-const JAVA_URL = `${environment.statusApiUrl}${environment.serverIP}`;
-const BEDROCK_URL = `${environment.bedrockStatusApiUrl}${environment.serverIP}`;
+const JAVA_URL = environment.statusApiUrl;
+const BEDROCK_URL = environment.bedrockStatusApiUrl;
 
 const ONLINE_RESPONSE = {
   online: true,

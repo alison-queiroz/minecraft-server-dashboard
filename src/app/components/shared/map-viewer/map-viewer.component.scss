@@ -56,13 +56,20 @@
   iframe {
     height: 100% !important;
   }
+
+  @media (max-width: 767px) {
+    /* Drag-resize doesn't work on touch screens — switch to a fixed viewport-relative height */
+    resize: none;
+    height: 55vmax;
+    min-height: 200px;
+    max-height: 60vh;
+  }
 }
 
 .fill-handle {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 240px;
   overflow: hidden;
-  resize: vertical;
 
   iframe {
     height: 100% !important;

@@ -1,26 +1,42 @@
-<div class="col-span-5 flex items-center gap-4">
+<div class="col-span-4 flex items-center gap-4">
     <app-player-face [player]="player" [size]="40" [showBadge]="true"
       class="player-row-avatar">
     </app-player-face>
-    <div class="flex flex-col">
-      <span class="font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">{{ player.name }}</span>
+    <div class="flex min-w-0 flex-col">
+      <span class="truncate font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">{{ player.name }}</span>
       <span class="text-[10px] font-mono text-zinc-600 truncate max-w-[120px]">{{ player.uuid }}</span>
     </div>
   </div>
 
-  <div class="col-span-2">
+  <div class="col-span-1">
     <span class="player-row-level">
       LVL {{ player.level }}
     </span>
   </div>
 
-  <div class="col-span-3">
+  <div class="col-span-2">
+    @if ((player.play_hours ?? 0) > 0) {
+      <span class="text-zinc-400 text-xs">{{ player.play_hours | number:'1.0-0' }}h</span>
+    } @else {
+      <span class="text-zinc-700 text-xs">&mdash;</span>
+    }
+  </div>
+
+  <div class="col-span-2">
     <span class="text-xs font-bold"
       [ngClass]="{
         'text-emerald-500': player.dimension === 'Overworld',
         'text-orange-500': player.dimension === 'Nether',
         'text-purple-500': player.dimension === 'The End'
       }">{{ player.dimension }}</span>
+  </div>
+
+  <div class="col-span-1">
+    @if ((player.advancement_count ?? 0) > 0) {
+      <span class="player-row-adv">{{ player.advancement_count }}</span>
+    } @else {
+      <span class="text-zinc-700 text-xs">&mdash;</span>
+    }
   </div>
 
   <div class="col-span-2 text-right">

@@ -24,11 +24,13 @@ export class MapComponent {
 
   private readonly profileService = inject(UserProfileService);
   protected readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
 
-  /** Fragment from the URL (#world:x:y:z:...) — used when navigating from player cards */
+  /** Fragment from the URL (#mapId:x:z:zoom) — set synchronously so the iframe
+   * loads with the correct position on first render (avoids same-doc hash nav). */
   protected readonly navigateToHash = toSignal(
-    inject(ActivatedRoute).fragment.pipe(map(f => f ?? '')),
-    { initialValue: '' }
+    this.route.fragment.pipe(map(f => f ?? '')),
+    { initialValue: this.route.snapshot.fragment ?? '' }
   );
 
   protected readonly capturedHash = signal('');
