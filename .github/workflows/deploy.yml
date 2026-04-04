@@ -1,0 +1,189 @@
+name: CI and Deploy
+
+on:
+  workflow_call:
+    secrets:
+      ORACLE_SSH_PRIVATE_KEY:
+        required: false
+      ORACLE_HOST:
+        required: false
+      ORACLE_USER:
+        required: false
+      ORACLE_KNOWN_HOSTS:
+        required: false
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Run deploy after tests/build"
+        required: false
+        default: true
+        type: boolean
+
+env:
+  NODE_VERSION: "20"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  quality-and-tests:
+    name: Quality and Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Install backend deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r api/requirements.txt -r api/requirements-dev.txt
+
+      - name: Install Chrome for Karma
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run quality gate (lint + strict typecheck)
+        run: npm run ci:quality
+
+      - name: Run Angular unit tests
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: npx ng test --watch=false --browsers=ChromeHeadless
+
+      - name: Run Python unit tests
+        run: pytest tests/
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright e2e (with local backend)
+        run: |
+          python run.py &
+          npx wait-on tcp:5000
+          npx playwright test
+
+  build-frontend:
+    name: Build Frontend Artifact
+    runs-on: ubuntu-latest
+    needs: quality-and-tests
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Build Angular app (production)
+        run: npx ng build --configuration production
+
+      - name: Pack frontend artifact
+        run: |
+          tar -czf deploy_build.tar.gz -C dist/minecraft-server-dashboard .
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: deploy_build.tar.gz
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy to Oracle VM
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: .
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
+
+      - name: Add host key
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_KNOWN_HOSTS: ${{ secrets.ORACLE_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          if [ -n "$ORACLE_KNOWN_HOSTS" ]; then
+            echo "$ORACLE_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H "$ORACLE_HOST" >> ~/.ssh/known_hosts
+          fi
+
+      - name: Upload backend files
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_USER: ${{ secrets.ORACLE_USER }}
+        run: |
+          scp -r api "$ORACLE_USER@$ORACLE_HOST:/home/opc/minecraft/"
+          scp run.py "$ORACLE_USER@$ORACLE_HOST:/home/opc/minecraft/run.py"
+          scp config/setup-nginx-map.sh "$ORACLE_USER@$ORACLE_HOST:/tmp/setup-nginx-map.sh"
+
+      - name: Deploy backend and restart services
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_USER: ${{ secrets.ORACLE_USER }}
+        run: |
+          ssh "$ORACLE_USER@$ORACLE_HOST" "
+            sudo rm -rf /var/www/dashboard/* &&
+            pip install -q -r /home/opc/minecraft/api/requirements.txt &&
+            find /home/opc/minecraft/api -name '*.pyc' -delete &&
+            find /home/opc/minecraft/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null;
+            sudo systemctl restart minecraft-api.service &&
+            chmod +x /tmp/setup-nginx-map.sh &&
+            /tmp/setup-nginx-map.sh &&
+            rm /tmp/setup-nginx-map.sh
+          "
+
+      - name: Upload frontend tar
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_USER: ${{ secrets.ORACLE_USER }}
+        run: |
+          scp deploy_build.tar.gz "$ORACLE_USER@$ORACLE_HOST:/tmp/deploy_build.tar.gz"
+
+      - name: Extract frontend on server
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_USER: ${{ secrets.ORACLE_USER }}
+        run: |
+          ssh "$ORACLE_USER@$ORACLE_HOST" "
+            sudo tar -xzf /tmp/deploy_build.tar.gz -C /var/www/dashboard &&
+            rm /tmp/deploy_build.tar.gz
+          "
