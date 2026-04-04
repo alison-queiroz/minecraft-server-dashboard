@@ -66,4 +66,11 @@ test.describe('Auth redirect', () => {
     await page.goto('/players');
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
   });
+
+  for (const route of ['/profile', '/map', '/backups', '/analytics']) {
+    test(`redirects unauthenticated users from ${route} to /login`, async ({ page }) => {
+      await page.goto(route);
+      await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
+    });
+  }
 });

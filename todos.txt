@@ -1,6 +1,0 @@
-Next TODOS:
-1. on #file:profile-accounts.component.html, filter java and bedrock players on their respective dropdowns
-2. Make player page show differently in mobile, the player list should take whole screen, and when a player is selected, it should show the player card in the whole page. So basically, remove the scroll between these components when on mobile, make them take the whole screen, it'll easer the navigation in mobile.
-3. Show how many hours a player played in the server
-4. A page showing how many were online today, on a week, on a month, on a year, etc. Show a graph of how many players were online during the day, let the user define what period to check etc
-5. Is it possible to show how many achievements a player got in the server? Also, is it possible to list these achievements?

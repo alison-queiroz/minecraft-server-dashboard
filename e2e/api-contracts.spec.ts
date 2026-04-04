@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIResponse } from '@playwright/test';
 
 /**
  * API route contract tests.
@@ -12,18 +12,31 @@ import { test, expect } from '@playwright/test';
  *   - FIREBASE_SA_KEY env var pointing to a valid service-account file, OR
  *     _FIREBASE_INITIALIZED=False (dev mode, no auth enforced).
  *
- * These tests are intentionally skipped when the backend is not available
- * (the proxy returns 502 / ECONNREFUSED); they are useful for local
- * integration checks and CI pipelines that spin up the full stack.
+ * If the backend is unavailable, tests fail with a clear diagnostic so
+ * setup issues are visible immediately.
  */
 
-const AUTH_HEADER = { Authorization: 'Bearer __dev_token__' };
+async function assertBackendReachable(res: APIResponse, endpoint: string): Promise<void> {
+  const status = res.status();
+  if (status < 500) {
+    return;
+  }
+
+  const body = await res.text();
+  throw new Error(
+    [
+      `Backend/proxy unavailable for ${endpoint}.`,
+      `Expected non-5xx response but got HTTP ${status}.`,
+      'Make sure the Python API is running on http://127.0.0.1:5000 and Angular proxy is active.',
+      `Response body: ${body.slice(0, 300)}`,
+    ].join(' '),
+  );
+}
 
 test.describe('API – /api/status', () => {
   test('returns a JSON response with an "online" boolean field', async ({ request }) => {
     const res = await request.get('/api/status');
-
-    test.skip(res.status() >= 500, 'Python backend not running — skipping API tests');
+    await assertBackendReachable(res, '/api/status');
 
     expect(res.status()).toBe(200);
     const body = await res.json();
@@ -34,8 +47,7 @@ test.describe('API – /api/status', () => {
 test.describe('API – /api/bedrock-status', () => {
   test('returns a JSON response with an "online" boolean field', async ({ request }) => {
     const res = await request.get('/api/bedrock-status');
-
-    test.skip(res.status() >= 500, 'Python backend not running — skipping API tests');
+    await assertBackendReachable(res, '/api/bedrock-status');
 
     expect(res.status()).toBe(200);
     const body = await res.json();
@@ -46,8 +58,7 @@ test.describe('API – /api/bedrock-status', () => {
 test.describe('API – /api/players', () => {
   test('returns 401 when no Authorization header is sent', async ({ request }) => {
     const res = await request.get('/api/players');
-
-    test.skip(res.status() >= 500, 'Python backend not running — skipping API tests');
+    await assertBackendReachable(res, '/api/players');
 
     // Either 401 (Firebase enforced) or 200 (dev mode with no auth).
     expect([200, 401]).toContain(res.status());
@@ -57,8 +68,7 @@ test.describe('API – /api/players', () => {
 test.describe('API – /api/backups', () => {
   test('returns 401 for an unauthenticated request', async ({ request }) => {
     const res = await request.get('/api/backups');
-
-    test.skip(res.status() >= 500, 'Python backend not running — skipping API tests');
+    await assertBackendReachable(res, '/api/backups');
 
     expect([200, 401]).toContain(res.status());
   });

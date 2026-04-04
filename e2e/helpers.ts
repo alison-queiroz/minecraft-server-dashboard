@@ -29,6 +29,13 @@ export const MOCK_USER = {
  */
 export async function mockFirebaseAuth(page: Page): Promise<void> {
   await page.addInitScript((user) => {
+    if (sessionStorage.getItem('__E2E_FORCE_SIGNED_OUT__') === '1') {
+      return;
+    }
+
+    // Consumed by AuthService in dev mode to bypass Firebase restore during e2e.
+    (globalThis as Record<string, unknown>)['__E2E_AUTH_USER__'] = user;
+
     // @ts-expect-error – runtime patch before module loading
     window.__PLAYWRIGHT_MOCK_USER__ = user;
 

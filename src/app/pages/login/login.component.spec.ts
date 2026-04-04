@@ -36,6 +36,8 @@ const makeServerStub = () => ({
   bedrockProtocol: signal(null),
 });
 
+const flushMicrotasks = () => new Promise<void>((resolve) => queueMicrotask(resolve));
+
 describe('LoginComponent', () => {
   let authStub: ReturnType<typeof makeAuthStub>;
   let httpMock: HttpTestingController;
@@ -87,7 +89,7 @@ describe('LoginComponent', () => {
     fixture.detectChanges();
     const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.login-button')!;
     button.click();
-    await fixture.whenStable();
+    await flushMicrotasks();
     expect(authStub.signInWithGoogle).toHaveBeenCalledTimes(1);
   });
 
