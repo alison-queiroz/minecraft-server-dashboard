@@ -43,10 +43,13 @@ set REMOTE_API_DIR=/home/opc/minecraft
 set TAR_FILE=deploy_build.tar.gz
 
 echo ==========================================================
-echo   1 AND 2. RUNNING UI AND API TESTS IN PARALLEL
+echo   1, 2 AND 3. RUNNING ALL TESTS IN PARALLEL
 echo ==========================================================
-:: Runs Angular and Python tests concurrently, aborts if any fails
-call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "UI,API" -c "cyan,green" "npx ng test --watch=false --browsers=ChromeHeadless" ".venv\Scripts\python.exe -m pytest tests/"
+:: Runs Angular unit tests, Python unit tests, and Playwright e2e concurrently.
+:: CI=1 tells Playwright to start its own dev server and use 0 retries.
+set CI=1
+call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "UI,API,E2E" -c "cyan,green,magenta" "npx ng test --watch=false --browsers=ChromeHeadless" ".venv\Scripts\python.exe -m pytest tests/" "npx playwright test"
+set CI=
 
 if %ERRORLEVEL% NEQ 0 (
     color 0C
@@ -56,7 +59,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo ==========================================================
-echo   3. BUILDING ANGULAR ^& DEPLOYING BACKEND IN PARALLEL
+echo   4. BUILDING ANGULAR ^& DEPLOYING BACKEND IN PARALLEL
 echo ==========================================================
 echo [INFO] Starting Angular Build in the background...
 
@@ -106,7 +109,7 @@ del build_log.txt
 
 echo.
 echo ==========================================================
-echo   4. COMPRESSING ^& UPLOADING FRONT-END
+echo   5. COMPRESSING ^& UPLOADING FRONT-END
 echo ==========================================================
 tar -czf "%TAR_FILE%" -C "%BUILD_DIR%" .
 scp -q -i %KEY_PATH% "%TAR_FILE%" %SERVER_USER%@%SERVER_IP%:"/tmp/%TAR_FILE%"

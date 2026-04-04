@@ -44,3 +44,7 @@ Thumbs.db
 .coverage
 */__pycache__/*
 
+# Playwright e2e output
+/test-results
+/playwright-report
+

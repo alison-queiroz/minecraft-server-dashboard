@@ -136,3 +136,118 @@ def test_get_players_cache_hit(mocker):
 
     mock_fetch.assert_not_called()
     assert result == [{"name": "CachedSteve"}]
+
+
+# ── _read_stats ───────────────────────────────────────────────────────────────
+
+def test_read_stats_missing_file(mocker):
+    """Returns an empty dict when the stats file does not exist."""
+    from api.player_data import _read_stats
+    mocker.patch("os.path.exists", return_value=False)
+    assert _read_stats("some-uuid") == {}
+
+
+def test_read_stats_corrupted_file(mocker):
+    """Returns an empty dict when the JSON cannot be parsed."""
+    from api.player_data import _read_stats
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="not-json"))
+    assert _read_stats("some-uuid") == {}
+
+
+def test_read_stats_success(mocker, tmp_path):
+    """Returns the minecraft:custom stats sub-dict."""
+    import json
+    from api.player_data import _read_stats
+    stats = {"stats": {"minecraft:custom": {"minecraft:play_time": 72000}}}
+    f = tmp_path / "uuid.json"
+    f.write_text(json.dumps(stats))
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data=json.dumps(stats)))
+    result = _read_stats("uuid")
+    assert result.get("minecraft:play_time") == 72000
+
+
+# ── _count_advancements ───────────────────────────────────────────────────────
+
+def test_count_advancements_missing_file(mocker):
+    """Returns 0 when the advancements file does not exist."""
+    from api.player_data import _count_advancements
+    mocker.patch("os.path.exists", return_value=False)
+    assert _count_advancements("some-uuid") == 0
+
+
+def test_count_advancements_counts_done_non_recipe(mocker, tmp_path):
+    """Counts only completed non-recipe advancements."""
+    import json
+    from api.player_data import _count_advancements
+    adv = {
+        "DataVersion": 3955,
+        "minecraft:story/mine_stone": {"done": True, "criteria": {}},
+        "minecraft:story/upgrade_tools": {"done": False, "criteria": {}},
+        "minecraft:recipes/building_blocks/stone": {"done": True, "criteria": {}},
+    }
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data=json.dumps(adv)))
+    assert _count_advancements("uuid") == 1
+
+
+def test_count_advancements_corrupted_file(mocker):
+    """Returns 0 when the file cannot be parsed."""
+    from api.player_data import _count_advancements
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="bad-json"))
+    assert _count_advancements("uuid") == 0
+
+
+# ── _parse_player: unknown name ───────────────────────────────────────────────
+
+def test_parse_player_unknown_name(mocker):
+    """Falls back to 'Unknown' when UUID is not in the name map."""
+    mocker.patch("os.path.getmtime", return_value=1700000000.0)
+    mocker.patch("api.player_data.get_skin_url", return_value="http://skin")
+    mocker.patch("nbtlib.load", return_value={
+        "XpLevel": 1, "Health": 20.0,
+        "Dimension": "minecraft:overworld", "Pos": [0, 64, 0]
+    })
+    result = _parse_player("/path/to/abc-def.dat", {})
+    assert result is not None
+    assert result["name"] == "Unknown"
+
+
+# ── _acquire_sync_lock ────────────────────────────────────────────────────────
+
+def test_acquire_sync_lock_returns_true_when_fcntl_unavailable(mocker):
+    """On Windows (no fcntl), always returns True (single-process dev env)."""
+    import api.player_data as pd
+    orig = pd._FCNTL_AVAILABLE
+    pd._FCNTL_AVAILABLE = False
+    try:
+        result = pd._acquire_sync_lock()
+        assert result is True
+    finally:
+        pd._FCNTL_AVAILABLE = orig
+
+
+# ── _FileWatcher ──────────────────────────────────────────────────────────────
+
+def test_file_watcher_detects_change(mocker, tmp_path):
+    """has_changes() returns True on first call when files exist."""
+    from api.player_data import _FileWatcher
+    import glob as _glob
+
+    f = tmp_path / "player.dat"
+    f.write_bytes(b"data")
+    watcher = _FileWatcher(str(tmp_path))
+    assert watcher.has_changes() is True
+
+
+def test_file_watcher_no_change_on_second_call(mocker, tmp_path):
+    """has_changes() returns False on the second call when nothing changed."""
+    from api.player_data import _FileWatcher
+
+    f = tmp_path / "player.dat"
+    f.write_bytes(b"data")
+    watcher = _FileWatcher(str(tmp_path))
+    watcher.has_changes()  # first call records mtimes
+    assert watcher.has_changes() is False

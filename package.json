@@ -33,6 +33,7 @@
     "@angular/cli": "^21.2.1",
     "@angular/compiler-cli": "^21.2.1",
     "@angular/pwa": "^21.2.1",
+    "@playwright/test": "^1.59.1",
     "@types/jasmine": "~6.0.0",
     "@types/node": "^20.19.37",
     "autoprefixer": "^10.4.27",

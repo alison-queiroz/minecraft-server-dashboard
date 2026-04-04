@@ -149,6 +149,34 @@ describe('ServerService', () => {
     });
   });
 
+  // ── setInterval refresh path ──────────────────────────────────────────────
+  describe('setInterval triggers a refresh of both statuses', () => {
+    it('calls fetchStatus and fetchBedrockStatus again after the interval fires', () => {
+      let intervalCallback: (() => void) | undefined;
+      const origSetInterval = window.setInterval;
+      spyOn(window, 'setInterval').and.callFake((fn: TimerHandler, _delay?: number): ReturnType<typeof setInterval> => {
+        intervalCallback = fn as () => void;
+        return 0 as unknown as ReturnType<typeof setInterval>;
+      });
+
+      const { service } = createService();
+      const httpMock = TestBed.inject(HttpTestingController);
+
+      // Initial constructor calls
+      httpMock.expectOne(JAVA_URL).flush(ONLINE_RESPONSE);
+      httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
+
+      // Manually trigger what the interval would do
+      intervalCallback!();
+
+      // Two more requests should appear
+      httpMock.expectOne(JAVA_URL).flush(OFFLINE_RESPONSE);
+      httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
+
+      expect(service.status()).toBe(SERVER_STATUS.OFFLINE);
+    });
+  });
+
   // ─── Bedrock OFFLINE ───────────────────────────────────────────────────────
   describe('when Bedrock server is OFFLINE', () => {
     let service: ServerService;

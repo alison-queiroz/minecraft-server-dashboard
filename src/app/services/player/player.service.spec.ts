@@ -70,6 +70,16 @@ class PlayerServiceHarness extends PlayerService {
   pushError(err: unknown = new Error('Firestore unavailable')): void {
     console.warn('Firestore player listener error:', err);
   }
+
+  /** Expose fetchPlayersFromApi for direct testing */
+  callFetchPlayersFromApi(): void {
+    (this as any).fetchPlayersFromApi();
+  }
+
+  /** Expose enrichFromApi for direct testing */
+  callEnrichFromApi(): void {
+    (this as any).enrichFromApi();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -239,4 +249,89 @@ describe('PlayerService', () => {
       expect(service.getAvatarUrl(avatarUrl)).toBe(avatarUrl);
     });
   });
+
+  // ── fetchPlayersFromApi (private) ─────────────────────────────────────────
+
+  describe('fetchPlayersFromApi', () => {
+    it('sets players when the API returns a non-empty list', () => {
+      service.callFetchPlayersFromApi();
+      const req = httpMock.expectOne('/api/players');
+      req.flush(MOCK_PLAYERS);
+      expect(service.players().length).toBe(MOCK_PLAYERS.length);
+    });
+
+    it('does not change rawPlayers when API returns an empty list', () => {
+      service.pushPlayers();
+      service.callFetchPlayersFromApi();
+      const req = httpMock.expectOne('/api/players');
+      req.flush([]);
+      expect(service.players().length).toBe(MOCK_PLAYERS.length);
+    });
+
+    it('silently handles HTTP errors', () => {
+      service.callFetchPlayersFromApi();
+      httpMock.expectOne('/api/players').error(new ProgressEvent('error'));
+      expect(service.players()).toBeDefined();
+    });
+  });
+
+  // ── enrichFromApi (private) ────────────────────────────────────────────────
+
+  describe('enrichFromApi', () => {
+    beforeEach(() => service.pushPlayers());
+
+    it('merges live API data into existing Firestore players', () => {
+      service.callEnrichFromApi();
+      const enrichedData = MOCK_PLAYERS.map(p => ({ ...p, level: 99 }));
+      httpMock.expectOne('/api/players').flush(enrichedData);
+      const steve = service.players().find(p => p.name === 'Steve');
+      expect(steve?.level).toBe(99);
+    });
+
+    it('keeps existing player data when player is not in API response', () => {
+      service.callEnrichFromApi();
+      // Flush with only Alex — Steve should keep its original level
+      httpMock.expectOne('/api/players').flush([{ name: 'Alex', level: 99 }]);
+      const steve = service.players().find(p => p.name === 'Steve');
+      expect(steve?.level).toBe(10);
+    });
+
+    it('does nothing when API returns empty list', () => {
+      service.callEnrichFromApi();
+      httpMock.expectOne('/api/players').flush([]);
+      expect(service.players().length).toBe(MOCK_PLAYERS.length);
+    });
+
+    it('handles HTTP errors silently', () => {
+      service.callEnrichFromApi();
+      httpMock.expectOne('/api/players').error(new ProgressEvent('error'));
+      expect(service.players().length).toBe(MOCK_PLAYERS.length);
+    });
+  });
+
+  // ── house links error ──────────────────────────────────────────────────────
+
+  describe('house links error path', () => {
+    it('logs a warning when house links JSON cannot be fetched', () => {
+      // Create a fresh service without absorbing the house links request
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [HttpClientTestingModule],
+        providers: [{ provide: PlayerService, useClass: PlayerServiceHarness }],
+      });
+
+      const warnSpy = spyOn(console, 'warn');
+      const freshService = TestBed.inject(PlayerService) as PlayerServiceHarness;
+      const freshHttp = TestBed.inject(HttpTestingController);
+
+      freshHttp.expectOne('assets/player-houses-mapping.json')
+        .error(new ProgressEvent('error'));
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        jasmine.stringContaining('Could not reach house links')
+      );
+      freshHttp.verify();
+    });
+  });
 });
+

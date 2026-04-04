@@ -1,14 +1,15 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { PreloadAllModules, provideRouter, withPreloading } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
-import { isDevMode } from '@angular/core';
+import { isDevMode, provideZonelessChangeDetection } from '@angular/core';
 import { AppComponent } from './app/app.component';
 import { authGuard } from './app/guards/auth.guard';
 import { authInterceptor } from './app/interceptors/auth.interceptor';
 
 bootstrapApplication(AppComponent, {
   providers: [
+    provideZonelessChangeDetection(),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideRouter([
       {
@@ -75,7 +76,7 @@ bootstrapApplication(AppComponent, {
         canActivate: [authGuard],
       },
       { path: '**', redirectTo: '' },
-    ], withPreloading(PreloadAllModules)),
+    ]),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

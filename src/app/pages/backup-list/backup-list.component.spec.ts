@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { throwError } from 'rxjs';
+import { BackupService } from '../../services/backup/backup.service';
 import {
   provideHttpClientTesting,
   HttpTestingController,
@@ -111,6 +113,21 @@ describe('BackupListComponent', () => {
     expect((component as any).isLoading()).toBeFalse();
   });
 
+  it('loadCurrentFolder catchError logs and resets isLoading on parse error', () => {
+    // Bypass BackupService's own catchError by making getBackups throw directly
+    const backupService = TestBed.inject(BackupService);
+    spyOn(backupService, 'getBackups').and.returnValue(throwError(() => new Error('parse error')));
+
+    spyOn(console, 'error');
+    (component as any).loadCurrentFolder();
+
+    expect(console.error).toHaveBeenCalledWith(
+      jasmine.stringContaining('Failed to parse backups'),
+      jasmine.anything()
+    );
+    expect((component as any).isLoading()).toBeFalse();
+  });
+
   it('should request the current folder when loadCurrentFolder runs', fakeAsync(() => {
     (component as any).currentPath.set([
       { id: null, name: 'Root' },
@@ -139,5 +156,25 @@ describe('BackupListComponent', () => {
     expect((component as any).formatSize('1536')).toBe('1.5 KB');
     expect((component as any).formatSize('1048576')).toBe('1 MB');
     expect((component as any).formatSize('1073741824')).toBe('1 GB');
+  });
+
+  it('trackByBackupId returns the backup id', () => {
+    const backup = { id: 'abc-123', name: 'test.zip' } as any;
+    expect((component as any).trackByBackupId(0, backup)).toBe('abc-123');
+  });
+
+  it('ngOnDestroy disconnects the ResizeObserver', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/backups').flush([]);
+
+    const observer = (component as any).resizeObserver as ResizeObserver;
+    if (observer) {
+      const disconnectSpy = spyOn(observer, 'disconnect');
+      fixture.destroy();
+      expect(disconnectSpy).toHaveBeenCalled();
+    } else {
+      // ResizeObserver not available — just verify destroy doesn't throw
+      expect(() => fixture.destroy()).not.toThrow();
+    }
   });
 });
