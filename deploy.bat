@@ -43,12 +43,13 @@ set REMOTE_API_DIR=/home/opc/minecraft
 set TAR_FILE=deploy_build.tar.gz
 
 echo ==========================================================
-echo   1, 2 AND 3. RUNNING ALL TESTS IN PARALLEL
+echo   0, 1, 2 AND 3. RUNNING QUALITY + TESTS IN PARALLEL
 echo ==========================================================
-:: Runs Angular unit tests, Python unit tests, and Playwright e2e concurrently.
+:: Runs quality gate (lint + strict typecheck), Angular unit tests,
+:: Python unit tests, and Playwright e2e concurrently.
 :: CI=1 tells Playwright to start its own dev server and use 0 retries.
 set CI=1
-call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "UI,API,E2E" -c "cyan,green,magenta" "npx ng test --watch=false --browsers=ChromeHeadless" ".venv\Scripts\python.exe -m pytest tests/" "npm run e2e:playwright"
+call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "QUALITY,UI,API,E2E" -c "yellow,cyan,green,magenta" "npm run ci:quality" "npx ng test --watch=false --browsers=ChromeHeadless" ".venv\Scripts\python.exe -m pytest tests/" "npm run e2e:playwright"
 set CI=
 
 if %ERRORLEVEL% NEQ 0 (

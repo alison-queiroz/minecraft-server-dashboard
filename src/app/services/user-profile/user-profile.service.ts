@@ -44,7 +44,7 @@ export class UserProfileService {
   private readonly auth = inject(AuthService);
 
   private readonly db = (() => {
-    const app = getApps().length ? getApps()[0] : initializeApp(environment.firebaseConfig);
+    const app = getApps().at(0) ?? initializeApp(environment.firebaseConfig);
     return getFirestore(app);
   })();
 

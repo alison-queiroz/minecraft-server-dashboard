@@ -64,7 +64,7 @@ export class MapViewerComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Last known href from the map iframe, received via postMessage from BlueMap */
   private lastKnownHref = '';
-  private urlPollInterval?: ReturnType<typeof setInterval>;
+  private urlPollInterval: ReturnType<typeof setInterval> | null = null;
 
   /** Bound postMessage listener — stored so we can removeEventListener correctly */
   private readonly onMessage = (e: MessageEvent) => {
@@ -164,7 +164,7 @@ export class MapViewerComponent implements OnInit, OnChanges, OnDestroy {
   private stopUrlPoller(): void {
     if (this.urlPollInterval != null) {
       clearInterval(this.urlPollInterval);
-      this.urlPollInterval = undefined;
+      this.urlPollInterval = null;
     }
   }
 }

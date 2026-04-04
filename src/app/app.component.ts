@@ -45,15 +45,19 @@ export class AppComponent {
       return;
     }
     this.skipGesture = false;
-    this.touchStartX = e.touches[0].clientX;
-    this.touchStartY = e.touches[0].clientY;
+    const touch = e.touches.item(0);
+    if (!touch) return;
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
     this.isDraggingHorizontal = false;
   }
 
   onTouchMove(e: TouchEvent): void {
     if (this.skipGesture) return;
-    const dx = e.touches[0].clientX - this.touchStartX;
-    const dy = e.touches[0].clientY - this.touchStartY;
+    const touch = e.touches.item(0);
+    if (!touch) return;
+    const dx = touch.clientX - this.touchStartX;
+    const dy = touch.clientY - this.touchStartY;
 
     if (!this.isDraggingHorizontal) {
       if (Math.abs(dx) < 8) return;
@@ -61,7 +65,8 @@ export class AppComponent {
       this.isDraggingHorizontal = true;
     }
 
-    const current = this.router.url.split('?')[0].split('#')[0];
+    const [pathWithHash = ''] = this.router.url.split('?');
+    const [current = ''] = pathWithHash.split('#');
     const idx = PAGE_ORDER.indexOf(current);
     if (idx === -1) return;
     if (dx > 0 && idx === 0) return;
@@ -81,8 +86,10 @@ export class AppComponent {
       return;
     }
 
-    const dx = e.changedTouches[0].clientX - this.touchStartX;
-    const dy = e.changedTouches[0].clientY - this.touchStartY;
+    const touch = e.changedTouches.item(0);
+    if (!touch) return;
+    const dx = touch.clientX - this.touchStartX;
+    const dy = touch.clientY - this.touchStartY;
     const threshold = window.innerWidth * 0.5;
 
     if (Math.abs(dx) < threshold || Math.abs(dy) > Math.abs(dx)) {
@@ -91,7 +98,8 @@ export class AppComponent {
       return;
     }
 
-    const current = this.router.url.split('?')[0].split('#')[0];
+    const [pathWithHash = ''] = this.router.url.split('?');
+    const [current = ''] = pathWithHash.split('#');
     const idx = PAGE_ORDER.indexOf(current);
     if (idx === -1) { this.dragX.set(0); return; }
 
@@ -99,12 +107,16 @@ export class AppComponent {
       // Going forward: new page enters from the right
       this.dragX.set(0);
       this.enterFrom.set('right');
-      this.router.navigateByUrl(PAGE_ORDER[idx + 1]);
+      const nextPath = PAGE_ORDER[idx + 1];
+      if (!nextPath) return;
+      this.router.navigateByUrl(nextPath);
     } else if (dx > 0 && idx > 0) {
       // Going backward: new page enters from the left
       this.dragX.set(0);
       this.enterFrom.set('left');
-      this.router.navigateByUrl(PAGE_ORDER[idx - 1]);
+      const prevPath = PAGE_ORDER[idx - 1];
+      if (!prevPath) return;
+      this.router.navigateByUrl(prevPath);
     } else {
       this.dragX.set(0);
     }

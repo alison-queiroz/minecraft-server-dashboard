@@ -40,7 +40,7 @@ export class SkinViewerComponent implements OnChanges, OnDestroy {
   private skinViewer: SkinViewerLike | null = null;
   private currentSkinUrl: string | null = null;
   private pendingSkinUrl: string | null = null;
-  private resizeObserver?: ResizeObserver;
+  private resizeObserver: ResizeObserver | null = null;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['skinUrl'] || changes['isRaw']) {
@@ -95,8 +95,10 @@ export class SkinViewerComponent implements OnChanges, OnDestroy {
 
       // Keep canvas in sync with container dimensions
       this.resizeObserver?.disconnect();
-      this.resizeObserver = new ResizeObserver(([entry]) => {
+      this.resizeObserver = new ResizeObserver((entries) => {
+        const entry = entries[0];
         if (!this.skinViewer) return;
+        if (!entry) return;
         const { width, height } = entry.contentRect;
         if (width > 0 && height > 0) {
           this.skinViewer.width  = width;
@@ -113,7 +115,7 @@ export class SkinViewerComponent implements OnChanges, OnDestroy {
     this.pendingSkinUrl = null;
     this.currentSkinUrl = null;
     this.resizeObserver?.disconnect();
-    this.resizeObserver = undefined;
+    this.resizeObserver = null;
     if (this.skinViewer) {
       this.skinViewer.dispose();
       this.skinViewer = null;

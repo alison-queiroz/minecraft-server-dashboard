@@ -84,7 +84,7 @@ export class BackupListComponent implements OnInit, AfterViewInit, OnDestroy {
   private loadCurrentFolder(): void {
     this.isLoading.set(true);
     const path = this.currentPath();
-    const currentFolderId = path[path.length - 1].id;
+    const currentFolderId = path.at(-1)?.id ?? null;
 
     this.backupService.getBackups(currentFolderId).pipe(
       tap(data => {

@@ -35,18 +35,19 @@ export class PlayerCardRowComponent implements OnInit, OnDestroy {
   @Input() isSelected = false;
   @Output() selected = new EventEmitter<void>();
 
-  private observer?: IntersectionObserver;
+  private observer: IntersectionObserver | null = null;
 
   ngOnInit(): void {
     // Only players with mc-heads.net URLs need an HTTP fetch; raw skins are CSS backgrounds
     if (this.player.isRawAvatar()) return;
 
     this.observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting) {
           this.playerService.fetchAvatarIfNeeded(this.player.avatarUrl(64));
           this.observer?.disconnect();
-          this.observer = undefined;
+          this.observer = null;
         }
       },
       { threshold: 0 }

@@ -17,7 +17,13 @@ export class PlayerService {
 
   readonly players = computed(() => {
     const links = this.houseLinks();
-    return this.rawPlayers().map(p => new Player({ ...p, houseUrl: links[p.name] || undefined }));
+    return this.rawPlayers().map((p) => {
+      const houseUrl = links[p.name];
+      return new Player({
+        ...p,
+        ...(houseUrl ? { houseUrl } : {}),
+      });
+    });
   });
 
   readonly searchTerm = signal<string>('');
@@ -47,7 +53,7 @@ export class PlayerService {
 
   protected subscribeToFirestorePlayers(): void {
     try {
-      const app = getApps().length ? getApps()[0] : initializeApp(environment.firebaseConfig);
+      const app = getApps().at(0) ?? initializeApp(environment.firebaseConfig);
       const db = getFirestore(app);
       onSnapshot(
         collection(db, 'players'),

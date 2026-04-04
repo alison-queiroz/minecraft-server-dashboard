@@ -158,7 +158,10 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
     // Compute actual time span of the data, not just the period window.
     // If all data is recent (< 3 hours), use 15-minute buckets regardless of period.
-    const spanSec = snaps[snaps.length - 1].ts - snaps[0].ts;
+    const first = snaps[0];
+    const last = snaps.at(-1);
+    if (!first || !last) return [];
+    const spanSec = last.ts - first.ts;
     let size: number;
     if      (spanSec <= 3 * 3600)       size = 15 * 60;       // ≤3 h  → 15-min buckets
     else if (spanSec <= 24 * 3600)      size = 60 * 60;       // ≤1 d  → 1-hour buckets

@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["jasmine", "node"],
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "e2e/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "coverage",
+    "playwright-report",
+    "test-results",
+    "node_modules"
+  ]
+}

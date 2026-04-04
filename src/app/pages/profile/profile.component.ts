@@ -79,14 +79,18 @@ export class ProfileComponent implements OnInit {
   }
 
   protected onTouchStart(e: TouchEvent): void {
-    this.touchStartX = e.touches[0].clientX;
-    this.touchStartY = e.touches[0].clientY;
+    const touch = e.touches.item(0);
+    if (!touch) return;
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
     this.isDraggingHorizontal = false;
   }
 
   protected onTouchMove(e: TouchEvent): void {
-    const dx = e.touches[0].clientX - this.touchStartX;
-    const dy = e.touches[0].clientY - this.touchStartY;
+    const touch = e.touches.item(0);
+    if (!touch) return;
+    const dx = touch.clientX - this.touchStartX;
+    const dy = touch.clientY - this.touchStartY;
     if (!this.isDraggingHorizontal) {
       if (Math.abs(dx) < 8) return;
       if (Math.abs(dy) > Math.abs(dx)) return;
@@ -109,8 +113,10 @@ export class ProfileComponent implements OnInit {
 
     if (!wasDragging) return;
 
-    const dx = e.changedTouches[0].clientX - this.touchStartX;
-    const dy = e.changedTouches[0].clientY - this.touchStartY;
+    const touch = e.changedTouches.item(0);
+    if (!touch) return;
+    const dx = touch.clientX - this.touchStartX;
+    const dy = touch.clientY - this.touchStartY;
     const threshold = window.innerWidth * 0.5;
     if (Math.abs(dx) < threshold || Math.abs(dy) > Math.abs(dx)) return;
 
@@ -121,7 +127,9 @@ export class ProfileComponent implements OnInit {
       if (idx < tabs.length - 1) {
         e.stopPropagation();
         this.enterTab.set('right');
-        this.setTab(tabs[idx + 1]);
+        const nextTab = tabs[idx + 1];
+        if (!nextTab) return;
+        this.setTab(nextTab);
         setTimeout(() => this.enterTab.set(null), 350);
       }
       // else: at right edge — don't stop propagation, let global navigate to /map
@@ -129,7 +137,9 @@ export class ProfileComponent implements OnInit {
       if (idx > 0) {
         e.stopPropagation();
         this.enterTab.set('left');
-        this.setTab(tabs[idx - 1]);
+        const prevTab = tabs[idx - 1];
+        if (!prevTab) return;
+        this.setTab(prevTab);
         setTimeout(() => this.enterTab.set(null), 350);
       }
       // else: at left edge — don't stop propagation, let global navigate to /players

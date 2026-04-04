@@ -9,10 +9,10 @@ export class Player {
   pos!: number[];
   last_seen!: string;
   skin_url!: string;
-  is_raw_skin?: boolean;
-  houseUrl?: string;
-  play_hours?: number;
-  advancement_count?: number;
+  is_raw_skin: boolean | undefined;
+  houseUrl: string | undefined;
+  play_hours: number | undefined;
+  advancement_count: number | undefined;
 
   constructor(data: Partial<Player>) {
     this.name = data.name!;

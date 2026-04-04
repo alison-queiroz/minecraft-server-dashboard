@@ -68,9 +68,9 @@ export class PlayerDetailComponent {
    *  Format: worldId:x:y:z:yaw:pitch:distance:orbitAngle:mode */
   protected playerMapFragment(player: Player): string {
     const mapId = DIMENSION_MAP[player.dimension] ?? 'world';
-    const x = Math.round(player.pos[0]);
-    const y = Math.round(player.pos[1]) + 2;
-    const z = Math.round(player.pos[2]);
+    const x = Math.round(player.pos[0] ?? 0);
+    const y = Math.round(player.pos[1] ?? 0) + 2;
+    const z = Math.round(player.pos[2] ?? 0);
     return `${mapId}:${x}:${y}:${z}:0:0.36:1.33:0:0:free`;
   }
 
