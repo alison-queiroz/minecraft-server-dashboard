@@ -84,6 +84,22 @@ def test_backups_endpoint_google_api_failure(client, mocker):
     # Expecting the 500 error we defined in the try/except block in server_api.py
     assert response.status_code == 500
     assert response.json == {"error": "Failed to fetch backups"}
+
+
+def test_backups_endpoint_dev_mode_missing_drive_credentials_returns_empty_list(client, mocker):
+    """In dev fallback mode, missing Drive SA key should return [] instead of 500."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
+    mocker.patch(
+        "api.server_api.service_account.Credentials.from_service_account_file",
+        side_effect=FileNotFoundError("drive-service-account.json not found"),
+    )
+
+    response = client.get("/api/backups")
+
+    assert response.status_code == 200
+    assert response.json == []
+
+
 def test_require_auth_invalid_token(client, mocker):
     """Ensure the endpoint returns 401 when an invalid or expired token is provided."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)

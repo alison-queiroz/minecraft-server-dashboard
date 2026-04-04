@@ -103,6 +103,14 @@ def backups_endpoint():
 
         return jsonify(results.get('files', []))
 
+    except FileNotFoundError as exc:
+        # In local/dev fallback mode (Firebase not initialized), missing Drive
+        # credentials should not fail the dashboard health checks.
+        if not _FIREBASE_INITIALIZED:
+            logger.warning("Drive credentials missing in dev mode: %s", exc)
+            return jsonify([])
+        logger.error("Drive credentials missing in protected mode: %s", exc)
+        return jsonify({"error": "Failed to fetch backups"}), 500
     except Exception as exc:
         logger.error("Failed to fetch backups from Google Drive: %s", exc)
         return jsonify({"error": "Failed to fetch backups"}), 500

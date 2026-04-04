@@ -48,7 +48,7 @@ echo ==========================================================
 :: Runs Angular unit tests, Python unit tests, and Playwright e2e concurrently.
 :: CI=1 tells Playwright to start its own dev server and use 0 retries.
 set CI=1
-call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "UI,API,E2E" -c "cyan,green,magenta" "npx ng test --watch=false --browsers=ChromeHeadless" ".venv\Scripts\python.exe -m pytest tests/" "npx playwright test"
+call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "UI,API,E2E" -c "cyan,green,magenta" "npx ng test --watch=false --browsers=ChromeHeadless" ".venv\Scripts\python.exe -m pytest tests/" "npm run e2e:playwright"
 set CI=
 
 if %ERRORLEVEL% NEQ 0 (
