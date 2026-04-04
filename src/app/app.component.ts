@@ -20,6 +20,8 @@ export class AppComponent {
   private touchStartX = 0;
   private touchStartY = 0;
   private isDraggingHorizontal = false;
+  /** True when the touch started on an input/textarea — skip the swipe gesture entirely */
+  private skipGesture = false;
 
   /** Live drag offset — follows the finger */
   protected readonly dragX = signal(0);
@@ -36,12 +38,20 @@ export class AppComponent {
   }
 
   onTouchStart(e: TouchEvent): void {
+    // Don't start a swipe when the user is interacting with an editable element
+    const target = e.target as HTMLElement;
+    if (target.closest('input, textarea, select, [contenteditable]')) {
+      this.skipGesture = true;
+      return;
+    }
+    this.skipGesture = false;
     this.touchStartX = e.touches[0].clientX;
     this.touchStartY = e.touches[0].clientY;
     this.isDraggingHorizontal = false;
   }
 
   onTouchMove(e: TouchEvent): void {
+    if (this.skipGesture) return;
     const dx = e.touches[0].clientX - this.touchStartX;
     const dy = e.touches[0].clientY - this.touchStartY;
 
@@ -62,6 +72,7 @@ export class AppComponent {
   }
 
   onTouchEnd(e: TouchEvent): void {
+    if (this.skipGesture) { this.skipGesture = false; return; }
     const wasDragging = this.isDraggingHorizontal;
     this.isDragging.set(false);
 

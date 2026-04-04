@@ -5,7 +5,7 @@
     <!-- Status badge -->
     <app-server-status-badge size="lg"></app-server-status-badge>
     @if (serverService.motd().length > 0) {
-      <p class="identity-motd">"{{ serverService.motd()[0] }}"</p>
+      <p class="identity-motd">{{ serverService.motd()[0] }}</p>
     }
   </div>
   <!-- Tags -->

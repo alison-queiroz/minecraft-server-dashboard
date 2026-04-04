@@ -52,7 +52,7 @@
          (touchmove)="onTouchMove($event)"
          (touchend)="onTouchEnd($event)">
       <div [style.transform]="dragTabX() ? 'translateX(' + dragTabX() + 'px)' : ''"
-           [class.profile-panel-spring]="!isTabDragging() && !enterTab()"
+           [class.swipe-spring]="!isTabDragging() && !enterTab()"
            [class.slide-in-from-right]="enterTab() === 'right'"
            [class.slide-in-from-left]="enterTab() === 'left'">
       @if (activeTab() === 'account') {

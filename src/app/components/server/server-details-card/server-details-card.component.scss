@@ -2,14 +2,6 @@
   @apply overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-xl;
 }
 
-.details-header {
-  @apply border-b border-zinc-800 p-5;
-}
-
-.details-title {
-  @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500;
-}
-
 .details-grid {
   @apply grid grid-cols-2 gap-4 p-5;
 }

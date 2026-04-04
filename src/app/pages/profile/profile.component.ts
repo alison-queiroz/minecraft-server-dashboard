@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   signal,
   OnInit,
@@ -9,7 +10,7 @@ import {
 import { UserProfileService } from '../../services/user-profile/user-profile.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { PlayerService } from '../../services/player/player.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ProfileAccountsComponent } from '../../components/profile/profile-accounts/profile-accounts.component';
 import { MapViewerComponent } from '../../components/shared/map-viewer/map-viewer.component';
 import { ProfileLocationsComponent } from '../../components/profile/profile-locations/profile-locations.component';
@@ -33,6 +34,7 @@ export class ProfileComponent implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly playerService = inject(PlayerService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly LucideUser      = LucideUser;
   protected readonly LucideTrophy    = LucideTrophy;
@@ -41,7 +43,7 @@ export class ProfileComponent implements OnInit {
 
   protected readonly activeTab = signal<ProfileTab>('account');
   protected readonly capturedMapHash = signal('');
-  protected readonly mapPreviewHash  = signal('');  
+  protected readonly mapPreviewHash  = signal('');
   protected readonly showMap = signal(false);
 
   /** Tab drag offset for swipe animation */
@@ -59,6 +61,17 @@ export class ProfileComponent implements OnInit {
     if (!javaName) return null;
     return this.playerService.players().find(p => p.name === javaName && !p.isBedrock()) ?? null;
   });
+
+  constructor() {
+    // Keep the URL query param in sync with the active tab so refresh restores state
+    effect(() => {
+      const tab = this.activeTab();
+      this.router.navigate([], {
+        replaceUrl: true,
+        queryParams: tab !== 'account' ? { tab } : {},
+      });
+    });
+  }
 
   protected setTab(tab: ProfileTab): void {
     this.activeTab.set(tab);
@@ -140,6 +153,11 @@ export class ProfileComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    // Restore tab from URL query param on refresh
+    const tab = this.route.snapshot.queryParamMap.get('tab') as ProfileTab | null;
+    if (tab && ['account', 'advancements', 'locations'].includes(tab)) {
+      this.activeTab.set(tab);
+    }
     await this.profileService.loadProfile();
   }
 }

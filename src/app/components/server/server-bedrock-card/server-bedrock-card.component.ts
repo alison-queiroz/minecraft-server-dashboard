@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ServerService, SERVER_STATUS } from '../../../services/server/server.service';
-import { LucideInfo } from '@lucide/angular';
+import { LucideInfo, LucideGrid3x3 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 
 @Component({
@@ -14,7 +14,8 @@ import { IconComponent } from '../../shared/icon/icon.component';
   styleUrls: ['./server-bedrock-card.component.scss'],
 })
 export class ServerBedrockCardComponent {
-  protected readonly LucideInfo = LucideInfo;
+  protected readonly LucideInfo    = LucideInfo;
+  protected readonly LucideGrid3x3 = LucideGrid3x3;
 
   protected readonly serverService = inject(ServerService);
   protected readonly serverStatus = SERVER_STATUS;

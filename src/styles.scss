@@ -127,4 +127,30 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #3f3f46;
   }
+
+  /** Card header and title — shared across all server info cards */
+  .server-card-title {
+    @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500;
+  }
+
+  .server-card-header {
+    @apply border-b border-zinc-800 p-5;
+  }
 }
+
+/** Page / tab slide-in animations ─────────────────────────────────────────
+ *  Defined once here; used by app.component (page swipe) and
+ *  profile.component (tab swipe) — no duplication in component SCSS files. */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+.swipe-spring        { transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1); }
+.slide-in-from-right { animation: slide-in-right 0.3s cubic-bezier(0.2, 0, 0, 1) forwards; }
+.slide-in-from-left  { animation: slide-in-left  0.3s cubic-bezier(0.2, 0, 0, 1) forwards; }

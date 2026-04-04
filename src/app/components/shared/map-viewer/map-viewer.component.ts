@@ -14,6 +14,8 @@ import {
   signal,
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { LucideMapPin } from '@lucide/angular';
+import { IconComponent } from '../icon/icon.component';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -21,15 +23,21 @@ import { environment } from '../../../../environments/environment';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.h-full]': 'fillHeight', '[class.flex]': 'fillHeight', '[class.flex-col]': 'fillHeight' },
+  imports: [IconComponent],
   templateUrl: './map-viewer.component.html',
   styleUrls: ['./map-viewer.component.scss'],
 })
 export class MapViewerComponent implements OnInit, OnChanges, OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
+  protected readonly LucideMapPin = LucideMapPin;
 
   protected readonly mapBaseUrl =
     (environment as Record<string, unknown>)['mapBaseUrl'] as string
       ?? '/map/';
+
+  /** A per-instance cache-bust nonce appended as ?_r=<timestamp> so Android Chrome
+   *  bypasses any BlueMap service-worker cache on every dashboard load. */
+  private readonly cacheBust = '?_r=' + Date.now();
 
   /** Navigate the embedded map to this position hash when it changes */
   @Input() navigateToHash = '';
@@ -49,7 +57,7 @@ export class MapViewerComponent implements OnInit, OnChanges, OnDestroy {
   @ViewChild('mapIframe') private mapIframe?: ElementRef<HTMLIFrameElement>;
 
   protected readonly mapSrc = signal<SafeResourceUrl>(
-    this.sanitizer.bypassSecurityTrustResourceUrl(this.mapBaseUrl)
+    this.sanitizer.bypassSecurityTrustResourceUrl(this.mapBaseUrl + this.cacheBust)
   );
   protected readonly captureInput = signal('');
   protected readonly showCaptureInput = signal(false);
@@ -73,7 +81,7 @@ export class MapViewerComponent implements OnInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['navigateToHash'] && this.navigateToHash) {
       const base = this.mapBaseUrl.endsWith('/') ? this.mapBaseUrl : this.mapBaseUrl + '/';
-      const url = base + (this.navigateToHash.startsWith('#') ? this.navigateToHash : '#' + this.navigateToHash);
+      const url = base + this.cacheBust + (this.navigateToHash.startsWith('#') ? this.navigateToHash : '#' + this.navigateToHash);
       this.mapSrc.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
     }
   }

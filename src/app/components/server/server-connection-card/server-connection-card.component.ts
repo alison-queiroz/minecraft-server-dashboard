@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { LucideWifi, LucideGlobe, LucideServer } from '@lucide/angular';
+import { LucideWifi, LucideGlobe, LucideServer, LucideHash } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { ServerService } from '../../../services/server/server.service';
@@ -17,6 +17,7 @@ export class ServerConnectionCardComponent {
   protected readonly LucideWifi   = LucideWifi;
   protected readonly LucideGlobe  = LucideGlobe;
   protected readonly LucideServer = LucideServer;
+  protected readonly LucideHash   = LucideHash;
 
   protected readonly serverService = inject(ServerService);
 }

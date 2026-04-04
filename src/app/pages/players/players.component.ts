@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PlayerService } from '../../services/player/player.service';
 import { PlayerListComponent } from '../../components/player/player-list/player-list.component';
 import { PlayerDetailComponent } from '../../components/player/player-detail/player-detail.component';
@@ -18,7 +18,19 @@ export class PlayersComponent implements OnInit {
   protected readonly LucideArrowLeft = LucideArrowLeft;
   protected readonly playerService = inject(PlayerService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   protected readonly hasSelection = computed(() => !!this.playerService.selectedPlayerName());
+
+  constructor() {
+    // Keep the URL query param in sync with the selected player so refresh restores state
+    effect(() => {
+      const name = this.playerService.selectedPlayerName();
+      this.router.navigate([], {
+        replaceUrl: true,
+        queryParams: name ? { player: name } : {},
+      });
+    });
+  }
 
   ngOnInit(): void {
     const name = this.route.snapshot.queryParamMap.get('player');
