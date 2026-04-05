@@ -46,3 +46,9 @@
 .player-list-viewport::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
 }
+
+@media (max-width: 639px) {
+  .sort-btn--mobile-hidden {
+    display: none;
+  }
+}

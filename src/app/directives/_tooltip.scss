@@ -1,0 +1,17 @@
+.app-tooltip {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  max-width: 240px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #18181b;
+  border: 1px solid #3f3f46;
+  color: #e4e4e7;
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}

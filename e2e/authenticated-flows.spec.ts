@@ -124,4 +124,19 @@ test.describe('Authenticated post-login flows', () => {
     await page.goto('/analytics');
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
   });
+
+  test('player list hides Time and Seen columns at mobile width', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/players');
+    await expectNotOnLogin('/players', page.url());
+
+    const timeHeader  = page.locator('button.sort-btn', { hasText: 'Time' });
+    const seenHeader  = page.locator('button.sort-btn', { hasText: 'Seen' });
+
+    await expect(timeHeader).toBeHidden();
+    await expect(seenHeader).toBeHidden();
+
+    // LVL header must still be visible
+    await expect(page.locator('button.sort-btn', { hasText: 'LVL' })).toBeVisible();
+  });
 });

@@ -1,6 +1,5 @@
-import {
+﻿import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   effect,
   Input,
@@ -17,12 +16,13 @@ import type { AdvancementsResult, Advancement } from '../../../services/advancem
 import { AdvancementsService } from '../../../services/advancements/advancements.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { LoadingService } from '../../../services/loading/loading.service';
+import { TooltipDirective } from '../../../directives/tooltip.directive';
 
 @Component({
   selector: 'app-player-advancements',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, KeyValuePipe, IconComponent],
+  imports: [CommonModule, KeyValuePipe, IconComponent, TooltipDirective],
   templateUrl: './player-advancements.component.html',
   styleUrls: ['./player-advancements.component.scss'],
 })
@@ -48,7 +48,6 @@ export class PlayerAdvancementsComponent {
   }
 
   private readonly advancementsService = inject(AdvancementsService);
-  private readonly cdr = inject(ChangeDetectorRef);
   protected readonly loadingService = inject(LoadingService);
 
   protected readonly LucideTrophy     = LucideTrophy;
@@ -74,9 +73,6 @@ export class PlayerAdvancementsComponent {
     return groups;
   });
 
-  /** Currently hovered chip tooltip state */
-  protected readonly tooltip = signal<{ id: string; text: string; x: number; y: number } | null>(null);
-
   private loaded = false;
 
   constructor() {
@@ -86,7 +82,6 @@ export class PlayerAdvancementsComponent {
 
       this.loaded = false;
       this.result.set({ completed: [], total: 0, by_category: {} });
-      this.tooltip.set(null);
 
       const startOpen = untracked(() => this.startOpenInput());
       if (startOpen && !isBedrock && uuid) {
@@ -107,26 +102,16 @@ export class PlayerAdvancementsComponent {
     }
   }
 
-  protected onChipEnter(adv: Advancement, event: MouseEvent | FocusEvent): void {
-    const rect = (event.target as HTMLElement).getBoundingClientRect();
-    // Show label immediately while description loads
-    this.tooltip.set({ id: adv.id, text: adv.description ?? adv.label, x: rect.left, y: rect.bottom + 6 });
-    if (!adv.description) {
-      this.advancementsService.getDescription(adv.id).pipe(
-        tap(desc => {
-          if (!desc) return;
-          adv.description = desc;
-          // Update tooltip if still showing this chip
-          const cur = this.tooltip();
-          if (cur?.id === adv.id) this.tooltip.set({ ...cur, text: desc });
-          this.cdr.markForCheck();
-        }),
-      ).subscribe();
-    }
-  }
-
-  protected onChipLeave(): void {
-    this.tooltip.set(null);
+  /**
+   * Lazily fetches the advancement description on first hover/focus.
+   * The result is cached on `adv.description`; the [appTooltip] binding
+   * picks it up on the next interaction once loaded.
+   */
+  protected prefetchDescription(adv: Advancement): void {
+    if (adv.description) return;
+    this.advancementsService.getDescription(adv.id).pipe(
+      tap(desc => { if (desc) adv.description = desc; }),
+    ).subscribe();
   }
 
   private fetch(): void {
@@ -139,4 +124,3 @@ export class PlayerAdvancementsComponent {
     ).subscribe();
   }
 }
-

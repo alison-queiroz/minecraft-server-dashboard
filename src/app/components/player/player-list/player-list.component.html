@@ -4,25 +4,25 @@
 
   <!-- Table Header (sortable) -->
   <div class="player-list-header">
-    <button class="col-span-4 sort-btn" [class.sort-btn--active]="sortField() === 'name'" (click)="toggleSort('name')">
+    <button class="col-span-6 sm:col-span-4 sort-btn" [class.sort-btn--active]="sortField() === 'name'" (click)="toggleSort('name')">
       Player
       @if (sortField() === 'name') {
         <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
       }
     </button>
-    <button class="col-span-1 sort-btn" [class.sort-btn--active]="sortField() === 'level'" (click)="toggleSort('level')">
+    <button class="col-span-2 sm:col-span-1 sort-btn" [class.sort-btn--active]="sortField() === 'level'" (click)="toggleSort('level')">
       LVL
       @if (sortField() === 'level') {
         <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
       }
     </button>
-    <button class="col-span-2 sort-btn" [class.sort-btn--active]="sortField() === 'play_hours'" (click)="toggleSort('play_hours')">
+    <button class="sort-btn--mobile-hidden sm:flex col-span-2 sort-btn" [class.sort-btn--active]="sortField() === 'play_hours'" (click)="toggleSort('play_hours')">
       Time
       @if (sortField() === 'play_hours') {
         <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
       }
     </button>
-    <button class="col-span-2 sort-btn" [class.sort-btn--active]="sortField() === 'dimension'" (click)="toggleSort('dimension')">
+    <button class="col-span-3 sm:col-span-2 sort-btn" [class.sort-btn--active]="sortField() === 'dimension'" (click)="toggleSort('dimension')">
       Dim.
       @if (sortField() === 'dimension') {
         <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
@@ -34,7 +34,7 @@
         <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
       }
     </button>
-    <button class="col-span-2 sort-btn header-align-right" [class.sort-btn--active]="sortField() === 'last_seen'" (click)="toggleSort('last_seen')">
+    <button class="sort-btn--mobile-hidden sm:flex col-span-2 sort-btn header-align-right" [class.sort-btn--active]="sortField() === 'last_seen'" (click)="toggleSort('last_seen')">
       @if (sortField() === 'last_seen') {
         <app-icon [icon]="sortDir() === 'asc' ? LucideChevronUp : LucideChevronDown" [size]="9"></app-icon>
       }

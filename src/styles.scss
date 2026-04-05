@@ -1,4 +1,6 @@
-﻿@tailwind base;
+﻿@use './app/directives/tooltip';
+
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 

@@ -30,12 +30,11 @@
                 <div class="adv-chips">
                   @for (adv of entry.value; track adv.id) {
                     <span class="adv-chip"
-                      (mouseenter)="onChipEnter(adv, $event)"
-                      (mouseleave)="onChipLeave()"
-                      (focus)="onChipEnter(adv, $any($event))"
-                      (blur)="onChipLeave()"
-                      tabindex="0"
-                      [attr.aria-label]="adv.label">
+                        [appTooltip]="adv.description ?? adv.label"
+                        (mouseenter)="prefetchDescription(adv)"
+                        (focus)="prefetchDescription(adv)"
+                        tabindex="0"
+                        [attr.aria-label]="adv.description ?? adv.label">
                       {{ adv.label }}
                     </span>
                   }
@@ -48,12 +47,4 @@
     }
   </div>
 
-  <!-- Floating tooltip -->
-  @if (tooltip(); as tip) {
-    <div class="adv-tooltip"
-         [style.left.px]="tip.x"
-         [style.top.px]="tip.y">
-      {{ tip.text }}
-    </div>
-  }
 }

@@ -68,11 +68,3 @@
          px-2 py-0.5 text-[10px] text-amber-300 cursor-default select-none
          outline-none focus:ring-1 focus:ring-amber-500/50;
 }
-
-.adv-tooltip {
-  position: fixed;
-  z-index: 9999;
-  max-width: 260px;
-  @apply rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2
-         text-xs text-zinc-200 shadow-xl pointer-events-none;
-}

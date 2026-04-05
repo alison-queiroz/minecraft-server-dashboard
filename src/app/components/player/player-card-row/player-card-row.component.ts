@@ -14,12 +14,13 @@ import { NgClass, DecimalPipe } from '@angular/common';
 import type { Player } from '../../../services/player/player.model';
 import { PlayerService } from '../../../services/player/player.service';
 import { PlayerFaceComponent } from '../../shared/player-face/player-face.component';
+import { TooltipDirective } from '../../../directives/tooltip.directive';
 
 @Component({
   selector: 'app-player-card-row',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, DecimalPipe, PlayerFaceComponent],
+  imports: [NgClass, DecimalPipe, PlayerFaceComponent, TooltipDirective],
   templateUrl: './player-card-row.component.html',
   styleUrls: ['./player-card-row.component.scss'],
   host: {

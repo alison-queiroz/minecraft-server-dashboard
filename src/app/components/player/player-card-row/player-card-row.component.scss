@@ -19,3 +19,9 @@
 		@apply px-1 text-[9px];
 	}
 }
+
+@media (max-width: 639px) {
+	.col-mobile-hidden {
+		display: none;
+	}
+}
