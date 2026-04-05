@@ -24,7 +24,7 @@ import { TooltipDirective } from '../../../directives/tooltip.directive';
   templateUrl: './player-card-row.component.html',
   styleUrls: ['./player-card-row.component.scss'],
   host: {
-    class: 'grid grid-cols-12 items-center py-3 px-6 hover:bg-emerald-500/5 cursor-pointer transition-all border-b border-zinc-800/50 group',
+    class: 'group grid grid-cols-12 items-center border-b border-stone-200/70 px-6 py-3 transition-all hover:bg-emerald-500/5 dark:border-zinc-800/50 cursor-pointer',
     '[class.bg-emerald-500/10]': 'isSelected',
     '(click)': 'selected.emit()',
   },

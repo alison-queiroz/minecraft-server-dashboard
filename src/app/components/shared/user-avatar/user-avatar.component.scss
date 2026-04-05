@@ -3,7 +3,7 @@
 }
 
 .avatar-img {
-  @apply rounded-full border-2 border-zinc-700 object-cover shrink-0;
+  @apply shrink-0 rounded-full border-2 border-stone-300 object-cover dark:border-zinc-700;
 }
 
 :host([data-size="sm"]) .avatar-img {

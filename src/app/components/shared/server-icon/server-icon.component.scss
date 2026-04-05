@@ -3,15 +3,15 @@
 }
 
 .icon-container {
-  @apply overflow-hidden bg-zinc-800;
+  @apply overflow-hidden bg-stone-200 dark:bg-zinc-800;
 }
 
 :host([data-size="card"]) .icon-container {
-  @apply w-24 h-24 rounded-2xl border-2 border-zinc-700 shadow-2xl;
+  @apply h-24 w-24 rounded-2xl border-2 border-stone-300 shadow-2xl dark:border-zinc-700;
 }
 
 :host([data-size="nav"]) .icon-container {
-  @apply w-10 h-10 rounded-xl border border-zinc-700 shrink-0 shadow-lg;
+  @apply h-10 w-10 shrink-0 rounded-xl border border-stone-300 shadow-lg dark:border-zinc-700;
 }
 
 :host([data-size="login"]) .icon-container {
@@ -19,7 +19,7 @@
 }
 
 :host([data-size="home"]) .icon-container {
-  @apply shrink-0 w-24 h-24 rounded-2xl border-2 border-zinc-700 shadow-2xl;
+  @apply h-24 w-24 shrink-0 rounded-2xl border-2 border-stone-300 shadow-2xl dark:border-zinc-700;
 }
 
 @media (min-width: 768px) {

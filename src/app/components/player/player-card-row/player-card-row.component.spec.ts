@@ -5,9 +5,7 @@ import { PlayerService } from '../../../services/player/player.service';
 import { Player } from '../../../services/player/player.model';
 
 class MockPlayerService {
-  fetchAvatarIfNeeded(_url: string): void {
-    // no-op for unit tests
-  }
+  fetchAvatarIfNeeded(_url: string): void { return; }
 }
 
 describe('PlayerCardRowComponent', () => {
@@ -28,7 +26,9 @@ describe('PlayerCardRowComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PlayerCardRowComponent],
-      providers: [{ provide: PlayerService, useClass: MockPlayerService }],
+      providers: [
+        { provide: PlayerService, useClass: MockPlayerService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(PlayerCardRowComponent);
@@ -37,10 +37,13 @@ describe('PlayerCardRowComponent', () => {
   });
 
   it('emits selected when row is clicked', () => {
-    spyOn(fixture.componentInstance.selected, 'emit');
+    jest.spyOn(fixture.componentInstance.selected, 'emit');
 
     (fixture.nativeElement as HTMLElement).click();
 
     expect(fixture.componentInstance.selected.emit).toHaveBeenCalledTimes(1);
   });
 });
+
+
+

@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { HttpClient, HttpContext, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { LoadingService } from '../services/loading/loading.service';
@@ -26,38 +26,41 @@ describe('loadingInterceptor', () => {
     httpMock.verify();
   });
 
-  it('sets loading while a tracked request is in flight', fakeAsync(() => {
+  it('sets loading while a tracked request is in flight', () => {
     http.get('/api/analytics').subscribe();
 
-    expect(loading.isLoading()).toBeTrue();
+    expect(loading.isLoading()).toBe(true);
 
     const req = httpMock.expectOne('/api/analytics');
     req.flush({ ok: true });
 
-    expect(loading.isLoading()).toBeFalse();
-  }));
+    expect(loading.isLoading()).toBe(false);
+  });
 
-  it('clears loading after an error response', fakeAsync(() => {
+  it('clears loading after an error response', () => {
     http.get('/api/analytics').subscribe({ error: () => undefined });
 
-    expect(loading.isLoading()).toBeTrue();
+    expect(loading.isLoading()).toBe(true);
 
     const req = httpMock.expectOne('/api/analytics');
     req.flush('boom', { status: 500, statusText: 'Server Error' });
 
-    expect(loading.isLoading()).toBeFalse();
-  }));
+    expect(loading.isLoading()).toBe(false);
+  });
 
-  it('ignores requests explicitly marked with SKIP_LOADING', fakeAsync(() => {
+  it('ignores requests explicitly marked with SKIP_LOADING', () => {
     http.get('/api/status', {
       context: new HttpContext().set(SKIP_LOADING, true),
     }).subscribe();
 
-    expect(loading.isLoading()).toBeFalse();
+    expect(loading.isLoading()).toBe(false);
 
     const req = httpMock.expectOne('/api/status');
     req.flush({ ok: true });
 
-    expect(loading.isLoading()).toBeFalse();
-  }));
+    expect(loading.isLoading()).toBe(false);
+  });
 });
+
+
+

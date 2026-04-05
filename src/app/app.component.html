@@ -3,7 +3,8 @@
     <div class="loading-bar-fill"></div>
   </div>
 }
-<div class="h-screen overflow-hidden bg-zinc-950 text-zinc-100 font-sans flex flex-col"
+<div class="flex h-screen flex-col overflow-hidden bg-stone-100 font-sans text-zinc-900 transition-colors dark:bg-zinc-950 dark:text-zinc-100"
+  [attr.data-theme]="themeService.theme()"
   appSwipeNavigate
   [appSwipeNavigatePageOrder]="pageOrder"
   (dragXChange)="onDragXChange($event)"

@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { ServerService, SERVER_STATUS } from './server.service';
 import { environment } from '../../../environments/environment';
 import { SKIP_LOADING } from '../../interceptors/loading.interceptor';
@@ -32,7 +33,10 @@ function createService() {
 describe('ServerService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
   });
 
@@ -40,7 +44,7 @@ describe('ServerService', () => {
     TestBed.inject(HttpTestingController).verify();
   });
 
-  // ─── Java server ONLINE ────────────────────────────────────────────────────
+  // â”€â”€â”€ Java server ONLINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Java server is ONLINE', () => {
     let service: ServerService;
 
@@ -80,7 +84,7 @@ describe('ServerService', () => {
 
   });
 
-  // ─── Java server OFFLINE ───────────────────────────────────────────────────
+  // â”€â”€â”€ Java server OFFLINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Java server is OFFLINE', () => {
     let service: ServerService;
 
@@ -96,7 +100,7 @@ describe('ServerService', () => {
     });
   });
 
-  // ─── Java server HTTP error ────────────────────────────────────────────────
+  // â”€â”€â”€ Java server HTTP error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Java server returns an HTTP error', () => {
     let service: ServerService;
 
@@ -117,7 +121,7 @@ describe('ServerService', () => {
     });
   });
 
-  // ─── Bedrock ONLINE ────────────────────────────────────────────────────────
+  // â”€â”€â”€ Bedrock ONLINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Bedrock server is ONLINE', () => {
     let service: ServerService;
 
@@ -150,11 +154,11 @@ describe('ServerService', () => {
     });
   });
 
-  // ── setInterval refresh path ──────────────────────────────────────────────
+  // â”€â”€ setInterval refresh path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('setInterval triggers a refresh of both statuses', () => {
     it('calls fetchStatus and fetchBedrockStatus again after the interval fires', () => {
       let intervalCallback: (() => void) | undefined;
-      spyOn(window, 'setInterval').and.callFake((fn: TimerHandler): ReturnType<typeof setInterval> => {
+      jest.spyOn(window, 'setInterval').mockImplementation((fn: TimerHandler): ReturnType<typeof setInterval> => {
         intervalCallback = fn as () => void;
         return 0 as unknown as ReturnType<typeof setInterval>;
       });
@@ -177,7 +181,7 @@ describe('ServerService', () => {
     });
   });
 
-  // ─── Bedrock OFFLINE ───────────────────────────────────────────────────────
+  // â”€â”€â”€ Bedrock OFFLINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Bedrock server is OFFLINE', () => {
     let service: ServerService;
 
@@ -194,7 +198,7 @@ describe('ServerService', () => {
     });
   });
 
-  // ─── Bedrock HTTP error ────────────────────────────────────────────────────
+  // â”€â”€â”€ Bedrock HTTP error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Bedrock server returns an HTTP error', () => {
     let service: ServerService;
 
@@ -218,10 +222,13 @@ describe('ServerService', () => {
     const javaReq = httpMock.expectOne(JAVA_URL);
     const bedrockReq = httpMock.expectOne(BEDROCK_URL);
 
-    expect(javaReq.request.context.get(SKIP_LOADING)).toBeTrue();
-    expect(bedrockReq.request.context.get(SKIP_LOADING)).toBeTrue();
+    expect(javaReq.request.context.get(SKIP_LOADING)).toBe(true);
+    expect(bedrockReq.request.context.get(SKIP_LOADING)).toBe(true);
 
     javaReq.flush(ONLINE_RESPONSE);
     bedrockReq.flush(OFFLINE_RESPONSE);
   });
 });
+
+
+

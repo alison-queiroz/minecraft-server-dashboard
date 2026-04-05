@@ -21,12 +21,12 @@ describe('Player model', () => {
 
   describe('isBedrock()', () => {
     it('should return false for a Java player UUID', () => {
-      expect(player.isBedrock()).toBeFalse();
+      expect(player.isBedrock()).toBe(false);
     });
 
     it('should return true for a UUID starting with the Bedrock prefix', () => {
       const bedrock = new Player({ ...BASE, uuid: '00000000-0000-0000-0009-000000000003' });
-      expect(bedrock.isBedrock()).toBeTrue();
+      expect(bedrock.isBedrock()).toBe(true);
     });
   });
 
@@ -52,23 +52,23 @@ describe('Player model', () => {
 
   describe('isRawAvatar()', () => {
     it('should return false for mc-heads URL', () => {
-      expect(player.isRawAvatar()).toBeFalse();
+      expect(player.isRawAvatar()).toBe(false);
     });
 
     it('should return true for a non mc-heads URL', () => {
       const raw = new Player({ ...BASE, skin_url: 'https://example.com/skin.png' });
-      expect(raw.isRawAvatar()).toBeTrue();
+      expect(raw.isRawAvatar()).toBe(true);
     });
 
     it('should return false when skin_url is falsy', () => {
       const noSkin = new Player({ ...BASE, skin_url: undefined });
-      expect(noSkin.isRawAvatar()).toBeFalse();
+      expect(noSkin.isRawAvatar()).toBe(false);
     });
   });
 
   describe('healthPercent()', () => {
     it('should calculate health as a percentage of 20', () => {
-      expect(player.healthPercent()).toBe(70); // 14/20 * 100
+      expect(player.healthPercent()).toBe(70);
     });
 
     it('should return 100 at full health', () => {
@@ -84,27 +84,31 @@ describe('Player model', () => {
 
   describe('matchesSearch()', () => {
     it('should match by lowercase name', () => {
-      expect(player.matchesSearch('steve')).toBeTrue();
+      expect(player.matchesSearch('steve')).toBe(true);
     });
 
     it('should match partial name', () => {
-      expect(player.matchesSearch('tev')).toBeTrue();
+      expect(player.matchesSearch('tev')).toBe(true);
     });
 
     it('should match dimension', () => {
-      expect(player.matchesSearch('overworld')).toBeTrue();
+      expect(player.matchesSearch('overworld')).toBe(true);
     });
 
     it('should match UUID fragment', () => {
-      expect(player.matchesSearch('aaaaaaaa')).toBeTrue();
+      expect(player.matchesSearch('aaaaaaaa')).toBe(true);
     });
 
     it('should return false when nothing matches', () => {
-      expect(player.matchesSearch('zzz')).toBeFalse();
+      expect(player.matchesSearch('zzz')).toBe(false);
     });
 
     it('should be case-insensitive', () => {
-      expect(player.matchesSearch('STEVE')).toBeTrue();
+      expect(player.matchesSearch('STEVE')).toBe(true);
     });
   });
 });
+
+
+
+

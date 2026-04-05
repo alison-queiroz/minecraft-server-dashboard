@@ -11,7 +11,7 @@
 }
 
 .header-stats {
-  @apply flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-3 shadow-xl backdrop-blur-md;
+  @apply flex items-center gap-4 rounded-2xl border border-stone-200 bg-white/90 p-3 shadow-xl backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80;
 }
 
 .header-stat {
@@ -19,7 +19,7 @@
 }
 
 .header-stat--bordered {
-  @apply border-r border-zinc-800;
+  @apply border-r border-stone-200 dark:border-zinc-800;
 }
 
 .header-stat-value {
@@ -31,15 +31,15 @@
 }
 
 .header-stat-subvalue {
-  @apply text-sm font-normal text-zinc-600;
+  @apply text-sm font-normal text-zinc-500 dark:text-zinc-600;
 }
 
 .header-stat-label {
-  @apply text-[10px] font-black uppercase tracking-tighter text-zinc-500;
+  @apply text-[10px] font-black uppercase tracking-tighter text-zinc-500 dark:text-zinc-500;
 }
 
 .header-status-label {
-  @apply mb-1 block text-[10px] font-black uppercase tracking-tighter text-zinc-500;
+  @apply mb-1 block text-[10px] font-black uppercase tracking-tighter text-zinc-500 dark:text-zinc-500;
 }
 
 .status-pill {

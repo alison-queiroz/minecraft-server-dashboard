@@ -8,19 +8,17 @@
           <span class="adv-count">{{ displayCount() }}</span>
         }
       </span>
-      <app-icon [icon]="LucideChevronDown" [size]="14"
-        [class.rotate-180]="!collapsed()" class="adv-chevron"></app-icon>
+      <app-icon
+        [icon]="LucideChevronDown"
+        [size]="14"
+        [class.rotate-180]="!collapsed()"
+        class="adv-chevron"
+      ></app-icon>
     </button>
 
     @if (!collapsed()) {
       <div class="adv-body">
-        @if (loadingService.isLoading()) {
-          <div class="adv-loading">
-            <span class="adv-dot"></span>
-            <span class="adv-dot"></span>
-            <span class="adv-dot"></span>
-          </div>
-        } @else if (result().total === 0) {
+        @if (result().total === 0) {
           <p class="adv-empty">No advancements found.</p>
         } @else {
           <div class="adv-categories">
@@ -29,12 +27,14 @@
                 <p class="adv-cat-label">{{ entry.key }}</p>
                 <div class="adv-chips">
                   @for (adv of entry.value; track adv.id) {
-                    <span class="adv-chip"
-                        [appTooltip]="adv.description ?? adv.label"
-                        (mouseenter)="prefetchDescription(adv)"
-                        (focus)="prefetchDescription(adv)"
-                        tabindex="0"
-                        [attr.aria-label]="adv.description ?? adv.label">
+                    <span
+                      class="adv-chip"
+                      [appTooltip]="adv.description ?? adv.label"
+                      (mouseenter)="prefetchDescription(adv)"
+                      (focus)="prefetchDescription(adv)"
+                      tabindex="0"
+                      [attr.aria-label]="adv.description ?? adv.label"
+                    >
                       {{ adv.label }}
                     </span>
                   }
@@ -46,5 +46,4 @@
       </div>
     }
   </div>
-
 }

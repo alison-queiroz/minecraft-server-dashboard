@@ -28,7 +28,10 @@ describe('BackupService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
     service = TestBed.inject(BackupService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -45,7 +48,7 @@ describe('BackupService', () => {
 
     const req = httpMock.expectOne('/api/backups');
     expect(req.request.method).toBe('GET');
-    expect(req.request.params.has('folderId')).toBeFalse();
+    expect(req.request.params.has('folderId')).toBe(false);
     req.flush(MOCK_BACKUPS);
   });
 
@@ -78,3 +81,6 @@ describe('BackupService', () => {
     expect(result).toEqual([]);
   });
 });
+
+
+

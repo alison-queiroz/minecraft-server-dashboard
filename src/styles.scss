@@ -4,17 +4,31 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    @apply bg-stone-100 text-zinc-900;
+  }
+
+  html.dark {
+    @apply bg-zinc-950 text-zinc-100;
+  }
+
+  body {
+    @apply bg-stone-100 text-zinc-900 transition-colors dark:bg-zinc-950 dark:text-zinc-100;
+  }
+}
+
 .pixelated {
   image-rendering: pixelated;
 }
 
 @layer components {
   .card-label {
-    @apply text-[10px] uppercase font-black tracking-widest;
+    @apply text-[10px] uppercase font-black tracking-widest text-zinc-500 dark:text-zinc-500;
   }
 
   .ui-panel {
-    @apply rounded-2xl border border-zinc-800 bg-zinc-900;
+    @apply rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none;
   }
 
   .ui-panel--padded {
@@ -22,7 +36,7 @@
   }
 
   .ui-input {
-    @apply w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 transition-colors focus:outline-none focus:border-emerald-500;
+    @apply w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-emerald-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500;
   }
 
   .ui-input--mono {
@@ -38,7 +52,7 @@
   }
 
   .ui-button--secondary {
-    @apply bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
+    @apply bg-white text-zinc-700 ring-1 ring-inset ring-stone-300 hover:bg-stone-100 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-700;
   }
 
   .ui-button--blue {
@@ -50,7 +64,7 @@
   }
 
   .ui-icon-button {
-    @apply inline-flex items-center justify-center rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800;
+    @apply inline-flex items-center justify-center rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-stone-100 dark:text-zinc-400 dark:hover:bg-zinc-800;
   }
 
   .ui-icon-button--accent {
@@ -62,7 +76,7 @@
   }
 
   .ui-icon-button--bright {
-    @apply hover:text-zinc-100;
+    @apply hover:text-zinc-900 dark:hover:text-zinc-100;
   }
 
   .ui-badge {
@@ -94,7 +108,7 @@
   }
 
   .ui-toggle__track {
-    @apply block h-5 w-9 rounded-full bg-zinc-700 transition-colors;
+    @apply block h-5 w-9 rounded-full bg-stone-300 transition-colors dark:bg-zinc-700;
   }
 
   .ui-toggle__thumb {
@@ -110,7 +124,7 @@
   }
 
   .ui-toggle__text {
-    @apply text-sm text-zinc-300;
+    @apply text-sm text-zinc-700 dark:text-zinc-300;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -122,21 +136,29 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #27272a;
+    background: #d6d3d1;
     border-radius: 10px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #a8a29e;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #27272a;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #3f3f46;
   }
 
   /** Card header and title — shared across all server info cards */
   .server-card-title {
-    @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500;
+    @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500;
   }
 
   .server-card-header {
-    @apply border-b border-zinc-800 p-5;
+    @apply border-b border-stone-200 p-5 dark:border-zinc-800;
   }
 }
 

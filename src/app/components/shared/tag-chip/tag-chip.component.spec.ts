@@ -1,4 +1,4 @@
-import type { ComponentFixture} from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { TagChipComponent } from './tag-chip.component';
 
@@ -8,6 +8,7 @@ describe('TagChipComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TagChipComponent],
+      providers: [],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TagChipComponent);
@@ -34,3 +35,6 @@ describe('TagChipComponent', () => {
     expect(fixture.nativeElement.getAttribute('data-color')).toBe('dim');
   });
 });
+
+
+

@@ -22,7 +22,7 @@ function createTouchList(clientX: number, clientY: number): TouchList {
     0: touch,
     length: 1,
     item: (index: number) => (index === 0 ? touch : null),
-    [Symbol.iterator]: function* () {
+    [Symbol.iterator]: function* (): Generator<Touch, void, unknown> {
       yield touch;
     },
   } as unknown as TouchList;
@@ -64,7 +64,7 @@ describe('SwipeNavigateDirective', () => {
   it('skips gestures that start on editable elements', () => {
     const directive = getDirectiveInstance();
     const input = document.createElement('input');
-    const dragSpy = jasmine.createSpy('dragX');
+    const dragSpy = jest.fn();
 
     directive.dragXChange.subscribe(dragSpy);
     directive.onTouchStart(fakeTouchEvent(50, 50, input));
@@ -78,8 +78,8 @@ describe('SwipeNavigateDirective', () => {
     await router.navigate(['/players']);
 
     const directive = getDirectiveInstance();
-    const dragSpy = jasmine.createSpy('dragX');
-    const draggingSpy = jasmine.createSpy('dragging');
+    const dragSpy = jest.fn();
+    const draggingSpy = jest.fn();
 
     directive.dragXChange.subscribe(dragSpy);
     directive.draggingChange.subscribe(draggingSpy);
@@ -94,10 +94,10 @@ describe('SwipeNavigateDirective', () => {
   it('navigates forward on committed left swipe', async () => {
     const router = TestBed.inject(Router);
     await router.navigate(['/']);
-    spyOn(router, 'navigateByUrl').and.resolveTo(true);
+    jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
     const directive = getDirectiveInstance();
-    const directionSpy = jasmine.createSpy('direction');
+    const directionSpy = jest.fn();
 
     directive.navigateDirection.subscribe(directionSpy);
 
@@ -113,10 +113,10 @@ describe('SwipeNavigateDirective', () => {
   it('does not navigate when swipe threshold is not met', async () => {
     const router = TestBed.inject(Router);
     await router.navigate(['/players']);
-    const navigateSpy = spyOn(router, 'navigateByUrl').and.resolveTo(true);
+    const navigateSpy = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
     const directive = getDirectiveInstance();
-    const dragSpy = jasmine.createSpy('dragX');
+    const dragSpy = jest.fn();
 
     directive.dragXChange.subscribe(dragSpy);
 
@@ -128,3 +128,7 @@ describe('SwipeNavigateDirective', () => {
     expect(dragSpy).toHaveBeenCalledWith(0);
   });
 });
+
+
+
+

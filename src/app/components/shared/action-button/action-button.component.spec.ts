@@ -1,4 +1,4 @@
-import type { ComponentFixture} from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActionButtonComponent } from './action-button.component';
 
@@ -17,6 +17,7 @@ describe('ActionButtonComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ActionButtonComponent],
+      providers: [],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ActionButtonComponent);
@@ -29,14 +30,14 @@ describe('ActionButtonComponent', () => {
   });
 
   it('handleClick emits pressed when not disabled', () => {
-    const emitSpy = spyOn(component.pressed, 'emit');
+    const emitSpy = jest.spyOn(component.pressed, 'emit');
     asActionButtonTestAccess(component).handleClick();
     expect(emitSpy).toHaveBeenCalled();
   });
 
   it('handleClick does NOT emit pressed when disabled', () => {
     component.disabled = true;
-    const emitSpy = spyOn(component.pressed, 'emit');
+    const emitSpy = jest.spyOn(component.pressed, 'emit');
     asActionButtonTestAccess(component).handleClick();
     expect(emitSpy).not.toHaveBeenCalled();
   });
@@ -51,3 +52,6 @@ describe('ActionButtonComponent', () => {
     expect(component.variant).toBe('secondary');
   });
 });
+
+
+

@@ -1,12 +1,15 @@
-import { TestBed, fakeAsync, tick, type ComponentFixture } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { throwError } from 'rxjs';
-import { BackupService, type BackupFile } from '../../services/backup/backup.service';
+import { BackupService } from '../../services/backup/backup.service';
+import type { BackupFile } from '../../services/backup/backup.service';
 import {
   provideHttpClientTesting,
   HttpTestingController,
 } from '@angular/common/http/testing';
-import { BackupListComponent, type NavigationPath } from './backup-list.component';
+import { BackupListComponent } from './backup-list.component';
+import type { NavigationPath } from './backup-list.component';
 
 type WritableSignalLike<T> = (() => T) & {
   set(value: T): void;
@@ -36,7 +39,10 @@ describe('BackupListComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [BackupListComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BackupListComponent);
@@ -50,7 +56,7 @@ describe('BackupListComponent', () => {
 
   it('should create and load root folder on init', () => {
     const cmp = asBackupListTestAccess(component);
-    const loadCurrentFolderSpy = spyOn(cmp, 'loadCurrentFolder').and.callThrough();
+    const loadCurrentFolderSpy = jest.spyOn(cmp, 'loadCurrentFolder');
 
     fixture.detectChanges();
 
@@ -67,7 +73,7 @@ describe('BackupListComponent', () => {
     httpMock.expectOne('/api/backups').flush([]);
 
     const cmp = asBackupListTestAccess(component);
-    const loadCurrentFolderSpy = spyOn(cmp, 'loadCurrentFolder').and.callThrough();
+    const loadCurrentFolderSpy = jest.spyOn(cmp, 'loadCurrentFolder');
     cmp.navigateTo('folder-123', 'world');
 
     expect(cmp.currentPath()).toEqual([
@@ -91,7 +97,7 @@ describe('BackupListComponent', () => {
       { id: '2', name: 'region' },
     ]);
 
-    const loadCurrentFolderSpy = spyOn(cmp, 'loadCurrentFolder').and.callThrough();
+    const loadCurrentFolderSpy = jest.spyOn(cmp, 'loadCurrentFolder');
     cmp.navigateTo('1', 'world');
 
     expect(cmp.currentPath()).toEqual([
@@ -126,7 +132,7 @@ describe('BackupListComponent', () => {
   it('should handle API errors gracefully', () => {
     fixture.detectChanges();
     const cmp = asBackupListTestAccess(component);
-    spyOn(console, 'error');
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const req = httpMock.expectOne('/api/backups');
 
     req.flush('Server Error', {
@@ -142,19 +148,19 @@ describe('BackupListComponent', () => {
     // Bypass BackupService's own catchError by making getBackups throw directly
     const cmp = asBackupListTestAccess(component);
     const backupService = TestBed.inject(BackupService);
-    spyOn(backupService, 'getBackups').and.returnValue(throwError(() => new Error('parse error')));
+    jest.spyOn(backupService, 'getBackups').mockReturnValue(throwError(() => new Error('parse error')));
 
-    spyOn(console, 'error');
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
     cmp.loadCurrentFolder();
 
     expect(console.error).toHaveBeenCalledWith(
-      jasmine.stringContaining('Failed to parse backups'),
-      jasmine.anything()
+      expect.stringContaining('Failed to parse backups'),
+      expect.anything()
     );
     expect(cmp.backups()).toEqual([]);
   });
 
-  it('should request the current folder when loadCurrentFolder runs', fakeAsync(() => {
+  it('should request the current folder when loadCurrentFolder runs', () => {
     const cmp = asBackupListTestAccess(component);
     cmp.currentPath.set([
       { id: null, name: 'Root' },
@@ -162,12 +168,10 @@ describe('BackupListComponent', () => {
     ]);
 
     cmp.loadCurrentFolder();
-    tick();
-
     const req = httpMock.expectOne('/api/backups?folderId=folder-123');
     expect(req.request.method).toBe('GET');
     req.flush([]);
-  }));
+  });
 
   it('should correctly identify if a file is a folder', () => {
     const cmp = asBackupListTestAccess(component);
@@ -183,8 +187,8 @@ describe('BackupListComponent', () => {
       mimeType: 'application/zip',
       createdTime: '2026-01-01T00:00:00Z',
     };
-    expect(cmp.isFolder(folder)).toBeTrue();
-    expect(cmp.isFolder(file)).toBeFalse();
+    expect(cmp.isFolder(folder)).toBe(true);
+    expect(cmp.isFolder(file)).toBe(false);
   });
 
   it('should format file sizes correctly', () => {
@@ -216,12 +220,15 @@ describe('BackupListComponent', () => {
     const cmp = asBackupListTestAccess(component);
     const observer = cmp.resizeObserver;
     if (observer) {
-      const disconnectSpy = spyOn(observer, 'disconnect');
+      const disconnectSpy = jest.spyOn(observer, 'disconnect');
       fixture.destroy();
       expect(disconnectSpy).toHaveBeenCalled();
     } else {
-      // ResizeObserver not available — just verify destroy doesn't throw
+      // ResizeObserver not available â€” just verify destroy doesn't throw
       expect(() => fixture.destroy()).not.toThrow();
     }
   });
 });
+
+
+

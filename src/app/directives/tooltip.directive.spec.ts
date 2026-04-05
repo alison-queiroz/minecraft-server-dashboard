@@ -24,7 +24,8 @@ describe('TooltipDirective', () => {
   });
 
   afterEach(() => {
-    document.querySelectorAll('.app-tooltip').forEach(el => el.remove());
+    document.querySelectorAll('.app-tooltip').forEach((el: Element) => el.remove());
+    jest.useRealTimers();
   });
 
   it('shows tooltip on mouseenter', () => {
@@ -41,19 +42,20 @@ describe('TooltipDirective', () => {
     expect(document.querySelector('.app-tooltip')).toBeNull();
   });
 
-  it('shows tooltip after long press', (done) => {
+  it('shows tooltip after long press', () => {
+    jest.useFakeTimers();
     const touchStart = new TouchEvent('touchstart', {
       touches: [new Touch({ identifier: 1, target: spanEl.nativeElement, clientX: 10, clientY: 10 })],
     });
     spanEl.nativeElement.dispatchEvent(touchStart);
 
-    setTimeout(() => {
-      expect(document.querySelector('.app-tooltip')).toBeTruthy();
-      done();
-    }, 600);
+    jest.advanceTimersByTime(600);
+
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
   });
 
-  it('does not show tooltip if touch moves before long-press threshold', (done) => {
+  it('does not show tooltip if touch moves before long-press threshold', () => {
+    jest.useFakeTimers();
     const touchStart = new TouchEvent('touchstart', {
       touches: [new Touch({ identifier: 1, target: spanEl.nativeElement, clientX: 10, clientY: 10 })],
     });
@@ -64,19 +66,19 @@ describe('TooltipDirective', () => {
     });
     spanEl.nativeElement.dispatchEvent(touchMove);
 
-    setTimeout(() => {
-      expect(document.querySelector('.app-tooltip')).toBeNull();
-      done();
-    }, 600);
+    jest.advanceTimersByTime(600);
+
+    expect(document.querySelector('.app-tooltip')).toBeNull();
   });
 
   it('does not create tooltip if text is empty', () => {
-    const cmp = fixture.componentInstance as unknown as Record<string, unknown>;
-    Object.assign(cmp, {}); // keep type checker happy
-    // Manually set the directive text to empty
     const dir = spanEl.injector.get(TooltipDirective);
     dir.text = '';
     spanEl.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
     expect(document.querySelector('.app-tooltip')).toBeNull();
   });
 });
+
+
+
+

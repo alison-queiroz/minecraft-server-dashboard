@@ -13,15 +13,15 @@
 }
 
 .players-title {
-  @apply text-2xl font-black uppercase tracking-tighter text-zinc-100;
+  @apply text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100;
 }
 
 .players-subtitle {
-  @apply mt-1 text-sm text-zinc-500;
+  @apply mt-1 text-sm text-zinc-500 dark:text-zinc-500;
 }
 
 .players-back-btn {
-  @apply inline-flex items-center gap-2 text-sm font-bold text-zinc-400 hover:text-zinc-100 transition-colors;
+  @apply inline-flex items-center gap-2 text-sm font-bold text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100;
 }
 
 .players-layout {

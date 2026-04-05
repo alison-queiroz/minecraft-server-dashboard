@@ -53,6 +53,14 @@
 
     <!-- Right side: status badge + hamburger -->
     <div class="nav-actions">
+      <button type="button"
+        (click)="toggleTheme()"
+        class="theme-toggle"
+        [attr.aria-label]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'">
+        <app-icon [icon]="themeService.isDark() ? LucideSun : LucideMoon" [size]="16"></app-icon>
+        <span class="theme-toggle-label">{{ themeService.isDark() ? 'Light' : 'Dark' }}</span>
+      </button>
+
       <!-- Status badge -->
       <app-server-status-badge [mobileHideLabel]="true"></app-server-status-badge>
 

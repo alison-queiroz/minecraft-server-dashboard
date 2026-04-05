@@ -1,7 +1,7 @@
 :host {
-  @apply inline-flex items-center px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-[10px];
+  @apply inline-flex items-center rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[10px] shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:shadow-none;
 }
 
-:host([data-color="green"]) { @apply font-black uppercase tracking-widest text-emerald-400; }
-:host([data-color="zinc"])  { @apply font-black uppercase tracking-widest text-zinc-300; }
-:host([data-color="dim"])   { @apply font-mono text-zinc-500; }
+:host([data-color="green"]) { @apply font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400; }
+:host([data-color="zinc"])  { @apply font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300; }
+:host([data-color="dim"])   { @apply font-mono text-zinc-500 dark:text-zinc-500; }

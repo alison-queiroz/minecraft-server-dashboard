@@ -1,9 +1,9 @@
 .connection-card {
-  @apply overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-xl;
+  @apply overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
 }
 
 .connection-list {
-  @apply divide-y divide-zinc-800;
+  @apply divide-y divide-stone-200 dark:divide-zinc-800;
 }
 
 .connection-row {
@@ -19,15 +19,15 @@
 }
 
 .connection-icon-box {
-  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-500;
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-stone-100 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800;
 }
 
 .connection-label {
-  @apply mb-0.5 text-[10px] font-black uppercase tracking-widest text-zinc-600;
+  @apply mb-0.5 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-600;
 }
 
 .connection-value {
-  @apply font-mono text-sm text-zinc-300;
+  @apply font-mono text-sm text-zinc-700 dark:text-zinc-300;
 }
 
 .connection-value--accent {

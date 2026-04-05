@@ -1,4 +1,4 @@
-import type { ComponentFixture} from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { UserAvatarComponent } from './user-avatar.component';
@@ -12,9 +12,9 @@ interface AuthUserStub {
 const makeAuthStub = (photoURL?: string) => ({
   currentUser: signal<AuthUserStub | null>(photoURL ? { photoURL, displayName: 'Test User' } : null),
   isLoading: signal(false),
-  getIdToken: jasmine.createSpy('getIdToken').and.resolveTo(null),
-  signInWithGoogle: jasmine.createSpy('signInWithGoogle').and.resolveTo(undefined),
-  signOut: jasmine.createSpy('signOut').and.resolveTo(undefined),
+  getIdToken: jest.fn().mockResolvedValue(null),
+  signInWithGoogle: jest.fn().mockResolvedValue(undefined),
+  signOut: jest.fn().mockResolvedValue(undefined),
 });
 
 describe('UserAvatarComponent', () => {
@@ -23,7 +23,9 @@ describe('UserAvatarComponent', () => {
   async function setup(authStub = makeAuthStub()) {
     await TestBed.configureTestingModule({
       imports: [UserAvatarComponent],
-      providers: [{ provide: AuthService, useValue: authStub }],
+      providers: [
+        { provide: AuthService, useValue: authStub },
+      ],
     }).compileComponents();
     fixture = TestBed.createComponent(UserAvatarComponent);
     return fixture;
@@ -62,3 +64,6 @@ describe('UserAvatarComponent', () => {
     expect(img).toBeNull();
   });
 });
+
+
+

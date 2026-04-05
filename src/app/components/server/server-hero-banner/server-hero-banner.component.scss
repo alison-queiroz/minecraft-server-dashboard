@@ -1,5 +1,5 @@
 .hero-banner {
-  @apply relative overflow-hidden bg-gradient-to-br from-zinc-900 via-emerald-950/30 to-zinc-900 p-6 md:p-10;
+  @apply relative overflow-hidden bg-gradient-to-br from-stone-100 via-emerald-100 to-white p-6 dark:from-zinc-900 dark:via-emerald-950/30 dark:to-zinc-900 md:p-10;
 }
 
 .hero-grid {
@@ -22,11 +22,11 @@
 }
 
 .hero-title {
-  @apply text-4xl font-black uppercase tracking-tighter text-white md:text-5xl;
+  @apply text-4xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white md:text-5xl;
 }
 
 .hero-motd {
-  @apply mt-1 text-base italic text-zinc-400 md:text-lg;
+  @apply mt-1 text-base italic text-zinc-600 dark:text-zinc-400 md:text-lg;
 }
 
 .hero-tags {

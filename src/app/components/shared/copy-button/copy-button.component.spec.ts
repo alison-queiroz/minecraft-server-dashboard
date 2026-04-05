@@ -1,5 +1,5 @@
-import type { ComponentFixture} from '@angular/core/testing';
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { CopyButtonComponent } from './copy-button.component';
 
 type WritableSignalLike<T> = (() => T) & { set(value: T): void };
@@ -20,11 +20,16 @@ describe('CopyButtonComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [CopyButtonComponent],
+      providers: [],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CopyButtonComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('should create', () => {
@@ -33,82 +38,73 @@ describe('CopyButtonComponent', () => {
 
   it('copy() with empty value returns without writing to clipboard', async () => {
     component.value = '   ';
-    const writeSpy = spyOn(navigator.clipboard, 'writeText');
+    const writeSpy = jest.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
     await asCopyButtonTestAccess(component).copy();
     expect(writeSpy).not.toHaveBeenCalled();
-    expect(asCopyButtonTestAccess(component).copied()).toBeFalse();
+    expect(asCopyButtonTestAccess(component).copied()).toBe(false);
   });
 
-  it('copy() writes to clipboard and sets copied=true', fakeAsync(async () => {
+  it('copy() writes to clipboard and sets copied=true', async () => {
     component.value = 'localhost:25565';
-    spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+    jest.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
-    asCopyButtonTestAccess(component).copy();
-    await Promise.resolve(); // flush microtask
-    tick();
+    await asCopyButtonTestAccess(component).copy();
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('localhost:25565');
-    expect(asCopyButtonTestAccess(component).copied()).toBeTrue();
-  }));
+    expect(asCopyButtonTestAccess(component).copied()).toBe(true);
+  });
 
-  it('copy() resets copied=false after 2 seconds', fakeAsync(async () => {
+  it('copy() resets copied=false after 2 seconds', async () => {
+    jest.useFakeTimers();
     component.value = 'test';
-    spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+    jest.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
-    asCopyButtonTestAccess(component).copy();
-    await Promise.resolve();
-    tick();
+    await asCopyButtonTestAccess(component).copy();
 
-    expect(asCopyButtonTestAccess(component).copied()).toBeTrue();
-    tick(2001);
-    expect(asCopyButtonTestAccess(component).copied()).toBeFalse();
-  }));
+    expect(asCopyButtonTestAccess(component).copied()).toBe(true);
+    jest.advanceTimersByTime(2001);
+    expect(asCopyButtonTestAccess(component).copied()).toBe(false);
+  });
 
-  it('copy() clears the existing timeout when called again before 2 seconds', fakeAsync(async () => {
+  it('copy() clears the existing timeout when called again before 2 seconds', async () => {
+    jest.useFakeTimers();
     component.value = 'test';
-    spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+    jest.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
-    asCopyButtonTestAccess(component).copy();
-    await Promise.resolve();
-    tick();
-    tick(1000); // 1 second in
+    await asCopyButtonTestAccess(component).copy();
+    jest.advanceTimersByTime(1000);
 
-    // Call again before timeout fires
-    asCopyButtonTestAccess(component).copy();
-    await Promise.resolve();
-    tick();
+    await asCopyButtonTestAccess(component).copy();
 
-    // Should still be copied, and timeout reset
-    expect(asCopyButtonTestAccess(component).copied()).toBeTrue();
-    tick(2001);
-    expect(asCopyButtonTestAccess(component).copied()).toBeFalse();
-  }));
+    expect(asCopyButtonTestAccess(component).copied()).toBe(true);
+    jest.advanceTimersByTime(2001);
+    expect(asCopyButtonTestAccess(component).copied()).toBe(false);
+  });
 
-  it('copy() handles clipboard write failure gracefully', fakeAsync(async () => {
+  it('copy() handles clipboard write failure gracefully', async () => {
     component.value = 'fail-value';
-    spyOn(navigator.clipboard, 'writeText').and.rejectWith(new Error('denied'));
+    jest.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
 
-    asCopyButtonTestAccess(component).copy();
-    await Promise.resolve();
-    tick();
+    await asCopyButtonTestAccess(component).copy();
 
-    expect(asCopyButtonTestAccess(component).copied()).toBeFalse();
-  }));
+    expect(asCopyButtonTestAccess(component).copied()).toBe(false);
+  });
 
-  it('ngOnDestroy clears the reset timeout', fakeAsync(async () => {
+  it('ngOnDestroy clears the reset timeout', async () => {
+    jest.useFakeTimers();
     component.value = 'test';
-    spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+    jest.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
-    asCopyButtonTestAccess(component).copy();
-    await Promise.resolve();
-    tick();
+    await asCopyButtonTestAccess(component).copy();
 
-    // Manually set a timeout to verify ngOnDestroy clears it
-    const clearTimeoutSpy = spyOn(window, 'clearTimeout').and.callThrough();
+    const clearTimeoutSpy = jest.spyOn(window, 'clearTimeout');
     component.ngOnDestroy();
     expect(clearTimeoutSpy).toHaveBeenCalled();
 
-    // Drain pending timers
-    tick(2001);
-  }));
+    jest.advanceTimersByTime(2001);
+  });
 });
+
+
+
+

@@ -30,7 +30,7 @@ const makeServerStub = () => ({
 const makeAuthStub = () => ({
   currentUser: signal(null),
   isLoading: signal(false),
-  getIdToken: jasmine.createSpy('getIdToken').and.resolveTo(null),
+  getIdToken: jest.fn().mockResolvedValue(null),
 });
 
 interface ServerStatusTestAccess {
@@ -98,3 +98,7 @@ describe('ServerStatusComponent', () => {
     expect(link?.textContent).toContain('Back');
   });
 });
+
+
+
+

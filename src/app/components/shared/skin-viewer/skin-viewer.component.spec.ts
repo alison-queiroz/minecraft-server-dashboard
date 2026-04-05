@@ -15,7 +15,9 @@ describe('SkinViewerComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SkinViewerComponent],
-      providers: [{ provide: SkinService, useClass: MockSkinService }],
+      providers: [
+        { provide: SkinService, useClass: MockSkinService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(SkinViewerComponent);
@@ -39,3 +41,6 @@ describe('SkinViewerComponent', () => {
     expect(fixture.nativeElement.querySelector('img.skin-image')).toBeTruthy();
   });
 });
+
+
+

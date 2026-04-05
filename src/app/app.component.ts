@@ -6,6 +6,7 @@ import { SwipeNavigateModule } from './directives/swipe-navigate.module';
 import { filter } from 'rxjs/operators';
 import { SWIPE_ANIMATION_RESET_MS } from './constants/ui.constants';
 import { LoadingService } from './services/loading/loading.service';
+import { ThemeService } from './services/theme/theme.service';
 
 const PAGE_ORDER = ['/', '/server', '/players', '/profile', '/map', '/backups', '/analytics'];
 
@@ -20,6 +21,7 @@ const PAGE_ORDER = ['/', '/server', '/players', '/profile', '/map', '/backups', 
 export class AppComponent {
   private readonly router = inject(Router);
   protected readonly loadingService = inject(LoadingService);
+  protected readonly themeService = inject(ThemeService);
   protected readonly pageOrder = PAGE_ORDER;
 
   /** Live drag offset — follows the finger */

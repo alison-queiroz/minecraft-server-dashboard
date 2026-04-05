@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # setup-nginx-map.sh
 # Injects a postMessage sender + SW unregistration script into the BlueMap
 # nginx config via sub_filter, so the Angular dashboard can read the iframe

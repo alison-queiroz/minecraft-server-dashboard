@@ -1,4 +1,4 @@
-import type { ComponentFixture} from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { IconComponent } from './icon.component';
 import { LucideHouse } from '@lucide/angular';
@@ -9,6 +9,7 @@ describe('IconComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [IconComponent],
+      providers: [],
     }).compileComponents();
 
     fixture = TestBed.createComponent(IconComponent);
@@ -44,3 +45,6 @@ describe('IconComponent', () => {
     expect(svg.getAttribute('stroke-width')).toBe('3');
   });
 });
+
+
+

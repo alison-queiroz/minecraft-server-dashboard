@@ -36,7 +36,7 @@ set KEY_PATH="C:\Users\alison.soares\Desktop\Alison\cloud\ssh-key-2025-12-18.key
 :: Using %cd% to get the current directory where the .bat is running
 set PROJECT_DIR=%cd%
 :: Removed trailing slash to prevent Windows quote escaping issues
-set BUILD_DIR=%PROJECT_DIR%\dist\minecraft-server-dashboard
+set BUILD_DIR=%PROJECT_DIR%\dist\minecraft-server-dashboard\browser
 
 set REMOTE_WWW_DIR=/var/www/dashboard
 set REMOTE_API_DIR=/home/opc/minecraft
@@ -49,7 +49,7 @@ echo ==========================================================
 :: Python unit tests, and Playwright e2e concurrently.
 :: CI=1 tells Playwright to start its own dev server and use 0 retries.
 set CI=1
-call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "QUALITY,UI,API,E2E" -c "yellow,cyan,green,magenta" "npm run ci:quality" "npx ng test --watch=false --browsers=ChromeHeadless" ".venv\Scripts\python.exe -m pytest tests/" "npm run e2e:playwright"
+call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "QUALITY,UI,API,E2E" -c "yellow,cyan,green,magenta" "npm run ci:quality" "npm run test" ".venv\Scripts\python.exe -m pytest tests/" "npm run e2e:playwright"
 set CI=
 
 if %ERRORLEVEL% NEQ 0 (
@@ -76,11 +76,37 @@ start /b cmd /c "npx ng build --configuration production > build_log.txt 2>&1 &&
 
 echo [INFO] Uploading Python API and NGINX config while UI builds...
 scp -q -r -i %KEY_PATH% "%PROJECT_DIR%\api" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/"
+if %ERRORLEVEL% NEQ 0 (
+  color 0C
+  echo [ERROR] Failed to upload API folder.
+  pause
+  exit /b 1
+)
+
 scp -q -i %KEY_PATH% "%PROJECT_DIR%\run.py" %SERVER_USER%@%SERVER_IP%:"%REMOTE_API_DIR%/run.py"
+if %ERRORLEVEL% NEQ 0 (
+  color 0C
+  echo [ERROR] Failed to upload run.py.
+  pause
+  exit /b 1
+)
+
 scp -q -i %KEY_PATH% "%PROJECT_DIR%\config\setup-nginx-map.sh" %SERVER_USER%@%SERVER_IP%:"/tmp/setup-nginx-map.sh"
+if %ERRORLEVEL% NEQ 0 (
+  color 0C
+  echo [ERROR] Failed to upload setup-nginx-map.sh.
+  pause
+  exit /b 1
+)
 
 echo [INFO] Executing remote backend updates and cleaning WWW folder...
-ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/* && pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && find %REMOTE_API_DIR%/api -name '*.pyc' -delete && find %REMOTE_API_DIR%/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null; sudo systemctl restart minecraft-api.service && chmod +x /tmp/setup-nginx-map.sh && /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
+ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/* && pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && find %REMOTE_API_DIR%/api -name '*.pyc' -delete && find %REMOTE_API_DIR%/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null && sudo systemctl restart minecraft-api.service && sed -i '1s/^\xEF\xBB\xBF//;s/\r$//' /tmp/setup-nginx-map.sh && sudo bash /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
+if %ERRORLEVEL% NEQ 0 (
+  color 0C
+  echo [ERROR] Remote backend/nginx update failed. Deployment aborted.
+  pause
+  exit /b 1
+)
 
 echo [INFO] Backend deployment finished. Waiting for Angular build to complete...
 
@@ -113,9 +139,29 @@ echo ==========================================================
 echo   5. COMPRESSING ^& UPLOADING FRONT-END
 echo ==========================================================
 tar -czf "%TAR_FILE%" -C "%BUILD_DIR%" .
+if %ERRORLEVEL% NEQ 0 (
+  color 0C
+  echo [ERROR] Failed to create frontend archive.
+  pause
+  exit /b 1
+)
+
 scp -q -i %KEY_PATH% "%TAR_FILE%" %SERVER_USER%@%SERVER_IP%:"/tmp/%TAR_FILE%"
+if %ERRORLEVEL% NEQ 0 (
+  color 0C
+  echo [ERROR] Failed to upload frontend archive.
+  pause
+  exit /b 1
+)
 
 ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo tar -xzf /tmp/%TAR_FILE% -C %REMOTE_WWW_DIR% && rm /tmp/%TAR_FILE%"
+if %ERRORLEVEL% NEQ 0 (
+  color 0C
+  echo [ERROR] Failed to extract frontend archive on server.
+  pause
+  exit /b 1
+)
+
 del "%TAR_FILE%"
 
 echo.

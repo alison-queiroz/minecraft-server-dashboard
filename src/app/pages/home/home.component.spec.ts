@@ -30,7 +30,7 @@ const makeServerStub = () => ({
 const makeAuthStub = () => ({
   currentUser: signal(null),
   isLoading: signal(false),
-  getIdToken: jasmine.createSpy('getIdToken').and.resolveTo(null),
+  getIdToken: jest.fn().mockResolvedValue(null),
 });
 
 describe('HomeComponent', () => {
@@ -82,3 +82,7 @@ describe('HomeComponent', () => {
     expect(el.querySelector('app-home-connect-card')).toBeTruthy();
   });
 });
+
+
+
+

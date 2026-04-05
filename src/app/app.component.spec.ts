@@ -1,13 +1,21 @@
+import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { AppComponent } from './app.component';
 import { LoadingService } from './services/loading/loading.service';
+import { ThemeService } from './services/theme/theme.service';
 
 @Component({ standalone: true, template: '' })
 class BlankComponent {}
+
+const makeThemeStub = () => ({
+  theme: signal<'light' | 'dark'>('dark'),
+  isDark: signal(true),
+  toggleTheme: jest.fn(),
+});
 
 describe('AppComponent', () => {
   let httpMock: HttpTestingController;
@@ -18,6 +26,7 @@ describe('AppComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: ThemeService, useValue: makeThemeStub() },
         provideRouter([
           { path: '', component: BlankComponent },
           { path: 'server', component: BlankComponent },
@@ -39,12 +48,12 @@ describe('AppComponent', () => {
   });
 
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
+    const fixture: ComponentFixture<AppComponent> = TestBed.createComponent(AppComponent);
     expect(fixture.componentInstance).toBeTruthy();
   });
 
   it('should render nav, router outlet, and footer', () => {
-    const fixture = TestBed.createComponent(AppComponent);
+    const fixture: ComponentFixture<AppComponent> = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
 
@@ -53,8 +62,16 @@ describe('AppComponent', () => {
     expect(el.querySelector('app-footer')).toBeTruthy();
   });
 
+  it('binds the current theme on the app shell', () => {
+    const fixture: ComponentFixture<AppComponent> = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    const shell = (fixture.nativeElement as HTMLElement).querySelector('[data-theme]');
+    expect(shell?.getAttribute('data-theme')).toBe('dark');
+  });
+
   it('updates drag and animation state from directive output handlers', () => {
-    const fixture = TestBed.createComponent(AppComponent);
+    const fixture: ComponentFixture<AppComponent> = TestBed.createComponent(AppComponent);
     const comp = fixture.componentInstance as unknown as {
       onDragXChange(value: number): void;
       onDraggingChange(value: boolean): void;
@@ -69,12 +86,12 @@ describe('AppComponent', () => {
     comp.onNavigateDirection('right');
 
     expect(comp.dragX()).toBe(0);
-    expect(comp.isDragging()).toBeTrue();
+    expect(comp.isDragging()).toBe(true);
     expect(comp.enterFrom()).toBe('right');
   });
 
   it('renders the global loading bar while HTTP requests are in flight', () => {
-    const fixture = TestBed.createComponent(AppComponent);
+    const fixture: ComponentFixture<AppComponent> = TestBed.createComponent(AppComponent);
     const loading = TestBed.inject(LoadingService);
 
     fixture.detectChanges();
@@ -89,3 +106,7 @@ describe('AppComponent', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.loading-bar')).toBeNull();
   });
 });
+
+
+
+

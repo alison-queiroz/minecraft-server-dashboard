@@ -7,15 +7,15 @@
 }
 
 .profile-name {
-  @apply text-2xl font-black text-zinc-100;
+  @apply text-2xl font-black text-zinc-900 dark:text-zinc-100;
 }
 
 .profile-email {
-  @apply text-sm text-zinc-400;
+  @apply text-sm text-zinc-600 dark:text-zinc-400;
 }
 
 .profile-tabs {
-  @apply flex gap-1 border-b border-zinc-800 pb-0 overflow-x-auto;
+  @apply flex gap-1 overflow-x-auto border-b border-stone-200 pb-0 dark:border-zinc-800;
   scrollbar-width: none;
   -ms-overflow-style: none;
   &::-webkit-scrollbar { display: none; }
@@ -23,8 +23,8 @@
 
 .profile-tab {
   @apply flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest
-         text-zinc-500 border-b-2 border-transparent transition-colors -mb-px
-         hover:text-zinc-200 focus:outline-none cursor-pointer bg-transparent;
+         -mb-px border-b-2 border-transparent bg-transparent text-zinc-500 transition-colors
+         hover:text-zinc-700 focus:outline-none dark:hover:text-zinc-200 cursor-pointer;
 }
 
 .profile-tab--active {
@@ -38,12 +38,13 @@
 
 /* Fullscreen map overlay */
 .profile-map-overlay {
-  @apply fixed inset-0 z-50 flex flex-col bg-zinc-950;
+  @apply fixed inset-0 z-50 flex flex-col bg-stone-100 dark:bg-zinc-950;
 }
 
 .profile-map-back {
-  @apply flex items-center gap-2 px-4 py-3 text-xs font-bold text-zinc-400
-         hover:text-zinc-100 transition-colors bg-zinc-900 border-b border-zinc-800 shrink-0
+  @apply flex items-center gap-2 border-b border-stone-200 bg-white px-4 py-3 text-xs font-bold text-zinc-600
+         transition-colors hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400
+         dark:hover:text-zinc-100 shrink-0
          cursor-pointer;
 }
 

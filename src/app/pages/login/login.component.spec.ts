@@ -8,16 +8,14 @@ import { LoginComponent } from './login.component';
 import { AuthService } from '../../services/auth/auth.service';
 import { ServerService } from '../../services/server/server.service';
 
-/** Minimal AuthService stub */
 const makeAuthStub = () => ({
   currentUser: signal(null),
   isLoading: signal(false),
-  signInWithGoogle: jasmine.createSpy('signInWithGoogle').and.resolveTo(undefined),
-  signOut: jasmine.createSpy('signOut').and.resolveTo(undefined),
-  getIdToken: jasmine.createSpy('getIdToken').and.resolveTo(null),
+  signInWithGoogle: jest.fn().mockResolvedValue(undefined),
+  signOut: jest.fn().mockResolvedValue(undefined),
+  getIdToken: jest.fn().mockResolvedValue(null),
 });
 
-/** Minimal ServerService stub — prevents HTTP calls on construction */
 const makeServerStub = () => ({
   status: signal('LOADING' as const),
   bedrockStatus: signal('LOADING' as const),
@@ -36,7 +34,7 @@ const makeServerStub = () => ({
   bedrockProtocol: signal(null),
 });
 
-const flushMicrotasks = () => new Promise<void>((resolve) => queueMicrotask(resolve));
+const flushMicrotasks = (): Promise<void> => new Promise<void>((resolve) => queueMicrotask(resolve));
 
 describe('LoginComponent', () => {
   let authStub: ReturnType<typeof makeAuthStub>;
@@ -101,11 +99,11 @@ describe('LoginComponent', () => {
     button.click();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(comp.signing()).toBeFalse();
+    expect(comp.signing()).toBe(false);
   });
 
   it('shows error message when signInWithGoogle rejects', async () => {
-    authStub.signInWithGoogle.and.rejectWith(new Error('popup_closed_by_user'));
+    authStub.signInWithGoogle.mockRejectedValue(new Error('popup_closed_by_user'));
     const fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();
     const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.login-button')!;
@@ -117,22 +115,24 @@ describe('LoginComponent', () => {
   });
 
   it('clears the error and resets signing on subsequent sign-in attempt', async () => {
-    authStub.signInWithGoogle.and.rejectWith(new Error('first error'));
+    authStub.signInWithGoogle.mockRejectedValue(new Error('first error'));
     const fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();
     const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.login-button')!;
 
-    // First attempt — triggers error
     button.click();
     await fixture.whenStable();
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('.login-error')).toBeTruthy();
 
-    // Second attempt — error should clear before the next call
-    authStub.signInWithGoogle.and.resolveTo(undefined);
+    authStub.signInWithGoogle.mockResolvedValue(undefined);
     button.click();
     await fixture.whenStable();
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('.login-error')).toBeFalsy();
   });
 });
+
+
+
+

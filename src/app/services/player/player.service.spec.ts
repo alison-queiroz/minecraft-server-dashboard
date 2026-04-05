@@ -1,12 +1,9 @@
 ﻿import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Injectable } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
 import { PlayerService } from './player.service';
 import { Player } from './player.model';
-
-// ---------------------------------------------------------------------------
-// Mock data
-// ---------------------------------------------------------------------------
 
 const MOCK_PLAYERS: Partial<Player>[] = [
   {
@@ -49,42 +46,29 @@ const MOCK_HOUSE_MAPPING = {
   players: { Steve: '/steve-house' },
 };
 
-// ---------------------------------------------------------------------------
-// Test harness - overrides Firebase subscription so tests control player data
-// ---------------------------------------------------------------------------
-
 @Injectable()
 class PlayerServiceHarness extends PlayerService {
-  /** Override to skip actual Firebase connection in tests. */
   protected override subscribeToFirestorePlayers(): void { return; }
 
-  /** Push a batch of players as if Firestore sent a snapshot. */
   pushPlayers(players: Partial<Player>[] = MOCK_PLAYERS): void {
     const sorted = players
-      .map(p => new Player(p))
-      .sort((a, b) => b.level - a.level);
+      .map((p: Partial<Player>) => new Player(p))
+      .sort((a: Player, b: Player) => b.level - a.level);
     this.rawPlayers.set(sorted);
   }
 
-  /** Simulate what the Firestore error handler does. */
   pushError(err: unknown = new Error('Firestore unavailable')): void {
     console.warn('Firestore player listener error:', err);
   }
 
-  /** Expose fetchPlayersFromApi for direct testing */
   callFetchPlayersFromApi(): void {
     (this as unknown as { fetchPlayersFromApi(): void }).fetchPlayersFromApi();
   }
 
-  /** Expose enrichFromApi for direct testing */
   callEnrichFromApi(): void {
     (this as unknown as { enrichFromApi(): void }).enrichFromApi();
   }
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('PlayerService', () => {
   let service: PlayerServiceHarness;
@@ -92,8 +76,11 @@ describe('PlayerService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [{ provide: PlayerService, useClass: PlayerServiceHarness }],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PlayerService, useClass: PlayerServiceHarness },
+      ],
     });
     service = TestBed.inject(PlayerService) as PlayerServiceHarness;
     httpMock = TestBed.inject(HttpTestingController);
@@ -101,8 +88,6 @@ describe('PlayerService', () => {
   });
 
   afterEach(() => httpMock.verify());
-
-  // ── Initial state ─────────────────────────────────────────────────────────
 
   describe('initial state', () => {
     it('should create the service', () => {
@@ -123,8 +108,6 @@ describe('PlayerService', () => {
     });
   });
 
-  // ── Firestore live updates ─────────────────────────────────────────────────
-
   describe('Firestore live updates', () => {
     it('should populate players when a snapshot arrives', () => {
       service.pushPlayers();
@@ -138,33 +121,31 @@ describe('PlayerService', () => {
 
     it('should sort players by level descending', () => {
       service.pushPlayers();
-      const levels = service.players().map(p => p.level);
-      expect(levels).toEqual([...levels].sort((a, b) => b - a));
+      const levels = service.players().map((p: Player) => p.level);
+      expect(levels).toEqual([...levels].sort((a: number, b: number) => b - a));
     });
 
     it('should resolve house URLs from mapping', () => {
       service.pushPlayers();
-      const steve = service.players().find(p => p.name === 'Steve');
+      const steve = service.players().find((p: Player) => p.name === 'Steve');
       expect(steve?.houseUrl).toBe('https://maps.example.com/steve-house');
     });
 
     it('should leave houseUrl undefined for players not in mapping', () => {
       service.pushPlayers();
-      const alex = service.players().find(p => p.name === 'Alex');
+      const alex = service.players().find((p: Player) => p.name === 'Alex');
       expect(alex?.houseUrl).toBeUndefined();
     });
 
     it('should log a warning on Firestore listener error', () => {
-      spyOn(console, 'warn');
+      jest.spyOn(console, 'warn').mockImplementation(() => undefined);
       service.pushError();
       expect(console.warn).toHaveBeenCalledWith(
         'Firestore player listener error:',
-        jasmine.any(Error)
+        expect.any(Error)
       );
     });
   });
-
-  // ── filteredPlayers ────────────────────────────────────────────────────────
 
   describe('filteredPlayers', () => {
     beforeEach(() => service.pushPlayers());
@@ -198,8 +179,6 @@ describe('PlayerService', () => {
     });
   });
 
-  // ── selectedPlayer ─────────────────────────────────────────────────────────
-
   describe('selectedPlayer', () => {
     beforeEach(() => service.pushPlayers());
 
@@ -220,8 +199,6 @@ describe('PlayerService', () => {
     });
   });
 
-  // ── fetchAvatarIfNeeded ────────────────────────────────────────────────────
-
   describe('fetchAvatarIfNeeded', () => {
     const avatarUrl = 'https://mc-heads.net/avatar/Steve/64';
 
@@ -236,9 +213,13 @@ describe('PlayerService', () => {
       req.flush(new Blob(['img'], { type: 'image/png' }));
     });
 
-    it('should not repeat the HTTP request on subsequent calls', () => {
+    it('should not repeat the HTTP request on subsequent calls', async () => {
       service.fetchAvatarIfNeeded(avatarUrl);
       httpMock.expectOne(avatarUrl).flush(new Blob(['img'], { type: 'image/png' }));
+
+      // Wait one microtask for the tap operator to update the cache
+      await new Promise(resolve => setTimeout(resolve, 0));
+
       service.fetchAvatarIfNeeded(avatarUrl);
       httpMock.expectNone(avatarUrl);
     });
@@ -249,8 +230,6 @@ describe('PlayerService', () => {
       expect(service.getAvatarUrl(avatarUrl)).toBe(avatarUrl);
     });
   });
-
-  // ── fetchPlayersFromApi (private) ─────────────────────────────────────────
 
   describe('fetchPlayersFromApi', () => {
     it('sets players when the API returns a non-empty list', () => {
@@ -275,24 +254,21 @@ describe('PlayerService', () => {
     });
   });
 
-  // ── enrichFromApi (private) ────────────────────────────────────────────────
-
   describe('enrichFromApi', () => {
     beforeEach(() => service.pushPlayers());
 
     it('merges live API data into existing Firestore players', () => {
       service.callEnrichFromApi();
-      const enrichedData = MOCK_PLAYERS.map(p => ({ ...p, level: 99 }));
+      const enrichedData = MOCK_PLAYERS.map((p: Partial<Player>) => ({ ...p, level: 99 }));
       httpMock.expectOne('/api/players').flush(enrichedData);
-      const steve = service.players().find(p => p.name === 'Steve');
+      const steve = service.players().find((p: Player) => p.name === 'Steve');
       expect(steve?.level).toBe(99);
     });
 
     it('keeps existing player data when player is not in API response', () => {
       service.callEnrichFromApi();
-      // Flush with only Alex — Steve should keep its original level
       httpMock.expectOne('/api/players').flush([{ name: 'Alex', level: 99 }]);
-      const steve = service.players().find(p => p.name === 'Steve');
+      const steve = service.players().find((p: Player) => p.name === 'Steve');
       expect(steve?.level).toBe(10);
     });
 
@@ -309,18 +285,18 @@ describe('PlayerService', () => {
     });
   });
 
-  // ── house links error ──────────────────────────────────────────────────────
-
   describe('house links error path', () => {
     it('logs a warning when house links JSON cannot be fetched', () => {
-      // Create a fresh service without absorbing the house links request
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
-        imports: [HttpClientTestingModule],
-        providers: [{ provide: PlayerService, useClass: PlayerServiceHarness }],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: PlayerService, useClass: PlayerServiceHarness },
+        ],
       });
 
-      const warnSpy = spyOn(console, 'warn');
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
       TestBed.inject(PlayerService) as PlayerServiceHarness;
       const freshHttp = TestBed.inject(HttpTestingController);
 
@@ -328,10 +304,13 @@ describe('PlayerService', () => {
         .error(new ProgressEvent('error'));
 
       expect(warnSpy).toHaveBeenCalledWith(
-        jasmine.stringContaining('Could not reach house links')
+        expect.stringContaining('Could not reach house links')
       );
       freshHttp.verify();
     });
   });
 });
+
+
+
 

@@ -4,6 +4,7 @@ import { signal } from '@angular/core';
 import type { Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import type { User } from 'firebase/auth';
+import type { Mock } from 'vitest';
 
 import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth/auth.service';
@@ -11,13 +12,12 @@ import { AuthService } from '../services/auth/auth.service';
 describe('authGuard', () => {
   let isLoading = signal(false);
   let currentUser = signal<User | null>(null);
-  let mockRouter: jasmine.SpyObj<Router>;
+  let mockRouter: { navigate: Mock };
 
   beforeEach(() => {
-    // Re-create signals so each test starts fresh.
     isLoading = signal(false);
     currentUser = signal<User | null>(null);
-    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
+    mockRouter = { navigate: jest.fn() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -37,13 +37,13 @@ describe('authGuard', () => {
 
   it('returns true when the user is authenticated', async () => {
     currentUser.set({ uid: 'user-abc' } as User);
-    expect(await runGuard()).toBeTrue();
+    expect(await runGuard()).toBe(true);
   });
 
   it('navigates to /login and returns false for an unauthenticated user', async () => {
     currentUser.set(null);
     const result = await runGuard();
-    expect(result).toBeFalse();
+    expect(result).toBe(false);
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
   });
 
@@ -53,3 +53,7 @@ describe('authGuard', () => {
     expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 });
+
+
+
+

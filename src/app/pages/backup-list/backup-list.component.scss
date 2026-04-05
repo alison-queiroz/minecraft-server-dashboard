@@ -2,22 +2,22 @@
   @apply mx-auto w-full max-w-7xl pb-6;
 }
 .backup-card {
-  @apply bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl;
+  @apply overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
 }
 .card-header {
-  @apply p-5 border-b border-zinc-800 flex items-center justify-between;
+  @apply flex items-center justify-between border-b border-stone-200 p-5 dark:border-zinc-800;
 }
 .header-title {
-  @apply text-[10px] uppercase font-black tracking-widest text-zinc-500 flex items-center gap-2;
+  @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500;
 }
 .breadcrumb-container {
-  @apply px-5 py-4 bg-zinc-900/50 border-b border-zinc-800 flex items-center flex-wrap gap-2;
+  @apply flex items-center flex-wrap gap-2 border-b border-stone-200 bg-stone-50 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-900/50;
 }
 .breadcrumb-wrapper {
   @apply flex items-center;
 }
 .breadcrumb-separator {
-  @apply mx-3 text-zinc-700 font-bold;
+  @apply mx-3 font-bold text-zinc-400 dark:text-zinc-700;
 }
 .breadcrumb-btn {
   @apply text-[10px] font-black uppercase tracking-widest focus:outline-none transition-colors;
@@ -26,7 +26,7 @@
   @apply text-emerald-400 hover:text-emerald-300;
 }
 .breadcrumb-btn.inactive {
-  @apply text-zinc-500;
+  @apply text-zinc-500 dark:text-zinc-500;
 }
 .list-container {
   @apply min-h-[200px];
@@ -35,13 +35,13 @@
   @apply h-[min(68vh,640px)] w-full;
 }
 .list-item {
-  @apply border-b border-zinc-800;
+  @apply border-b border-stone-200 dark:border-zinc-800;
 }
 .item-content {
   @apply block;
 }
 .list-row {
-  @apply flex min-h-[88px] items-center justify-between gap-4 px-5 hover:bg-zinc-800/30 transition-colors;
+  @apply flex min-h-[88px] items-center justify-between gap-4 px-5 transition-colors hover:bg-stone-100 dark:hover:bg-zinc-800/30;
 }
 .item-content {
   @apply flex items-center gap-4 min-w-0;
@@ -50,28 +50,28 @@
   @apply shrink-0;
 }
 .icon-box {
-  @apply w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0;
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800;
 }
 .icon-box.folder {
   @apply text-emerald-400;
 }
 .icon-box.file {
-  @apply text-zinc-500;
+  @apply text-zinc-500 dark:text-zinc-500;
 }
 .item-info {
   @apply min-w-0;
 }
 .item-title {
-  @apply text-sm font-medium text-zinc-200 truncate cursor-pointer hover:text-emerald-400 transition-colors;
+  @apply truncate text-sm font-medium text-zinc-800 transition-colors hover:text-emerald-400 dark:text-zinc-200 cursor-pointer;
 }
 .item-meta {
-  @apply flex items-center flex-wrap gap-2 mt-1.5 text-[10px] uppercase font-black tracking-widest text-zinc-600;
+  @apply mt-1.5 flex items-center flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-600;
 }
 .meta-dot {
-  @apply w-1 h-1 rounded-full bg-zinc-700 hidden sm:inline-block;
+  @apply hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 sm:inline-block;
 }
 .meta-size {
-  @apply text-zinc-500;
+  @apply text-zinc-500 dark:text-zinc-500;
 }
 .btn-action {
   @apply inline-block px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all active:scale-95 text-center cursor-pointer;
@@ -80,11 +80,11 @@
   @apply text-emerald-400 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20;
 }
 .btn-action.secondary {
-  @apply text-zinc-400 bg-zinc-800 border-zinc-700 hover:text-zinc-100 hover:bg-zinc-700;
+  @apply border-stone-300 bg-white text-zinc-700 hover:bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-100;
 }
 .empty-action {
-  @apply text-zinc-700 text-[10px] font-black uppercase tracking-widest px-4 hidden sm:inline-block;
+  @apply hidden px-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-700 sm:inline-block;
 }
 .empty-state {
-  @apply p-12 text-center text-[10px] font-black uppercase tracking-widest text-zinc-600;
+  @apply p-12 text-center text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-600;
 }

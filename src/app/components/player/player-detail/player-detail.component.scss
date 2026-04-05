@@ -3,15 +3,15 @@
 }
 
 .detail-card {
-  @apply flex flex-col overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl lg:h-full;
+  @apply flex flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 lg:h-full;
 }
 
 .detail-hero {
-  @apply relative flex h-48 shrink-0 items-center justify-center overflow-hidden bg-zinc-800;
+  @apply relative flex h-48 shrink-0 items-center justify-center overflow-hidden bg-stone-200 dark:bg-zinc-800;
 }
 
 .detail-hero-overlay {
-  @apply pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-zinc-900 to-transparent;
+  @apply pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-white to-transparent dark:from-zinc-900;
 }
 
 .detail-grid-bg {
@@ -31,11 +31,19 @@
 }
 
 .detail-body::-webkit-scrollbar-thumb {
-  background: theme('colors.zinc.700');
+  background: theme('colors.stone.300');
   border-radius: 2px;
 }
 
 .detail-body::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.stone.400');
+}
+
+:host-context(.dark) .detail-body::-webkit-scrollbar-thumb {
+  background: theme('colors.zinc.700');
+}
+
+:host-context(.dark) .detail-body::-webkit-scrollbar-thumb:hover {
   background: theme('colors.zinc.600');
 }
 
@@ -44,15 +52,15 @@
 }
 
 .detail-name {
-  @apply text-3xl font-black uppercase tracking-tighter text-white;
+  @apply text-3xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white;
 }
 
 .detail-uuid-pill {
-  @apply mt-2 inline-block rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1;
+  @apply mt-2 inline-block rounded-full border border-stone-200 bg-stone-100 px-3 py-1 dark:border-zinc-800 dark:bg-zinc-950;
 }
 
 .detail-uuid {
-  @apply break-all font-mono text-[9px] text-zinc-500;
+  @apply break-all font-mono text-[9px] text-zinc-500 dark:text-zinc-500;
 }
 
 .detail-stats-grid {
@@ -60,11 +68,11 @@
 }
 
 .stat-card {
-  @apply rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition-colors hover:border-emerald-500/30;
+  @apply rounded-2xl border border-stone-200 bg-stone-50 p-4 transition-colors hover:border-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950;
 }
 
 .stat-label {
-  @apply mb-2 block text-[10px] font-black uppercase tracking-widest text-zinc-500;
+  @apply mb-2 block text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500;
 }
 
 .stat-value-row {
@@ -72,7 +80,7 @@
 }
 
 .health-track {
-  @apply h-2.5 flex-1 overflow-hidden rounded-full border border-zinc-800 bg-zinc-900;
+  @apply h-2.5 flex-1 overflow-hidden rounded-full border border-stone-300 bg-stone-200 dark:border-zinc-800 dark:bg-zinc-900;
 }
 
 .health-fill {
@@ -80,15 +88,15 @@
 }
 
 .health-value {
-  @apply text-sm font-black text-red-400;
+  @apply text-sm font-black text-red-600 dark:text-red-400;
 }
 
 .experience-value {
-  @apply text-2xl font-black italic text-emerald-400;
+  @apply text-2xl font-black italic text-emerald-600 dark:text-emerald-400;
 }
 
 .experience-unit {
-  @apply ml-1 text-[10px] not-italic text-zinc-600;
+  @apply ml-1 text-[10px] not-italic text-zinc-500 dark:text-zinc-600;
 }
 
 .detail-attributes {
@@ -96,7 +104,7 @@
 }
 
 .attribute-row {
-  @apply flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950/50 p-4;
+  @apply flex items-center justify-between rounded-2xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/50;
 }
 
 .attribute-label-group {
@@ -104,19 +112,19 @@
 }
 
 .attribute-icon-box {
-  @apply flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 text-zinc-500;
+  @apply flex h-8 w-8 items-center justify-center rounded-lg bg-white text-zinc-500 dark:bg-zinc-900;
 }
 
 .attribute-label {
-  @apply text-sm font-bold text-zinc-400;
+  @apply text-sm font-bold text-zinc-600 dark:text-zinc-400;
 }
 
 .attribute-value {
-  @apply font-mono text-sm text-zinc-300;
+  @apply font-mono text-sm text-zinc-700 dark:text-zinc-300;
 }
 
 .location-coordinates {
-  @apply rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-emerald-400;
+  @apply rounded-lg border border-stone-200 bg-white px-3 py-1.5 font-mono text-xs text-emerald-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-emerald-400;
 }
 
 .location-coordinates--link {
@@ -133,7 +141,7 @@
 }
 
 .detail-section-label {
-  @apply mb-2 text-[10px] font-black uppercase tracking-widest text-zinc-500;
+  @apply mb-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500;
 }
 
 .detail-locations-list {
@@ -141,11 +149,11 @@
 }
 
 .detail-location-link {
-  @apply flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/50 p-3 transition-colors hover:border-emerald-500/30;
+  @apply flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3 transition-colors hover:border-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950/50;
 }
 
 .detail-location-icon {
-  @apply shrink-0 text-zinc-500 transition-colors group-hover:text-emerald-400;
+  @apply shrink-0 text-zinc-500 transition-colors group-hover:text-emerald-400 dark:text-zinc-500;
 }
 
 .detail-location-copy {
@@ -153,15 +161,15 @@
 }
 
 .detail-location-name {
-  @apply truncate text-xs font-bold text-zinc-200 transition-colors group-hover:text-emerald-400;
+  @apply truncate text-xs font-bold text-zinc-800 transition-colors group-hover:text-emerald-400 dark:text-zinc-200;
 }
 
 .detail-location-description {
-  @apply truncate text-xs text-zinc-500;
+  @apply truncate text-xs text-zinc-500 dark:text-zinc-500;
 }
 
 .detail-location-arrow {
-  @apply shrink-0 text-zinc-600;
+  @apply shrink-0 text-zinc-400 dark:text-zinc-600;
 }
 
 .detail-actions {
@@ -177,11 +185,11 @@
 }
 
 .detail-action--secondary {
-  @apply border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
+  @apply border-stone-300 bg-white text-zinc-700 hover:bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700;
 }
 
 .detail-action--share {
-  @apply border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
+  @apply border-stone-300 bg-white text-zinc-700 hover:bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700;
 }
 
 .detail-action--copied {
@@ -189,19 +197,19 @@
 }
 
 .detail-empty-state {
-  @apply flex h-full flex-col items-center justify-center rounded-3xl border-2 border-dashed border-zinc-800 bg-zinc-900/40 p-12 text-center;
+  @apply flex h-full flex-col items-center justify-center rounded-3xl border-2 border-dashed border-stone-300 bg-stone-100/70 p-12 text-center dark:border-zinc-800 dark:bg-zinc-900/40;
 }
 
 .detail-empty-icon {
-  @apply mb-6 flex h-20 w-20 rotate-12 items-center justify-center rounded-3xl bg-zinc-800 text-zinc-600;
+  @apply mb-6 flex h-20 w-20 rotate-12 items-center justify-center rounded-3xl bg-white text-zinc-500 shadow-sm dark:bg-zinc-800 dark:text-zinc-600 dark:shadow-none;
 }
 
 .detail-empty-title {
-  @apply text-lg font-black uppercase tracking-tight text-zinc-400;
+  @apply text-lg font-black uppercase tracking-tight text-zinc-600 dark:text-zinc-400;
 }
 
 .detail-empty-copy {
-  @apply mt-2 max-w-[200px] text-sm text-zinc-600;
+  @apply mt-2 max-w-[200px] text-sm text-zinc-500 dark:text-zinc-600;
 }
 
 /* Replaces the inline style="background-image: ..." that was in the template */

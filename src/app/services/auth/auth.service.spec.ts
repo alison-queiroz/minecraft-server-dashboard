@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { AuthService } from './auth.service';
 import { Component } from '@angular/core';
+import { AuthService } from './auth.service';
 
 @Component({ standalone: true, template: '' })
 class BlankComponent {}
@@ -35,65 +35,42 @@ describe('AuthService', () => {
   });
 
   it('currentUser starts as null (Firebase not signed in)', () => {
-    // Firebase auth will call onAuthStateChanged(null) synchronously in test environment
-    // The signal should have been set (null or a user)
     expect(service.currentUser()).toBeDefined();
   });
 
   it('isLoading starts as true before onAuthStateChanged fires', () => {
-    // After construction isLoading may already be false (Firebase resolved synchronously)
-    // — just confirm it is a boolean
     expect(typeof service.isLoading()).toBe('boolean');
   });
 
   it('signInWithGoogle traverses the function body (covers lines for popup call)', async () => {
-    // Firebase signInWithPopup will hang waiting for a real popup window.
-    // Directly stub the private auth object's internal call path via the service
-    // private property to make it resolve instantly.
-    const privateAuth = asAuthServiceTestAccess(service).auth;
-
-    // Override the auth object temporarily so signInWithPopup resolves
-    const origAuth = privateAuth;
-    asAuthServiceTestAccess(service).auth = {
-      ...origAuth,
-      currentUser: null,
-    };
-
-    // Patch by injecting a fake auth that signInWithPopup will accept
-    // Since signInWithPopup is a standalone function we call via import,
-    // we instead test the method at the service level by replacing the body's call target
-    // through Object.defineProperty on the service constructor's auth property.
-
-    // Simplest: create a fake auth instance and replace the service's private field
     const fakeAuth: Record<string, unknown> = { currentUser: null };
     asAuthServiceTestAccess(service).auth = fakeAuth;
 
-    // Now signInWithGoogle will call signInWithPopup(fakeAuth, provider)
-    // signInWithPopup is a module function — it will fail because fakeAuth is not a real Auth
     try {
       await service.signInWithGoogle();
     } catch {
       // Expected: fakeAuth is not a real Firebase Auth object
     }
-    // Code path traversed — coverage achieved
   });
 
   it('signOut traverses the function body (covers signOut + navigate lines)', async () => {
-    spyOn(router, 'navigate').and.resolveTo(true);
+    jest.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    // Replace the auth object so Firebase signOut resolves immediately
     asAuthServiceTestAccess(service).auth = { currentUser: null };
 
     try {
       await service.signOut();
     } catch {
-      // Firebase throws because fakeAuth is not real — navigate may not be called
+      // Firebase throws because fakeAuth is not real
     }
   });
 
   it('getIdToken returns null when no current user is signed in', async () => {
-    // In tests, Firebase auth.currentUser is null
     const token = await service.getIdToken();
     expect(token).toBeNull();
   });
 });
+
+
+
+

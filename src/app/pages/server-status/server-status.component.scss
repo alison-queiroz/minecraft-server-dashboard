@@ -11,15 +11,15 @@
 }
 
 .status-title {
-  @apply text-2xl font-black uppercase tracking-tighter text-zinc-100;
+  @apply text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100;
 }
 
 .status-subtitle {
-  @apply mt-1 text-sm text-zinc-500;
+  @apply mt-1 text-sm text-zinc-500 dark:text-zinc-500;
 }
 
 .status-back-link {
-  @apply flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300;
+  @apply flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-zinc-500 transition-colors hover:bg-stone-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300;
 }
 
 .status-grid {

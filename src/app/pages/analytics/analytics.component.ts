@@ -6,6 +6,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ViewChild,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -21,9 +22,11 @@ import {
   Filler,
   type ChartDataset,
 } from 'chart.js';
-import { AnalyticsService, type Period, type Snapshot } from '../../services/analytics/analytics.service';
+import type { Period, Snapshot } from '../../services/analytics/analytics.service';
+import { AnalyticsService } from '../../services/analytics/analytics.service';
 import { IconComponent } from '../../components/shared/icon/icon.component';
 import { LoadingService } from '../../services/loading/loading.service';
+import { ThemeService } from '../../services/theme/theme.service';
 
 Chart.register(CategoryScale, LinearScale, LineController, LineElement, PointElement, Tooltip, Filler);
 
@@ -42,6 +45,7 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
   private readonly analyticsService = inject(AnalyticsService);
   protected readonly loadingService = inject(LoadingService);
+  private readonly themeService = inject(ThemeService);
 
   protected readonly period = signal<Period>('week');
   protected readonly hasData = signal(false);
@@ -57,6 +61,13 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
     { key: 'month', label: '30 d' },
     { key: 'year',  label: '1 y' },
   ];
+
+  constructor() {
+    effect(() => {
+      this.themeService.isDark();
+      this.applyThemeToChart();
+    });
+  }
 
   ngAfterViewInit(): void {
     this.buildChart();
@@ -79,6 +90,8 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
   private buildChart(): void {
     const ctx = this.canvasRef.nativeElement.getContext('2d');
     if (!ctx) return;
+
+    const palette = this.getThemePalette();
 
     const gradient = ctx.createLinearGradient(0, 0, 0, 280);
     gradient.addColorStop(0, 'rgba(34,197,94,0.35)');
@@ -106,17 +119,20 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
         animation: { duration: 400 },
         scales: {
           x: {
-            ticks: { color: '#9ca3af', maxTicksLimit: 8, maxRotation: 0 },
-            grid: { color: 'rgba(255,255,255,0.06)' },
+            ticks: { color: palette.axisLabel, maxTicksLimit: 8, maxRotation: 0 },
+            grid: { color: palette.gridLine },
           },
           y: {
             beginAtZero: true,
-            ticks: { color: '#9ca3af', stepSize: 1 },
-            grid: { color: 'rgba(255,255,255,0.06)' },
+            ticks: { color: palette.axisLabel, stepSize: 1 },
+            grid: { color: palette.gridLine },
           },
         },
         plugins: {
           tooltip: {
+            backgroundColor: palette.tooltipBackground,
+            titleColor: palette.tooltipText,
+            bodyColor: palette.tooltipText,
             callbacks: {
               label: ctx => ` ${ctx.parsed.y} online`,
             },
@@ -125,6 +141,8 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
         },
       },
     });
+
+    this.applyThemeToChart();
   }
 
   private async loadData(): Promise<void> {
@@ -196,5 +214,55 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
     if (bucketSize <= 6 * 60 * 60)     return d.toLocaleDateString([], { weekday: 'short', hour: '2-digit' });
     if (bucketSize <= 24 * 60 * 60)    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+
+  private getThemePalette(): {
+    axisLabel: string;
+    gridLine: string;
+    tooltipBackground: string;
+    tooltipText: string;
+  } {
+    if (this.themeService.isDark()) {
+      return {
+        axisLabel: '#9ca3af',
+        gridLine: 'rgba(255,255,255,0.06)',
+        tooltipBackground: '#18181b',
+        tooltipText: '#f4f4f5',
+      };
+    }
+
+    return {
+      axisLabel: '#52525b',
+      gridLine: 'rgba(24,24,27,0.08)',
+      tooltipBackground: '#fafafa',
+      tooltipText: '#18181b',
+    };
+  }
+
+  private applyThemeToChart(): void {
+    if (!this.chart) return;
+
+    const palette = this.getThemePalette();
+    const xScale = this.chart.options.scales?.['x'];
+    const yScale = this.chart.options.scales?.['y'];
+
+    if (xScale) {
+      xScale.ticks = { ...xScale.ticks, color: palette.axisLabel };
+      xScale.grid = { ...xScale.grid, color: palette.gridLine };
+    }
+
+    if (yScale) {
+      yScale.ticks = { ...yScale.ticks, color: palette.axisLabel };
+      yScale.grid = { ...yScale.grid, color: palette.gridLine };
+    }
+
+    const tooltip = this.chart.options.plugins?.tooltip;
+    if (tooltip) {
+      tooltip.backgroundColor = palette.tooltipBackground;
+      tooltip.titleColor = palette.tooltipText;
+      tooltip.bodyColor = palette.tooltipText;
+    }
+
+    this.chart.update('none');
   }
 }

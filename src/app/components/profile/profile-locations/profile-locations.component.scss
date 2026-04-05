@@ -1,5 +1,5 @@
 .locations-card {
-	@apply flex flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-6;
+	@apply flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none;
 }
 
 .locations-header {
@@ -7,7 +7,7 @@
 }
 
 .locations-title {
-	@apply text-base font-bold text-zinc-100;
+	@apply text-base font-bold text-zinc-900 dark:text-zinc-100;
 }
 
 .locations-toggle {
@@ -19,19 +19,19 @@
 }
 
 .locations-toggle--active {
-	@apply bg-zinc-800 text-zinc-300 hover:bg-zinc-700;
+	@apply bg-stone-100 text-zinc-700 hover:bg-stone-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700;
 }
 
 .location-form-card {
-	@apply flex flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-800/60 p-4;
+	@apply flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/60;
 }
 
 .location-map-wrap {
-  @apply rounded-xl border border-zinc-700 overflow-hidden;
+  @apply overflow-hidden rounded-xl border border-stone-200 dark:border-zinc-700;
 }
 
 .locations-toggle-note {
-	@apply text-xs text-zinc-500;
+	@apply text-xs text-zinc-500 dark:text-zinc-500;
 }
 
 .locations-error {
@@ -43,7 +43,7 @@
 }
 
 .locations-empty {
-	@apply py-4 text-center text-sm text-zinc-500;
+	@apply py-4 text-center text-sm text-zinc-500 dark:text-zinc-500;
 }
 
 .locations-list {
@@ -51,7 +51,7 @@
 }
 
 .location-card {
-	@apply flex flex-col gap-2 rounded-xl border border-zinc-800 p-4;
+	@apply flex flex-col gap-2 rounded-xl border border-stone-200 p-4 dark:border-zinc-800;
 }
 
 .location-edit-input {
@@ -75,7 +75,7 @@
 }
 
 .location-name {
-	@apply flex items-center gap-2 overflow-hidden text-sm font-bold text-zinc-100;
+	@apply flex items-center gap-2 overflow-hidden text-sm font-bold text-zinc-900 dark:text-zinc-100;
 }
 
 .location-public-badge {
@@ -83,7 +83,7 @@
 }
 
 .location-description {
-	@apply mt-0.5 text-xs text-zinc-400;
+	@apply mt-0.5 text-xs text-zinc-500 dark:text-zinc-400;
 }
 
 .location-actions {
@@ -91,7 +91,7 @@
 }
 
 .location-action {
-	@apply inline-flex items-center justify-center rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800;
+	@apply inline-flex items-center justify-center rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-stone-100 dark:text-zinc-400 dark:hover:bg-zinc-800;
 }
 
 .location-action--accent {
@@ -99,7 +99,7 @@
 }
 
 .location-action--bright {
-	@apply hover:text-zinc-100;
+	@apply hover:text-zinc-900 dark:hover:text-zinc-100;
 }
 
 .location-action--danger {
@@ -107,5 +107,5 @@
 }
 
 .location-hash {
-	@apply truncate font-mono text-xs text-zinc-600;
+	@apply truncate font-mono text-xs text-zinc-500 dark:text-zinc-600;
 }

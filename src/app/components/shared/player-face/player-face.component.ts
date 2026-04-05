@@ -6,7 +6,7 @@ import { PlayerService } from '../../../services/player/player.service';
   selector: 'app-player-face',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block relative overflow-hidden pixelated bg-zinc-800' },
+  host: { class: 'block relative overflow-hidden bg-stone-200 pixelated dark:bg-zinc-800' },
   imports: [],
   templateUrl: './player-face.component.html',
   styleUrls: ['./player-face.component.scss'],
