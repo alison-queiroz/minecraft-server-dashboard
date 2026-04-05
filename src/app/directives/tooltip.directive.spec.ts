@@ -1,5 +1,5 @@
-import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import type { DebugElement } from '@angular/core';
 import { By } from '@angular/platform-browser';
@@ -11,6 +11,15 @@ import { TooltipDirective } from './tooltip.directive';
   template: `<span [appTooltip]="'Hello world'" style="display:inline-block;width:40px;overflow:hidden">Hi</span>`,
 })
 class HostComponent {}
+
+@Component({
+  standalone: true,
+  imports: [TooltipDirective],
+  template: `<span [appTooltip]="tooltipText" style="display:inline-block;width:40px;overflow:hidden">Hi</span>`,
+})
+class DynamicHostComponent {
+  tooltipText = 'Initial text';
+}
 
 describe('TooltipDirective', () => {
   let fixture: ComponentFixture<HostComponent>;
@@ -54,6 +63,20 @@ describe('TooltipDirective', () => {
     expect(document.querySelector('.app-tooltip')).toBeTruthy();
   });
 
+  it('keeps the tooltip visible after touchend until another target is pressed', () => {
+    jest.useFakeTimers();
+    const touchStart = new TouchEvent('touchstart', {
+      touches: [new Touch({ identifier: 1, target: spanEl.nativeElement, clientX: 10, clientY: 10 })],
+    });
+    spanEl.nativeElement.dispatchEvent(touchStart);
+
+    jest.advanceTimersByTime(600);
+    spanEl.nativeElement.dispatchEvent(new TouchEvent('touchend'));
+    jest.advanceTimersByTime(3000);
+
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
+  });
+
   it('does not show tooltip if touch moves before long-press threshold', () => {
     jest.useFakeTimers();
     const touchStart = new TouchEvent('touchstart', {
@@ -76,6 +99,37 @@ describe('TooltipDirective', () => {
     dir.text = '';
     spanEl.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
     expect(document.querySelector('.app-tooltip')).toBeNull();
+  });
+
+  it('hides the tooltip when another element is pressed', () => {
+    spanEl.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
+
+    const otherButton = document.createElement('button');
+    document.body.appendChild(otherButton);
+
+    otherButton.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+    expect(document.querySelector('.app-tooltip')).toBeNull();
+    otherButton.remove();
+  });
+
+  it('updates visible tooltip text when the input changes', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [DynamicHostComponent] }).compileComponents();
+
+    const dynamicFixture = TestBed.createComponent(DynamicHostComponent);
+    dynamicFixture.detectChanges();
+
+    const dynamicSpan = dynamicFixture.debugElement.query(By.directive(TooltipDirective));
+    dynamicSpan.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+
+    expect(document.querySelector('.app-tooltip')?.textContent).toBe('Initial text');
+
+    dynamicFixture.componentInstance.tooltipText = 'Updated text';
+    dynamicFixture.detectChanges();
+
+    expect(document.querySelector('.app-tooltip')?.textContent).toBe('Updated text');
   });
 });
 

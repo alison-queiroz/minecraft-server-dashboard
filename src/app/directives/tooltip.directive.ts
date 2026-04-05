@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import type { OnDestroy } from '@angular/core';
 import { Directive, ElementRef, HostListener, Input, inject } from '@angular/core';
 
@@ -8,10 +9,30 @@ const LONG_PRESS_DELAY_MS = 500;
   standalone: true,
 })
 export class TooltipDirective implements OnDestroy {
-  @Input('appTooltip') text = '';
+  @Input('appTooltip')
+  set text(value: string) {
+    this.tooltipText = value;
+
+    if (!this.tooltipEl) {
+      return;
+    }
+
+    if (!this.tooltipText) {
+      this.hide();
+      return;
+    }
+
+    this.tooltipEl.textContent = this.tooltipText;
+  }
+
+  get text(): string {
+    return this.tooltipText;
+  }
 
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly document = inject(DOCUMENT);
   private tooltipEl: HTMLDivElement | null = null;
+  private tooltipText = '';
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
   private startX = 0;
   private startY = 0;
@@ -30,6 +51,24 @@ export class TooltipDirective implements OnDestroy {
   }
 
   @HostListener('blur') onBlur(): void {
+    this.hide();
+  }
+
+  @HostListener('document:pointerdown', ['$event']) onDocumentPointerDown(event: PointerEvent): void {
+    if (!this.tooltipEl) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Node)) {
+      this.hide();
+      return;
+    }
+
+    if (this.el.nativeElement.contains(target) || this.tooltipEl.contains(target)) {
+      return;
+    }
+
     this.hide();
   }
 
@@ -57,8 +96,6 @@ export class TooltipDirective implements OnDestroy {
 
   @HostListener('touchend') onTouchEnd(): void {
     this.cancelLongPress();
-    // Short delay so the tooltip is readable before auto-hiding on tap-release
-    setTimeout(() => this.hide(), 1200);
   }
 
   @HostListener('touchcancel') onTouchCancel(): void {
@@ -74,13 +111,13 @@ export class TooltipDirective implements OnDestroy {
   }
 
   private show(): void {
-    if (!this.text) return;
+    if (!this.tooltipText) return;
     this.hide();
 
     const tooltip = document.createElement('div');
     tooltip.className = 'app-tooltip';
-    tooltip.textContent = this.text;
-    document.body.appendChild(tooltip);
+    tooltip.textContent = this.tooltipText;
+    this.document.body.appendChild(tooltip);
     this.tooltipEl = tooltip;
 
     const rect = this.el.nativeElement.getBoundingClientRect();

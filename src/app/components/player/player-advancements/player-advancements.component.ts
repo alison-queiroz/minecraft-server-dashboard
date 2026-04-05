@@ -10,7 +10,7 @@
 } from '@angular/core';
 import { CommonModule, KeyValuePipe } from '@angular/common';
 import { of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, finalize, tap } from 'rxjs/operators';
 import { LucideTrophy, LucideChevronDown } from '@lucide/angular';
 import type { AdvancementsResult, Advancement } from '../../../services/advancements/advancements.service';
 import { AdvancementsService } from '../../../services/advancements/advancements.service';
@@ -73,6 +73,7 @@ export class PlayerAdvancementsComponent {
     return groups;
   });
 
+  private readonly loadingDescriptionIds = new Set<string>();
   private loaded = false;
 
   constructor() {
@@ -104,13 +105,28 @@ export class PlayerAdvancementsComponent {
 
   /**
    * Lazily fetches the advancement description on first hover/focus.
-   * The result is cached on `adv.description`; the [appTooltip] binding
-   * picks it up on the next interaction once loaded.
+    * The description is written back into the signal state so the visible
+    * tooltip and aria label refresh as soon as loading completes.
    */
   protected prefetchDescription(adv: Advancement): void {
-    if (adv.description) return;
+    if (adv.description || this.loadingDescriptionIds.has(adv.id)) return;
+
+    this.loadingDescriptionIds.add(adv.id);
     this.advancementsService.getDescription(adv.id).pipe(
-      tap(desc => { if (desc) adv.description = desc; }),
+      tap(desc => {
+        if (!desc) {
+          return;
+        }
+
+        this.result.update(result => ({
+          ...result,
+          completed: result.completed.map(item =>
+            item.id === adv.id ? { ...item, description: desc } : item),
+        }));
+      }),
+      finalize(() => {
+        this.loadingDescriptionIds.delete(adv.id);
+      }),
     ).subscribe();
   }
 
