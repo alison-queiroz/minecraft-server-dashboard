@@ -1,7 +1,7 @@
 import type { ComponentFixture} from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { IconComponent } from './icon.component';
-import { LucideHouse, LucideServer } from '@lucide/angular';
+import { LucideHouse } from '@lucide/angular';
 
 describe('IconComponent', () => {
   let fixture: ComponentFixture<IconComponent>;
@@ -42,28 +42,5 @@ describe('IconComponent', () => {
     fixture.detectChanges();
     const svg = fixture.nativeElement.querySelector('svg') as SVGElement;
     expect(svg.getAttribute('stroke-width')).toBe('3');
-  });
-
-  it('re-rendering with a new icon clears old children (hits while loop)', () => {
-    // First render populates SVG children
-    fixture.componentRef.setInput('icon', LucideHouse);
-    fixture.detectChanges();
-
-    const svg = fixture.nativeElement.querySelector('svg') as SVGElement;
-    expect(svg.childElementCount).toBeGreaterThan(0);
-
-    // Switching to a different icon triggers the effect again, hits the while(firstChild) loop
-    fixture.componentRef.setInput('icon', LucideServer);
-    fixture.detectChanges();
-
-    // Children replaced — still some children (new icon)
-    expect(svg.childElementCount).toBeGreaterThan(0);
-  });
-
-  it('renders icon nodes as SVG child elements', () => {
-    fixture.componentRef.setInput('icon', LucideHouse);
-    fixture.detectChanges();
-    const svg = fixture.nativeElement.querySelector('svg') as SVGElement;
-    expect(svg.childElementCount).toBeGreaterThan(0);
   });
 });

@@ -16,6 +16,7 @@ import { LucideTrophy, LucideChevronDown } from '@lucide/angular';
 import type { AdvancementsResult, Advancement } from '../../../services/advancements/advancements.service';
 import { AdvancementsService } from '../../../services/advancements/advancements.service';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { LoadingService } from '../../../services/loading/loading.service';
 
 @Component({
   selector: 'app-player-advancements',
@@ -48,6 +49,7 @@ export class PlayerAdvancementsComponent {
 
   private readonly advancementsService = inject(AdvancementsService);
   private readonly cdr = inject(ChangeDetectorRef);
+  protected readonly loadingService = inject(LoadingService);
 
   protected readonly LucideTrophy     = LucideTrophy;
   protected readonly LucideChevronDown = LucideChevronDown;
@@ -57,7 +59,6 @@ export class PlayerAdvancementsComponent {
   private readonly initialCountInput = signal(0);
   private readonly startOpenInput = signal(false);
   protected readonly collapsed = signal(true);
-  protected readonly isLoading = signal(false);
   protected readonly result    = signal<AdvancementsResult>({ completed: [], total: 0, by_category: {} });
   /** Shows the loaded total when available, otherwise falls back to the Firestore-cached count. */
   protected readonly displayCount = computed(() =>
@@ -129,14 +130,12 @@ export class PlayerAdvancementsComponent {
   }
 
   private fetch(): void {
-    this.isLoading.set(true);
     this.advancementsService.getAdvancements(this.uuidInput()).pipe(
       tap(r => {
         this.result.set(r);
-        this.isLoading.set(false);
         this.loaded = true;
       }),
-      catchError(() => { this.isLoading.set(false); return of(null); }),
+      catchError(() => of(null)),
     ).subscribe();
   }
 }

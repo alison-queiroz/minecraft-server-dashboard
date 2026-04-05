@@ -34,6 +34,41 @@ test.describe('Authenticated post-login flows', () => {
     await expect(page.getByRole('heading', { name: 'Players' })).toBeVisible();
   });
 
+  test('clicking a player opens detail and uses raw skin container', async ({ page }) => {
+    await page.route('**/api/players', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            name: 'Steve',
+            uuid: '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+            level: 30,
+            health: 20,
+            dimension: 'Overworld',
+            pos: [12, 64, -8],
+            last_seen: 'now',
+            skin_url: 'https://textures.minecraft.net/texture/raw-skin',
+            is_raw_skin: true,
+            play_hours: 120,
+            advancement_count: 53,
+          },
+        ]),
+      }),
+    );
+
+    await page.goto('/players');
+    await expectNotOnLogin('/players', page.url());
+
+    const firstRow = page.locator('app-player-card-row').first();
+    await expect(firstRow).toBeVisible();
+    await firstRow.click();
+
+    await expect(page.locator('.detail-name')).toHaveText('Steve');
+    await expect(page.locator('app-skin-viewer .skin-canvas')).toBeVisible();
+    await expect(page.locator('app-skin-viewer img.skin-image')).toHaveCount(0);
+  });
+
   test('opens profile page', async ({ page }) => {
     await page.goto('/profile');
     await expectNotOnLogin('/profile', page.url());

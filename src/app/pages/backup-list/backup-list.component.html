@@ -31,7 +31,7 @@
 
     <!-- Backup List -->
     <div class="list-container">
-      @if (isLoading()) {
+      @if (loadingService.isLoading()) {
         <div class="empty-state animate-pulse">
           Loading contents...
         </div>

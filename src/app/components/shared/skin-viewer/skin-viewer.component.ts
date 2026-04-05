@@ -38,9 +38,17 @@ export class SkinViewerComponent implements OnDestroy {
     this.skinUrlInput.set(value);
   }
 
+  get skinUrl(): string {
+    return this.skinUrlInput();
+  }
+
   @Input()
   set isRaw(value: boolean) {
     this.isRawInput.set(value);
+  }
+
+  get isRaw(): boolean {
+    return this.isRawInput();
   }
 
   @ViewChild('skinContainer', { static: false })

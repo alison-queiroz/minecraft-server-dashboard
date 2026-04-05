@@ -3,8 +3,19 @@
 }
 
 .player-row-level {
-	@apply rounded-md border border-zinc-700 bg-zinc-800 px-1 py-0.5 font-mono text-[10px] font-bold text-emerald-400 sm:px-2.5 sm:py-1 sm:text-xs;
+	@apply inline-flex max-w-full items-center justify-center whitespace-nowrap rounded-md border border-zinc-700 bg-zinc-800 px-1 py-0.5 font-mono text-[10px] font-bold text-emerald-400 sm:px-2.5 sm:py-1 sm:text-xs;
 }
 .player-row-adv {
-  @apply rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-400;
+  @apply inline-flex max-w-full items-center justify-center whitespace-nowrap rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-400;
+}
+
+.player-row-dimension {
+	@apply block max-w-full truncate text-xs font-bold;
+}
+
+@media (max-width: 640px) {
+	.player-row-level,
+	.player-row-adv {
+		@apply px-1 text-[9px];
+	}
 }

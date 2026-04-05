@@ -11,13 +11,21 @@ async function dispatchTouch(
 ): Promise<void> {
   await page.evaluate(
     ({ eventType, clientX, clientY }) => {
-      const host = document.querySelector('app-root > div');
+      const host = document.querySelector('app-root > div[appswipenavigate]');
       if (!host) {
         throw new Error('App root host not found for swipe dispatch');
       }
 
       const evt = new Event(eventType, { bubbles: true, cancelable: true });
-      const touchList = [{ clientX, clientY }] as unknown as TouchList;
+      const touch = { clientX, clientY };
+      const touchList = {
+        0: touch,
+        length: 1,
+        item: (index: number) => (index === 0 ? touch : null),
+        [Symbol.iterator]: function* () {
+          yield touch;
+        },
+      };
 
       if (eventType === 'touchend') {
         Object.defineProperty(evt, 'changedTouches', { value: touchList });

@@ -1,8 +1,11 @@
 import { Injectable, signal, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { SKIP_LOADING } from '../../interceptors/loading.interceptor';
+
+const SILENT = { context: new HttpContext().set(SKIP_LOADING, true) };
 
 export const SERVER_STATUS = {
   ONLINE: 'ONLINE',
@@ -62,7 +65,7 @@ export class ServerService {
   }
 
   private fetchStatus() {
-    this.http.get<ServerStatusResponse>(this.statusUrl).pipe(
+    this.http.get<ServerStatusResponse>(this.statusUrl, SILENT).pipe(
       tap(res => this.applyJavaStatus(res)),
       catchError(() => {
         this.setJavaOffline();
@@ -72,7 +75,7 @@ export class ServerService {
   }
 
   private fetchBedrockStatus() {
-    this.http.get<ServerStatusResponse>(this.bedrockStatusUrl).pipe(
+    this.http.get<ServerStatusResponse>(this.bedrockStatusUrl, SILENT).pipe(
       tap(res => {
         this.bedrockStatus.set(res.online ? SERVER_STATUS.ONLINE : SERVER_STATUS.OFFLINE);
         this.bedrockOnlinePlayers.set(res.players?.online ?? 0);

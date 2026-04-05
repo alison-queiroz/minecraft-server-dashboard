@@ -23,6 +23,7 @@ import {
 } from 'chart.js';
 import { AnalyticsService, type Period, type Snapshot } from '../../services/analytics/analytics.service';
 import { IconComponent } from '../../components/shared/icon/icon.component';
+import { LoadingService } from '../../services/loading/loading.service';
 
 Chart.register(CategoryScale, LinearScale, LineController, LineElement, PointElement, Tooltip, Filler);
 
@@ -40,9 +41,9 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
   @ViewChild('chartCanvas') private readonly canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private readonly analyticsService = inject(AnalyticsService);
+  protected readonly loadingService = inject(LoadingService);
 
   protected readonly period = signal<Period>('week');
-  protected readonly isLoading = signal(true);
   protected readonly hasData = signal(false);
   protected readonly peakOnline = signal(0);
   protected readonly avgOnline = signal(0);
@@ -127,12 +128,11 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
   }
 
   private async loadData(): Promise<void> {
-    this.isLoading.set(true);
     try {
       const snaps = await this.analyticsService.getSnapshots(this.period());
       this.updateChart(snaps);
-    } finally {
-      this.isLoading.set(false);
+    } catch {
+      // error is already handled silently; loading state is managed by the interceptor
     }
   }
 

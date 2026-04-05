@@ -16,10 +16,22 @@ class HostComponent {
   readonly pageOrder = ['/', '/server', '/players', '/profile', '/map', '/backups', '/analytics'];
 }
 
+function createTouchList(clientX: number, clientY: number): TouchList {
+  const touch = { clientX, clientY } as Touch;
+  return {
+    0: touch,
+    length: 1,
+    item: (index: number) => (index === 0 ? touch : null),
+    [Symbol.iterator]: function* () {
+      yield touch;
+    },
+  } as unknown as TouchList;
+}
+
 function fakeTouchEvent(clientX: number, clientY: number, target?: Element): TouchEvent {
   return {
-    touches: [{ clientX, clientY } as Touch],
-    changedTouches: [{ clientX, clientY } as Touch],
+    touches: createTouchList(clientX, clientY),
+    changedTouches: createTouchList(clientX, clientY),
     target: target ?? document.createElement('div'),
   } as unknown as TouchEvent;
 }
@@ -92,7 +104,7 @@ describe('SwipeNavigateDirective', () => {
     Object.defineProperty(window, 'innerWidth', { value: 100, configurable: true });
     directive.onTouchStart(fakeTouchEvent(500, 50));
     directive.onTouchMove(fakeTouchEvent(300, 50));
-    directive.onTouchEnd({ changedTouches: [{ clientX: 10, clientY: 52 }] } as unknown as TouchEvent);
+    directive.onTouchEnd({ changedTouches: createTouchList(10, 52) } as unknown as TouchEvent);
 
     expect(directionSpy).toHaveBeenCalledWith('right');
     expect(router.navigateByUrl).toHaveBeenCalledWith('/server');
@@ -110,7 +122,7 @@ describe('SwipeNavigateDirective', () => {
 
     directive.onTouchStart(fakeTouchEvent(300, 50));
     directive.onTouchMove(fakeTouchEvent(280, 52));
-    directive.onTouchEnd({ changedTouches: [{ clientX: 260, clientY: 52 }] } as unknown as TouchEvent);
+    directive.onTouchEnd({ changedTouches: createTouchList(260, 52) } as unknown as TouchEvent);
 
     expect(navigateSpy).not.toHaveBeenCalled();
     expect(dragSpy).toHaveBeenCalledWith(0);

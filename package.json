@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "set NODE_OPTIONS=--no-deprecation && ng serve",
+    "start:hmr": "set NODE_OPTIONS=--no-deprecation && ng serve --hmr",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",

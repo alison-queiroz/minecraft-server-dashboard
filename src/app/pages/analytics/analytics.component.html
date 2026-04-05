@@ -37,7 +37,7 @@
 
     <!-- Canvas / loading -->
     <div class="chart-wrapper">
-      @if (isLoading()) {
+      @if (loadingService.isLoading() && !hasData()) {
         <div class="chart-loading">
           <span class="loading-dot"></span>
           <span class="loading-dot"></span>

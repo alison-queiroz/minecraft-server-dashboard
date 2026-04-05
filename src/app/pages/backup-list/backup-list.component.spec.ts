@@ -16,7 +16,6 @@ type WritableSignalLike<T> = (() => T) & {
 interface BackupListTestAccess {
   currentPath: WritableSignalLike<NavigationPath[]>;
   backups: WritableSignalLike<BackupFile[]>;
-  isLoading: WritableSignalLike<boolean>;
   loadCurrentFolder(): void;
   navigateTo(folderId: string | null, folderName: string): void;
   isFolder(file: BackupFile): boolean;
@@ -122,12 +121,12 @@ describe('BackupListComponent', () => {
 
     req.flush(mockData);
     expect(cmp.backups()).toEqual(mockData);
-    expect(cmp.isLoading()).toBeFalse();
   });
 
   it('should handle API errors gracefully', () => {
     fixture.detectChanges();
     const cmp = asBackupListTestAccess(component);
+    spyOn(console, 'error');
     const req = httpMock.expectOne('/api/backups');
 
     req.flush('Server Error', {
@@ -135,11 +134,11 @@ describe('BackupListComponent', () => {
       statusText: 'Internal Server Error',
     });
 
+    expect(console.error).toHaveBeenCalled();
     expect(cmp.backups()).toEqual([]);
-    expect(cmp.isLoading()).toBeFalse();
   });
 
-  it('loadCurrentFolder catchError logs and resets isLoading on parse error', () => {
+  it('loadCurrentFolder catchError logs and leaves backups untouched on parse error', () => {
     // Bypass BackupService's own catchError by making getBackups throw directly
     const cmp = asBackupListTestAccess(component);
     const backupService = TestBed.inject(BackupService);
@@ -152,7 +151,7 @@ describe('BackupListComponent', () => {
       jasmine.stringContaining('Failed to parse backups'),
       jasmine.anything()
     );
-    expect(cmp.isLoading()).toBeFalse();
+    expect(cmp.backups()).toEqual([]);
   });
 
   it('should request the current folder when loadCurrentFolder runs', fakeAsync(() => {
@@ -166,6 +165,7 @@ describe('BackupListComponent', () => {
     tick();
 
     const req = httpMock.expectOne('/api/backups?folderId=folder-123');
+    expect(req.request.method).toBe('GET');
     req.flush([]);
   }));
 

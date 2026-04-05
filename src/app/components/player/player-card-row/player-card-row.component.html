@@ -22,8 +22,9 @@
     }
   </div>
 
-  <div class="col-span-2">
-    <span class="text-xs font-bold"
+  <div class="col-span-2 min-w-0">
+    <span class="player-row-dimension"
+      [attr.title]="player.dimension"
       [ngClass]="{
         'text-emerald-500': player.dimension === 'Overworld',
         'text-orange-500': player.dimension === 'Nether',

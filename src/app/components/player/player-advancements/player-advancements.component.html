@@ -14,7 +14,7 @@
 
     @if (!collapsed()) {
       <div class="adv-body">
-        @if (isLoading()) {
+        @if (loadingService.isLoading()) {
           <div class="adv-loading">
             <span class="adv-dot"></span>
             <span class="adv-dot"></span>

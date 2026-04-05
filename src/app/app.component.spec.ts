@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { AppComponent } from './app.component';
+import { LoadingService } from './services/loading/loading.service';
 
 @Component({ standalone: true, template: '' })
 class BlankComponent {}
@@ -70,5 +71,21 @@ describe('AppComponent', () => {
     expect(comp.dragX()).toBe(0);
     expect(comp.isDragging()).toBeTrue();
     expect(comp.enterFrom()).toBe('right');
+  });
+
+  it('renders the global loading bar while HTTP requests are in flight', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const loading = TestBed.inject(LoadingService);
+
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.loading-bar')).toBeNull();
+
+    loading.start();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.loading-bar')).toBeTruthy();
+
+    loading.done();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.loading-bar')).toBeNull();
   });
 });

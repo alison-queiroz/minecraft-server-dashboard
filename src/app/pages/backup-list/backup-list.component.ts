@@ -21,6 +21,7 @@ import {
 import { of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { IconComponent } from 'src/app/components/shared/icon/icon.component';
+import { LoadingService } from '../../services/loading/loading.service';
 
 export interface NavigationPath {
   readonly id: string | null;
@@ -41,8 +42,8 @@ export class BackupListComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly LucideFile = LucideFile;
 
   private readonly hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly loadingService = inject(LoadingService);
   protected readonly backups = signal<BackupFile[]>([]);
-  protected readonly isLoading = signal<boolean>(true);
   protected readonly currentPath = signal<NavigationPath[]>([
     { id: null, name: 'Root' },
   ]);
@@ -84,18 +85,15 @@ export class BackupListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadCurrentFolder(): void {
-    this.isLoading.set(true);
     const path = this.currentPath();
     const currentFolderId = path.at(-1)?.id ?? null;
 
     this.backupService.getBackups(currentFolderId).pipe(
       tap(data => {
         this.backups.set(data);
-        this.isLoading.set(false);
       }),
       catchError(err => {
         console.error('Failed to parse backups', err);
-        this.isLoading.set(false);
         return of([]);
       }),
     ).subscribe();

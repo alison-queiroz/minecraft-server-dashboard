@@ -1,3 +1,27 @@
 :host {
   display: block;
 }
+
+.loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  overflow: hidden;
+  background: transparent;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: theme('colors.green.500');
+  animation: loading-slide 1.4s ease-in-out infinite;
+  transform-origin: left;
+}
+
+@keyframes loading-slide {
+  0%   { transform: translateX(-100%) scaleX(0.5); }
+  50%  { transform: translateX(0%) scaleX(1); }
+  100% { transform: translateX(100%) scaleX(0.5); }
+}
