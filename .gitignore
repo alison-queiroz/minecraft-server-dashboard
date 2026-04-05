@@ -48,3 +48,6 @@ Thumbs.db
 /test-results
 /playwright-report
 
+# Runtime-generated data files
+analytics_snapshots.jsonl
+
