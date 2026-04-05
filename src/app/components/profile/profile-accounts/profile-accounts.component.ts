@@ -15,12 +15,20 @@ import type { Player } from '../../../services/player/player.model';
 import { PlayerFaceComponent } from '../../shared/player-face/player-face.component';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ActionButtonComponent } from '../../shared/action-button/action-button.component';
+import { UiBadgeComponent } from '../../../shared/ui/ui-badge/ui-badge.component';
+import { UiIconButtonComponent } from '../../../shared/ui/ui-icon-button/ui-icon-button.component';
 
 @Component({
   selector: 'app-profile-accounts',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PlayerFaceComponent, IconComponent, ActionButtonComponent],
+  imports: [
+    PlayerFaceComponent,
+    IconComponent,
+    ActionButtonComponent,
+    UiBadgeComponent,
+    UiIconButtonComponent,
+  ],
   templateUrl: './profile-accounts.component.html',
   styleUrls: ['./profile-accounts.component.scss'],
 })

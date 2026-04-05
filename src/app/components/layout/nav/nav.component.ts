@@ -12,12 +12,23 @@ import { ThemeService } from '../../../services/theme/theme.service';
 import { ServerIconComponent } from '../../shared/server-icon/server-icon.component';
 import { UserAvatarComponent } from '../../shared/user-avatar/user-avatar.component';
 import { ServerStatusBadgeComponent } from '../../shared/server-status-badge/server-status-badge.component';
+import { UiBadgeComponent } from '../../../shared/ui/ui-badge/ui-badge.component';
+import { UiIconButtonComponent } from '../../../shared/ui/ui-icon-button/ui-icon-button.component';
 
 @Component({
   selector: 'app-nav',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, ServerIconComponent, UserAvatarComponent, ServerStatusBadgeComponent, IconComponent],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    ServerIconComponent,
+    UserAvatarComponent,
+    ServerStatusBadgeComponent,
+    IconComponent,
+    UiBadgeComponent,
+    UiIconButtonComponent,
+  ],
   templateUrl: './nav.component.html',
   styleUrls: ['./nav.component.scss'],
 })
@@ -34,9 +45,9 @@ export class NavComponent {
   protected readonly LucideDatabase = LucideDatabase;
   protected readonly LucideChartLine = LucideChartLine;
 
-  protected readonly serverService = inject(ServerService);
-  protected readonly auth = inject(AuthService);
-  protected readonly themeService = inject(ThemeService);
+  protected readonly serverService: ServerService = inject(ServerService);
+  protected readonly auth: AuthService = inject(AuthService);
+  protected readonly themeService: ThemeService = inject(ThemeService);
   protected readonly menuOpen = signal(false);
 
   toggleMenu(): void {

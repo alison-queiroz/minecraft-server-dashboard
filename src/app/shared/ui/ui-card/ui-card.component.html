@@ -1,0 +1,26 @@
+<article
+  class="ui-card"
+  [class.ui-card--compact]="compact()"
+  [class.ui-card--interactive]="interactive()">
+  @if (showHeader()) {
+    <header class="ui-card__header">
+      <div class="ui-card__heading">
+        <ng-content select="[uiCardTitle]"></ng-content>
+        <ng-content select="[uiCardSubtitle]"></ng-content>
+      </div>
+      <div class="ui-card__actions">
+        <ng-content select="[uiCardActions]"></ng-content>
+      </div>
+    </header>
+  }
+
+  <div class="ui-card__body">
+    <ng-content></ng-content>
+  </div>
+
+  @if (showFooter()) {
+    <footer class="ui-card__footer">
+      <ng-content select="[uiCardFooter]"></ng-content>
+    </footer>
+  }
+</article>

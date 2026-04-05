@@ -1,41 +1,24 @@
-<div class="bedrock-card">
-  <div class="bedrock-header">
-    <h3 class="server-card-title">
-      <app-icon [icon]="LucideGrid3x3" [size]="12" [strokeWidth]="2.5"></app-icon>
-      Bedrock Edition
-      <span class="bedrock-status"
-        [ngClass]="{
-          'text-blue-400 bg-blue-500/10 border-blue-500/20': serverService.bedrockStatus() === serverStatus.ONLINE,
-          'text-red-400 bg-red-500/10 border-red-500/20': serverService.bedrockStatus() === serverStatus.OFFLINE,
-          'text-yellow-400 bg-yellow-500/10 border-yellow-500/20': serverService.bedrockStatus() === serverStatus.LOADING
-        }">
-        {{ serverService.bedrockStatus() }}
-      </span>
-    </h3>
-    <span class="bedrock-via">via Geyser</span>
-  </div>
+<app-ui-card class="bedrock-card" [showHeader]="true">
+  <h3 uiCardTitle class="server-card-title">
+    <app-icon [icon]="LucideGrid3x3" [size]="12" [strokeWidth]="2.5"></app-icon>
+    Bedrock Edition
+    <app-ui-badge [variant]="bedrockStatusVariant()" appearance="soft" size="sm">
+      {{ serverService.bedrockStatus() }}
+    </app-ui-badge>
+  </h3>
+  <span uiCardActions class="bedrock-via">via Geyser</span>
   <div class="bedrock-body">
     <div class="bedrock-grid">
-      <div>
-        <p class="bedrock-label">Port</p>
-        <code class="bedrock-value">{{ serverService.bedrockPort() ?? 19132 }}</code>
-      </div>
-      <div>
-        <p class="bedrock-label">Version</p>
-        <code class="bedrock-value">{{ serverService.bedrockVersion() || '—' }}</code>
-      </div>
-      <div>
-        <p class="bedrock-label">Online</p>
-        <p class="bedrock-online"
+      <app-ui-stat-item [label]="'Port'" [value]="serverService.bedrockPort() ?? 19132" [mono]="true"></app-ui-stat-item>
+      <app-ui-stat-item [label]="'Version'" [value]="serverService.bedrockVersion() || '—'" [mono]="true"></app-ui-stat-item>
+      <app-ui-stat-item [label]="'Online'">
+        <span uiStatValue class="bedrock-online"
           [class.text-blue-400]="serverService.bedrockOnlinePlayers() > 0"
           [class.text-zinc-500]="serverService.bedrockOnlinePlayers() === 0">
           {{ serverService.bedrockOnlinePlayers() }}<span class="bedrock-online-max">/{{ serverService.bedrockMaxPlayers() }}</span>
-        </p>
-      </div>
-      <div>
-        <p class="bedrock-label">Edition</p>
-        <p class="bedrock-edition">Bedrock</p>
-      </div>
+        </span>
+      </app-ui-stat-item>
+      <app-ui-stat-item [label]="'Edition'" [value]="'Bedrock'"></app-ui-stat-item>
     </div>
     <div class="bedrock-note">
       <app-icon [icon]="LucideInfo" [size]="12" class="bedrock-note-icon"></app-icon>
@@ -45,4 +28,4 @@
       </p>
     </div>
   </div>
-</div>
+</app-ui-card>

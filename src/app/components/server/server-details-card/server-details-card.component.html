@@ -1,26 +1,12 @@
-<div class="details-card">
-  <div class="server-card-header">
-    <h3 class="server-card-title">
-      <app-icon [icon]="LucideInfo" [size]="12" [strokeWidth]="2.5"></app-icon>
-      Server Details
-    </h3>
-  </div>
+<app-ui-card class="details-card" [showHeader]="true">
+  <h3 uiCardTitle class="server-card-title">
+    <app-icon [icon]="LucideInfo" [size]="12" [strokeWidth]="2.5"></app-icon>
+    Server Details
+  </h3>
   <div class="details-grid">
-    <div>
-      <p class="details-label">Software</p>
-      <p class="details-value">{{ serverService.software() || '—' }}</p>
-    </div>
-    <div>
-      <p class="details-label">Version</p>
-      <p class="details-value details-value--mono">{{ serverService.version() || '—' }}</p>
-    </div>
-    <div>
-      <p class="details-label">Protocol</p>
-      <p class="details-value details-value--mono">{{ serverService.protocol()?.version ?? '—' }}</p>
-    </div>
-    <div>
-      <p class="details-label">Edition</p>
-      <p class="details-value">Java</p>
-    </div>
+    <app-ui-stat-item [label]="'Software'" [value]="serverService.software() || '—'"></app-ui-stat-item>
+    <app-ui-stat-item [label]="'Version'" [value]="serverService.version() || '—'" [mono]="true"></app-ui-stat-item>
+    <app-ui-stat-item [label]="'Protocol'" [value]="serverService.protocol()?.version ?? '—'" [mono]="true"></app-ui-stat-item>
+    <app-ui-stat-item [label]="'Edition'" [value]="'Java'"></app-ui-stat-item>
   </div>
-</div>
+</app-ui-card>

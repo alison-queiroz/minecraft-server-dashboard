@@ -11,14 +11,12 @@
 
   <!-- Summary cards -->
   <div class="stat-cards">
-    <div class="stat-card">
-      <span class="stat-label">Peak online</span>
-      <span class="stat-value">{{ peakOnline() }}</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">Avg online</span>
-      <span class="stat-value">{{ avgOnline() }}</span>
-    </div>
+    <app-ui-stat-item class="stat-card" [label]="'Peak online'">
+      <span uiStatValue class="stat-value">{{ peakOnline() }}</span>
+    </app-ui-stat-item>
+    <app-ui-stat-item class="stat-card" [label]="'Avg online'">
+      <span uiStatValue class="stat-value">{{ avgOnline() }}</span>
+    </app-ui-stat-item>
   </div>
 
   <!-- Chart card -->

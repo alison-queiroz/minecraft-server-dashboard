@@ -1,5 +1,5 @@
 .identity-card {
-  @apply overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
+  @apply block;
 }
 
 .identity-hero {
@@ -11,5 +11,5 @@
 }
 
 .identity-tags {
-  @apply flex flex-wrap justify-center gap-2 border-t border-stone-200 p-4 dark:border-zinc-800;
+  @apply flex flex-wrap justify-center gap-2;
 }

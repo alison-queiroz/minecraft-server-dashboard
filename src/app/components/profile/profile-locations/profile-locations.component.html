@@ -49,7 +49,7 @@
 
   <div class="locations-list">
   @for (loc of profileService.savedLocations(); track loc.id) {
-    <div class="location-card">
+    <app-ui-card class="location-card" [compact]="true">
       @if (editingId() === loc.id) {
         <input [value]="editName()" (input)="editName.set($any($event.target).value)" maxlength="64"
           placeholder="Location name"
@@ -78,29 +78,29 @@
             <p class="location-name">
               <span class="min-w-0 flex-1 truncate">{{ loc.name }}</span>
               @if (loc.isPublic) {
-                <span class="location-public-badge">Public</span>
+                <app-ui-badge variant="success" appearance="solid" size="sm">Public</app-ui-badge>
               }
             </p>
             @if (loc.description) { <p class="location-description">{{ loc.description }}</p> }
           </div>
           <div class="location-actions">
-            <button (click)="previewOnMap(loc.mapHash)" class="location-action location-action--accent" title="Preview on map">
+            <app-ui-icon-button (activated)="previewOnMap(loc.mapHash)" [ariaLabel]="'Preview on map'" variant="accent" size="sm" class="location-action">
               <app-icon [icon]="LucideMap" [size]="14"></app-icon>
-            </button>
+            </app-ui-icon-button>
             <a [href]="mapUrl(loc.mapHash)" target="_blank" rel="noopener" class="location-action location-action--bright" title="Open in new tab">
               <app-icon [icon]="LucideExternalLink" [size]="14"></app-icon>
             </a>
-            <button (click)="startEdit(loc)" class="location-action location-action--bright" title="Edit">
+            <app-ui-icon-button (activated)="startEdit(loc)" [ariaLabel]="'Edit location'" variant="bright" size="sm" class="location-action">
               <app-icon [icon]="LucidePencil" [size]="14"></app-icon>
-            </button>
-            <button (click)="deleteLocation(loc.id)" class="location-action location-action--danger" title="Delete">
+            </app-ui-icon-button>
+            <app-ui-icon-button (activated)="deleteLocation(loc.id)" [ariaLabel]="'Delete location'" variant="danger" size="sm" class="location-action">
               <app-icon [icon]="LucideTrash2" [size]="14"></app-icon>
-            </button>
+            </app-ui-icon-button>
           </div>
         </div>
         <p class="location-hash">{{ loc.mapHash }}</p>
       }
-    </div>
+    </app-ui-card>
   }
   </div>
 </section>

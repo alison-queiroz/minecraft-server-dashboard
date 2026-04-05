@@ -1,11 +1,11 @@
 @if (serverService.motd().length > 0) {
-  <div class="motd-card">
-    <h3 class="server-card-title mb-3">
+  <app-ui-card class="motd-card" [showHeader]="true">
+    <h3 uiCardTitle class="server-card-title">
       <app-icon [icon]="LucideMessageSquare" [size]="12" [strokeWidth]="2.5"></app-icon>
       Message of the Day
     </h3>
     @for (line of serverService.motd(); track $index) {
       <p class="motd-line">{{ line }}</p>
     }
-  </div>
+  </app-ui-card>
 }

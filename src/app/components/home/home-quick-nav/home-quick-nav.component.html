@@ -1,23 +1,23 @@
 <div class="quick-nav-list">
-  <a routerLink="/players" class="quick-nav-item group">
-    <div class="quick-nav-icon">
-      <app-icon [icon]="LucideUsers" [size]="20"></app-icon>
-    </div>
-    <div class="quick-nav-copy">
-      <div class="quick-nav-title">Player List</div>
-      <div class="quick-nav-subtitle">{{ playerService.players().length }} registered players</div>
-    </div>
-    <app-icon [icon]="LucideChevronRight" [size]="16" [strokeWidth]="2.5" class="quick-nav-arrow"></app-icon>
+  <a routerLink="/players" class="quick-nav-link">
+    <app-ui-list-item class="quick-nav-item" [interactive]="true" [showLeading]="true" [showSubtitle]="true" [showTrailing]="true">
+      <div uiItemLeading class="quick-nav-icon">
+        <app-icon [icon]="LucideUsers" [size]="20"></app-icon>
+      </div>
+      <div uiItemTitle class="quick-nav-title">Player List</div>
+      <div uiItemSubtitle class="quick-nav-subtitle">{{ playerService.players().length }} registered players</div>
+      <app-icon uiItemTrailing [icon]="LucideChevronRight" [size]="16" [strokeWidth]="2.5" class="quick-nav-arrow"></app-icon>
+    </app-ui-list-item>
   </a>
 
-  <a routerLink="/server" class="quick-nav-item group">
-    <div class="quick-nav-icon">
-      <app-icon [icon]="LucideServer" [size]="20"></app-icon>
-    </div>
-    <div class="quick-nav-copy">
-      <div class="quick-nav-title">Server Status</div>
-      <div class="quick-nav-subtitle">Detailed server information</div>
-    </div>
-    <app-icon [icon]="LucideChevronRight" [size]="16" [strokeWidth]="2.5" class="quick-nav-arrow"></app-icon>
+  <a routerLink="/server" class="quick-nav-link">
+    <app-ui-list-item class="quick-nav-item" [interactive]="true" [showLeading]="true" [showSubtitle]="true" [showTrailing]="true">
+      <div uiItemLeading class="quick-nav-icon">
+        <app-icon [icon]="LucideServer" [size]="20"></app-icon>
+      </div>
+      <div uiItemTitle class="quick-nav-title">Server Status</div>
+      <div uiItemSubtitle class="quick-nav-subtitle">Detailed server information</div>
+      <app-icon uiItemTrailing [icon]="LucideChevronRight" [size]="16" [strokeWidth]="2.5" class="quick-nav-arrow"></app-icon>
+    </app-ui-list-item>
   </a>
 </div>

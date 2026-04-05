@@ -1,0 +1,6 @@
+<div class="ui-stat-item" [class.ui-stat-item--right]="align() === 'right'">
+  <p class="ui-stat-item__label">{{ label() }}</p>
+  <p class="ui-stat-item__value" [class.ui-stat-item__value--mono]="mono()">
+    <ng-content select="[uiStatValue]">{{ value() }}</ng-content>
+  </p>
+</div>

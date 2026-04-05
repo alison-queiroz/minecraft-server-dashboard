@@ -11,7 +11,7 @@
     <!-- Java -->
     <div class="account-section">
       <div class="account-row">
-        <span class="account-type account-type--java">Java</span>
+        <app-ui-badge class="account-type" variant="success" appearance="soft">Java</app-ui-badge>
         @if (profileService.minecraftAccounts().java) {
           @if (findJavaPlayer(profileService.minecraftAccounts().java); as player) {
             <app-player-face [player]="player" [size]="28"
@@ -19,11 +19,11 @@
             </app-player-face>
           }
           <span class="account-name">{{ profileService.minecraftAccounts().java }}</span>
-          <button (click)="unlink('java')" [disabled]="savingAccount() === 'java'"
-            title="Remove linked account"
-            class="account-remove">
+          <app-ui-icon-button (activated)="unlink('java')" [disabled]="savingAccount() === 'java'"
+            [ariaLabel]="'Remove linked Java account'"
+            variant="danger" size="sm" class="account-remove">
             <app-icon [icon]="LucideX" [size]="14" [strokeWidth]="2.5"></app-icon>
-          </button>
+          </app-ui-icon-button>
         }
       </div>
       <div class="account-form-row">
@@ -44,7 +44,7 @@
     <!-- Bedrock -->
     <div class="account-section">
       <div class="account-row">
-        <span class="account-type account-type--bedrock">Bedrock</span>
+        <app-ui-badge class="account-type" variant="info" appearance="soft">Bedrock</app-ui-badge>
         @if (profileService.minecraftAccounts().bedrock) {
           @if (findBedrockPlayer(profileService.minecraftAccounts().bedrock); as player) {
             <app-player-face [player]="player" [size]="28"
@@ -52,11 +52,11 @@
             </app-player-face>
           }
           <span class="account-name">{{ profileService.minecraftAccounts().bedrock }}</span>
-          <button (click)="unlink('bedrock')" [disabled]="savingAccount() === 'bedrock'"
-            title="Remove linked account"
-            class="account-remove">
+          <app-ui-icon-button (activated)="unlink('bedrock')" [disabled]="savingAccount() === 'bedrock'"
+            [ariaLabel]="'Remove linked Bedrock account'"
+            variant="danger" size="sm" class="account-remove">
             <app-icon [icon]="LucideX" [size]="14" [strokeWidth]="2.5"></app-icon>
-          </button>
+          </app-ui-icon-button>
         }
       </div>
       <div class="account-form-row">
@@ -77,7 +77,7 @@
     <!-- Admin -->
     <div class="account-section">
       <div class="account-row">
-        <span class="account-type account-type--admin">Admin</span>
+        <app-ui-badge class="account-type" variant="warning" appearance="soft">Admin</app-ui-badge>
         @if (profileService.minecraftAccounts().admin) {
           @if (findBedrockPlayer(profileService.minecraftAccounts().admin) ?? findJavaPlayer(profileService.minecraftAccounts().admin); as player) {
             <app-player-face [player]="player" [size]="28"
@@ -85,11 +85,11 @@
             </app-player-face>
           }
           <span class="account-name">{{ profileService.minecraftAccounts().admin }}</span>
-          <button (click)="unlink('admin')" [disabled]="savingAccount() === 'admin'"
-            title="Remove linked account"
-            class="account-remove">
+          <app-ui-icon-button (activated)="unlink('admin')" [disabled]="savingAccount() === 'admin'"
+            [ariaLabel]="'Remove linked Admin account'"
+            variant="danger" size="sm" class="account-remove">
             <app-icon [icon]="LucideX" [size]="14" [strokeWidth]="2.5"></app-icon>
-          </button>
+          </app-ui-icon-button>
         }
       </div>
       <div class="account-form-row">

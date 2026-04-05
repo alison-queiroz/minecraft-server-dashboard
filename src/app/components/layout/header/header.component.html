@@ -22,15 +22,17 @@
 
   <div class="header-stats">
     <div class="header-stat header-stat--bordered">
-      <span class="header-stat-value header-stat-value--accent">{{ playerService.players().length }}</span>
-      <span class="header-stat-label">Registered</span>
+      <app-ui-stat-item [label]="'Registered'">
+        <span uiStatValue class="header-stat-value header-stat-value--accent">{{ playerService.players().length }}</span>
+      </app-ui-stat-item>
     </div>
     <div class="header-stat header-stat--bordered">
-      <span class="header-stat-value"
-        [class.text-emerald-400]="serverService.onlinePlayers() > 0"
-        [class.text-zinc-500]="serverService.onlinePlayers() === 0"
-      >{{ serverService.onlinePlayers() }}<span class="header-stat-subvalue">/{{ serverService.maxPlayers() }}</span></span>
-      <span class="header-stat-label">Online Now</span>
+      <app-ui-stat-item [label]="'Online Now'">
+        <span uiStatValue class="header-stat-value"
+          [class.text-emerald-400]="serverService.onlinePlayers() > 0"
+          [class.text-zinc-500]="serverService.onlinePlayers() === 0"
+        >{{ serverService.onlinePlayers() }}<span class="header-stat-subvalue">/{{ serverService.maxPlayers() }}</span></span>
+      </app-ui-stat-item>
     </div>
     <div class="header-stat">
       <span class="header-status-label">Status</span>

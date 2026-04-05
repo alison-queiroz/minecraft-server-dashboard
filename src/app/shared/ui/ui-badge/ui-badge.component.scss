@@ -1,0 +1,51 @@
+:host {
+  @apply inline-flex;
+}
+
+.ui-badge {
+  @apply inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em];
+}
+
+:host([data-size='sm']) .ui-badge {
+  @apply px-2 py-0.5 text-[9px];
+}
+
+:host([data-appearance='soft'][data-variant='neutral']) .ui-badge {
+  @apply border-stone-300 bg-stone-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200;
+}
+
+:host([data-appearance='soft'][data-variant='success']) .ui-badge {
+  @apply border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300;
+}
+
+:host([data-appearance='soft'][data-variant='warning']) .ui-badge {
+  @apply border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300;
+}
+
+:host([data-appearance='soft'][data-variant='danger']) .ui-badge {
+  @apply border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-300;
+}
+
+:host([data-appearance='soft'][data-variant='info']) .ui-badge {
+  @apply border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-300;
+}
+
+:host([data-appearance='solid'][data-variant='neutral']) .ui-badge {
+  @apply border-zinc-800 bg-zinc-900 text-zinc-100 dark:border-zinc-600 dark:bg-zinc-100 dark:text-zinc-900;
+}
+
+:host([data-appearance='solid'][data-variant='success']) .ui-badge {
+  @apply border-emerald-600 bg-emerald-600 text-white;
+}
+
+:host([data-appearance='solid'][data-variant='warning']) .ui-badge {
+  @apply border-amber-500 bg-amber-500 text-white;
+}
+
+:host([data-appearance='solid'][data-variant='danger']) .ui-badge {
+  @apply border-rose-600 bg-rose-600 text-white;
+}
+
+:host([data-appearance='solid'][data-variant='info']) .ui-badge {
+  @apply border-sky-600 bg-sky-600 text-white;
+}

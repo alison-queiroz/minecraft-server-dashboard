@@ -23,19 +23,7 @@
 }
 
 .account-type {
-	@apply w-16 shrink-0 text-xs font-black uppercase tracking-widest;
-}
-
-.account-type--java {
-	@apply text-emerald-400;
-}
-
-.account-type--bedrock {
-	@apply text-blue-400;
-}
-
-.account-type--admin {
-	@apply text-orange-400;
+	@apply w-16 justify-center;
 }
 
 .account-face {
@@ -47,7 +35,7 @@
 }
 
 .account-remove {
-	@apply rounded-lg p-1 text-zinc-500 transition-colors hover:bg-stone-100 hover:text-red-400 disabled:opacity-50 dark:hover:bg-zinc-800;
+	@apply inline-flex;
 }
 
 .account-form-row {

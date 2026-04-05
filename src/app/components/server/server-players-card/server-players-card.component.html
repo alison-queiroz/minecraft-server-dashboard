@@ -1,5 +1,5 @@
-<div class="players-card">
-  <h3 class="server-card-title mb-4">
+<app-ui-card class="players-card" [showHeader]="true">
+  <h3 uiCardTitle class="server-card-title">
     <app-icon [icon]="LucideUsers" [size]="12" [strokeWidth]="2.5"></app-icon>
     Players
   </h3>
@@ -22,4 +22,4 @@
   <p class="players-card-footer">
     {{ playerService.players().length }} registered total
   </p>
-</div>
+</app-ui-card>

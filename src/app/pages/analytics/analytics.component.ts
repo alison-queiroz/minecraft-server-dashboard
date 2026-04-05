@@ -27,13 +27,14 @@ import { AnalyticsService } from '../../services/analytics/analytics.service';
 import { IconComponent } from '../../components/shared/icon/icon.component';
 import { LoadingService } from '../../services/loading/loading.service';
 import { ThemeService } from '../../services/theme/theme.service';
+import { UiStatItemComponent } from '../../shared/ui/ui-stat-item/ui-stat-item.component';
 
 Chart.register(CategoryScale, LinearScale, LineController, LineElement, PointElement, Tooltip, Filler);
 
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [IconComponent],
+  imports: [IconComponent, UiStatItemComponent],
   templateUrl: './analytics.component.html',
   styleUrls: ['./analytics.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,0 +1,32 @@
+<article
+  class="ui-list-item"
+  [class.ui-list-item--compact]="compact()"
+  [class.ui-list-item--interactive]="interactive()">
+  @if (showLeading()) {
+    <div class="ui-list-item__leading">
+      <ng-content select="[uiItemLeading]"></ng-content>
+    </div>
+  }
+
+  <div class="ui-list-item__main">
+    <div class="ui-list-item__title">
+      <ng-content select="[uiItemTitle]"></ng-content>
+    </div>
+
+    @if (showSubtitle()) {
+      <div class="ui-list-item__subtitle">
+        <ng-content select="[uiItemSubtitle]"></ng-content>
+      </div>
+    }
+
+    <div class="ui-list-item__meta">
+      <ng-content select="[uiItemMeta]"></ng-content>
+    </div>
+  </div>
+
+  @if (showTrailing()) {
+    <div class="ui-list-item__trailing">
+      <ng-content select="[uiItemTrailing]"></ng-content>
+    </div>
+  }
+</article>

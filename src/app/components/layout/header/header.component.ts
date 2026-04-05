@@ -2,12 +2,13 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { PlayerService } from '../../../services/player/player.service';
 import { ServerService, SERVER_STATUS } from '../../../services/server/server.service';
+import { UiStatItemComponent } from '../../../shared/ui/ui-stat-item/ui-stat-item.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass],
+  imports: [NgClass, UiStatItemComponent],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
 })

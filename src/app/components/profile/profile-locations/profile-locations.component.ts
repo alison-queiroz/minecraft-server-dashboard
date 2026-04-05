@@ -14,12 +14,21 @@ import { LucideMap, LucideExternalLink, LucidePencil, LucideTrash2 } from '@luci
 import { IconComponent } from '../../shared/icon/icon.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
 import { environment } from '../../../../environments/environment';
+import { UiBadgeComponent } from '../../../shared/ui/ui-badge/ui-badge.component';
+import { UiCardComponent } from '../../../shared/ui/ui-card/ui-card.component';
+import { UiIconButtonComponent } from '../../../shared/ui/ui-icon-button/ui-icon-button.component';
 
 @Component({
   selector: 'app-profile-locations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, MapViewerComponent],
+  imports: [
+    IconComponent,
+    MapViewerComponent,
+    UiBadgeComponent,
+    UiCardComponent,
+    UiIconButtonComponent,
+  ],
   templateUrl: './profile-locations.component.html',
   styleUrls: ['./profile-locations.component.scss'],
 })

@@ -3,8 +3,8 @@
       class="player-row-avatar">
     </app-player-face>
     <div class="flex min-w-0 flex-col">
-      <span class="truncate font-bold text-zinc-900 transition-colors group-hover:text-emerald-400 dark:text-zinc-100" [appTooltip]="player.name">{{ player.name }}</span>
-      <span class="max-w-[120px] truncate text-[10px] font-mono text-zinc-500 dark:text-zinc-600" [appTooltip]="player.uuid">{{ player.uuid }}</span>
+      <span class="player-row-name" [appTooltip]="player.name">{{ player.name }}</span>
+      <span class="player-row-uuid" [appTooltip]="player.uuid">{{ player.uuid }}</span>
     </div>
   </div>
 

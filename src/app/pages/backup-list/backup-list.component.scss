@@ -2,10 +2,7 @@
   @apply mx-auto w-full max-w-7xl pb-6;
 }
 .backup-card {
-  @apply overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
-}
-.card-header {
-  @apply flex items-center justify-between border-b border-stone-200 p-5 dark:border-zinc-800;
+  @apply block;
 }
 .header-title {
   @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500;
@@ -36,9 +33,6 @@
 }
 .list-item {
   @apply border-b border-stone-200 dark:border-zinc-800;
-}
-.item-content {
-  @apply block;
 }
 .list-row {
   @apply flex min-h-[88px] items-center justify-between gap-4 px-5 transition-colors hover:bg-stone-100 dark:hover:bg-zinc-800/30;

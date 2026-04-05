@@ -3,13 +3,14 @@ import { ServerService } from '../../../services/server/server.service';
 import { PlayerService } from '../../../services/player/player.service';
 import { LucideUsers } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { UiCardComponent } from '../../../shared/ui/ui-card/ui-card.component';
 
 @Component({
   selector: 'app-server-players-card',
   standalone: true,
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent],
+  imports: [IconComponent, UiCardComponent],
   templateUrl: './server-players-card.component.html',
   styleUrls: ['./server-players-card.component.scss'],
 })

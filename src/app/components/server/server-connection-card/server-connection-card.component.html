@@ -1,10 +1,8 @@
-<div class="connection-card">
-  <div class="server-card-header">
-    <h3 class="server-card-title">
-      <app-icon [icon]="LucideWifi" [size]="12" [strokeWidth]="2.5"></app-icon>
-      Connection Details
-    </h3>
-  </div>
+<app-ui-card class="connection-card" [showHeader]="true">
+  <h3 uiCardTitle class="server-card-title">
+    <app-icon [icon]="LucideWifi" [size]="12" [strokeWidth]="2.5"></app-icon>
+    Connection Details
+  </h3>
   <div class="connection-list">
     <!-- Hostname -->
     <div class="connection-row">
@@ -47,4 +45,4 @@
       </div>
     </div>
   </div>
-</div>
+</app-ui-card>

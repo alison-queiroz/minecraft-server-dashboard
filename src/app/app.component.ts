@@ -20,8 +20,8 @@ const PAGE_ORDER = ['/', '/server', '/players', '/profile', '/map', '/backups', 
 })
 export class AppComponent {
   private readonly router = inject(Router);
-  protected readonly loadingService = inject(LoadingService);
-  protected readonly themeService = inject(ThemeService);
+  protected readonly loadingService: LoadingService = inject(LoadingService);
+  protected readonly themeService: ThemeService = inject(ThemeService);
   protected readonly pageOrder = PAGE_ORDER;
 
   /** Live drag offset — follows the finger */

@@ -3,13 +3,14 @@ import { LucideWifi, LucideGlobe, LucideServer, LucideHash } from '@lucide/angul
 import { IconComponent } from '../../shared/icon/icon.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { ServerService } from '../../../services/server/server.service';
+import { UiCardComponent } from '../../../shared/ui/ui-card/ui-card.component';
 
 @Component({
   selector: 'app-server-connection-card',
   standalone: true,
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, CopyButtonComponent],
+  imports: [IconComponent, CopyButtonComponent, UiCardComponent],
   templateUrl: './server-connection-card.component.html',
   styleUrls: ['./server-connection-card.component.scss'],
 })

@@ -1,0 +1,10 @@
+<button
+  type="button"
+  class="ui-icon-button"
+  [attr.aria-label]="ariaLabel()"
+  [title]="ariaLabel()"
+  [disabled]="disabled()"
+  (click)="handleClick()">
+  <span class="sr-only">{{ ariaLabel() }}</span>
+  <ng-content></ng-content>
+</button>

@@ -3,13 +3,14 @@ import { RouterLink } from '@angular/router';
 import { PlayerService } from '../../../services/player/player.service';
 import { LucideUsers, LucideServer, LucideChevronRight } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { UiListItemComponent } from '../../../shared/ui/ui-list-item/ui-list-item.component';
 
 @Component({
   selector: 'app-home-quick-nav',
   standalone: true,
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent],
+  imports: [RouterLink, IconComponent, UiListItemComponent],
   templateUrl: './home-quick-nav.component.html',
   styleUrls: ['./home-quick-nav.component.scss'],
 })

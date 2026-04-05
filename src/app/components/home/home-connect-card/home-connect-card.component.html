@@ -1,5 +1,5 @@
-<div class="connect-card">
-  <h2 class="connect-title">
+<app-ui-card class="connect-card" [showHeader]="true">
+  <h2 uiCardTitle class="connect-title">
     <app-icon [icon]="LucideWifi" [size]="12" [strokeWidth]="2.5"></app-icon>
     How to Connect
   </h2>
@@ -21,4 +21,4 @@
     </span>
     <span class="connect-port">Port: {{ serverService.port() ?? 25565 }}</span>
   </div>
-</div>
+</app-ui-card>

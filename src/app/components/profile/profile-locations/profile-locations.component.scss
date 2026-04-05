@@ -51,7 +51,7 @@
 }
 
 .location-card {
-	@apply flex flex-col gap-2 rounded-xl border border-stone-200 p-4 dark:border-zinc-800;
+	@apply block;
 }
 
 .location-edit-input {
@@ -78,10 +78,6 @@
 	@apply flex items-center gap-2 overflow-hidden text-sm font-bold text-zinc-900 dark:text-zinc-100;
 }
 
-.location-public-badge {
-	@apply inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-500;
-}
-
 .location-description {
 	@apply mt-0.5 text-xs text-zinc-500 dark:text-zinc-400;
 }
@@ -91,19 +87,7 @@
 }
 
 .location-action {
-	@apply inline-flex items-center justify-center rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-stone-100 dark:text-zinc-400 dark:hover:bg-zinc-800;
-}
-
-.location-action--accent {
-	@apply hover:text-emerald-400;
-}
-
-.location-action--bright {
-	@apply hover:text-zinc-900 dark:hover:text-zinc-100;
-}
-
-.location-action--danger {
-	@apply hover:text-red-400;
+	@apply inline-flex;
 }
 
 .location-hash {

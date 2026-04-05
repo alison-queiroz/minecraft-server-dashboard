@@ -16,13 +16,13 @@
 
       <div class="hero-tags">
         @if (serverService.software()) {
-          <app-tag-chip color="green">{{ serverService.software() }}</app-tag-chip>
+          <app-ui-badge variant="success" appearance="soft">{{ serverService.software() }}</app-ui-badge>
         }
         @if (serverService.version()) {
-          <app-tag-chip color="zinc">v{{ serverService.version() }}</app-tag-chip>
+          <app-ui-badge variant="neutral" appearance="soft">v{{ serverService.version() }}</app-ui-badge>
         }
         @if (serverService.hostname()) {
-          <app-tag-chip color="dim">{{ serverService.hostname() }}</app-tag-chip>
+          <app-ui-badge variant="info" appearance="soft">{{ serverService.hostname() }}</app-ui-badge>
         }
       </div>
     </div>

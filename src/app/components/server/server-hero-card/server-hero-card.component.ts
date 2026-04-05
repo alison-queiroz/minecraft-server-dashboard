@@ -8,5 +8,6 @@ import { ServerHeroStatsComponent } from '../server-hero-stats/server-hero-stats
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ServerHeroBannerComponent, ServerHeroStatsComponent],
   templateUrl: './server-hero-card.component.html',
+  styleUrls: ['./server-hero-card.component.scss'],
 })
 export class ServerHeroCardComponent {}

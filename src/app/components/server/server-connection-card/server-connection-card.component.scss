@@ -1,5 +1,5 @@
 .connection-card {
-  @apply overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
+  @apply block;
 }
 
 .connection-list {

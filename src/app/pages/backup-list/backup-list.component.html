@@ -1,13 +1,11 @@
 <div class="backup-container">
-  <div class="backup-card">
+  <app-ui-card class="backup-card" [showHeader]="true">
 
     <!-- Header -->
-    <div class="card-header">
-      <h3 class="header-title">
-        <app-icon [icon]="LucideDatabase" size="14" strokeWidth="2.5"></app-icon>
-        Server Backups
-      </h3>
-    </div>
+    <h3 uiCardTitle class="header-title">
+      <app-icon [icon]="LucideDatabase" size="14" strokeWidth="2.5"></app-icon>
+      Server Backups
+    </h3>
 
     <!-- Breadcrumbs -->
     <div class="breadcrumb-container">
@@ -88,5 +86,5 @@
         }
       }
     </div>
-  </div>
+  </app-ui-card>
 </div>

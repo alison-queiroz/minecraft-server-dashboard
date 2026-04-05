@@ -1,8 +1,8 @@
-<a routerLink="/players" class="players-cta-link group">
-  <app-icon [icon]="LucideUsers" [size]="22" class="players-cta-icon"></app-icon>
-  <div class="players-cta-copy">
-    <p class="players-cta-title">Browse Player List</p>
-    <p class="players-cta-subtitle">{{ playerService.players().length }} registered players</p>
-  </div>
-  <app-icon [icon]="LucideChevronRight" [size]="18" [strokeWidth]="2.5" class="players-cta-arrow"></app-icon>
+<a routerLink="/players" class="players-cta-link">
+  <app-ui-list-item class="players-cta-item" [interactive]="true" [variant]="'accent'" [showLeading]="true" [showSubtitle]="true" [showTrailing]="true">
+    <app-icon uiItemLeading [icon]="LucideUsers" [size]="22" class="players-cta-icon"></app-icon>
+    <p uiItemTitle class="players-cta-title">Browse Player List</p>
+    <p uiItemSubtitle class="players-cta-subtitle">{{ playerService.players().length }} registered players</p>
+    <app-icon uiItemTrailing [icon]="LucideChevronRight" [size]="18" [strokeWidth]="2.5" class="players-cta-arrow"></app-icon>
+  </app-ui-list-item>
 </a>

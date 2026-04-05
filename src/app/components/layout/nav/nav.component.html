@@ -53,24 +53,26 @@
 
     <!-- Right side: status badge + hamburger -->
     <div class="nav-actions">
-      <button type="button"
-        (click)="toggleTheme()"
-        class="theme-toggle"
-        [attr.aria-label]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'">
-        <app-icon [icon]="themeService.isDark() ? LucideSun : LucideMoon" [size]="16"></app-icon>
+      <div class="theme-toggle">
+        <app-ui-icon-button
+          [ariaLabel]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+          size="sm"
+          (activated)="toggleTheme()">
+          <app-icon [icon]="themeService.isDark() ? LucideSun : LucideMoon" [size]="16"></app-icon>
+        </app-ui-icon-button>
         <span class="theme-toggle-label">{{ themeService.isDark() ? 'Light' : 'Dark' }}</span>
-      </button>
+      </div>
 
       <!-- Status badge -->
       <app-server-status-badge [mobileHideLabel]="true"></app-server-status-badge>
 
       <!-- Player count badge (desktop) -->
-      <div class="player-count-badge">
+      <app-ui-badge class="player-count-badge" variant="info" appearance="soft">
         <app-icon [icon]="LucideUsers" [size]="12" [strokeWidth]="2.5"></app-icon>
         <span class="player-count-current">{{ serverService.onlinePlayers() }}</span>
         <span class="player-count-divider">/</span>
         <span class="player-count-max">{{ serverService.maxPlayers() }}</span>
-      </div>
+      </app-ui-badge>
 
       <!-- User avatar + sign-out (desktop) -->
       @if (auth.currentUser(); as user) {
@@ -83,14 +85,17 @@
       }
 
       <!-- Hamburger button (mobile only) -->
-      <button (click)="toggleMenu()" class="menu-toggle"
-        aria-label="Toggle menu">
+      <app-ui-icon-button
+        class="menu-toggle"
+        [ariaLabel]="'Toggle menu'"
+        size="sm"
+        (activated)="toggleMenu()">
         @if (menuOpen()) {
           <app-icon [icon]="LucideX" [size]="20"></app-icon>
         } @else {
           <app-icon [icon]="LucideMenu" [size]="20"></app-icon>
         }
-      </button>
+      </app-ui-icon-button>
     </div>
   </div>
 

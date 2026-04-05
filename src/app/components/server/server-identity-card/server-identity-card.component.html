@@ -1,4 +1,4 @@
-<div class="identity-card">
+<app-ui-card class="identity-card" [showFooter]="true">
   <div class="identity-hero">
     <!-- Icon -->
     <app-server-icon size="card"></app-server-icon>
@@ -9,15 +9,15 @@
     }
   </div>
   <!-- Tags -->
-  <div class="identity-tags">
+  <div uiCardFooter class="identity-tags">
     @if (serverService.software()) {
-      <app-tag-chip color="green">{{ serverService.software() }}</app-tag-chip>
+      <app-ui-badge variant="success" appearance="soft">{{ serverService.software() }}</app-ui-badge>
     }
     @if (serverService.version()) {
-      <app-tag-chip color="zinc">{{ serverService.version() }}</app-tag-chip>
+      <app-ui-badge variant="neutral" appearance="soft">{{ serverService.version() }}</app-ui-badge>
     }
     @if (serverService.protocol()) {
-      <app-tag-chip color="dim">Protocol {{ serverService.protocol()!.version }}</app-tag-chip>
+      <app-ui-badge variant="info" appearance="soft">Protocol {{ serverService.protocol()!.version }}</app-ui-badge>
     }
   </div>
-</div>
+</app-ui-card>

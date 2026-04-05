@@ -1,29 +1,34 @@
 <div class="hero-stats-grid">
   <div class="hero-stat-cell hero-stat-cell--right-border">
-    <span class="hero-stat-value"
-      [class.text-emerald-400]="serverService.onlinePlayers() > 0"
-      [class.text-zinc-500]="serverService.onlinePlayers() === 0">{{ serverService.onlinePlayers() }}</span>
-    <span class="hero-stat-label">Java Online</span>
+    <app-ui-stat-item [label]="'Java Online'">
+      <span uiStatValue class="hero-stat-value"
+        [class.text-emerald-400]="serverService.onlinePlayers() > 0"
+        [class.text-zinc-500]="serverService.onlinePlayers() === 0">{{ serverService.onlinePlayers() }}</span>
+    </app-ui-stat-item>
   </div>
   <div class="hero-stat-cell hero-stat-cell--right-border">
-    <span class="hero-stat-value"
-      [class.text-blue-400]="serverService.bedrockOnlinePlayers() > 0"
-      [class.text-zinc-500]="serverService.bedrockOnlinePlayers() === 0">{{ serverService.bedrockOnlinePlayers() }}</span>
-    <span class="hero-stat-label">Bedrock Online</span>
+    <app-ui-stat-item [label]="'Bedrock Online'">
+      <span uiStatValue class="hero-stat-value"
+        [class.text-blue-400]="serverService.bedrockOnlinePlayers() > 0"
+        [class.text-zinc-500]="serverService.bedrockOnlinePlayers() === 0">{{ serverService.bedrockOnlinePlayers() }}</span>
+    </app-ui-stat-item>
   </div>
   <div class="hero-stat-cell hero-stat-cell--right-border">
-    <span class="hero-stat-value text-zinc-700 dark:text-zinc-400">{{ serverService.maxPlayers() }}</span>
-    <span class="hero-stat-label">Max Players</span>
+    <app-ui-stat-item [label]="'Max Players'">
+      <span uiStatValue class="hero-stat-value text-zinc-700 dark:text-zinc-400">{{ serverService.maxPlayers() }}</span>
+    </app-ui-stat-item>
   </div>
   <div class="hero-stat-cell hero-stat-cell--top-border hero-stat-cell--right-border hero-stat-cell--no-top-border-sm">
-    <span class="hero-stat-value text-zinc-700 dark:text-zinc-300">{{ playerService.players().length }}</span>
-    <span class="hero-stat-label">Registered</span>
+    <app-ui-stat-item [label]="'Registered'">
+      <span uiStatValue class="hero-stat-value text-zinc-700 dark:text-zinc-300">{{ playerService.players().length }}</span>
+    </app-ui-stat-item>
   </div>
   <div class="hero-stat-cell hero-stat-cell--top-border hero-stat-cell--no-top-border-sm col-span-2 sm:col-span-1">
-    <span class="hero-stat-version">
-      {{ serverService.version() || '—' }}
-    </span>
-    <span class="hero-stat-label">Version</span>
+    <app-ui-stat-item [label]="'Version'" [mono]="true">
+      <span uiStatValue class="hero-stat-version">
+        {{ serverService.version() || '—' }}
+      </span>
+    </app-ui-stat-item>
   </div>
 </div>
 

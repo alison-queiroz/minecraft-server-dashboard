@@ -1,0 +1,35 @@
+:host {
+  @apply block;
+}
+
+.ui-card {
+  @apply rounded-2xl border border-stone-300 bg-white shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900;
+}
+
+.ui-card--interactive {
+  @apply transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md dark:hover:border-emerald-700;
+}
+
+.ui-card--compact .ui-card__body {
+  @apply p-3;
+}
+
+.ui-card__header {
+  @apply flex items-start justify-between gap-3 border-b border-stone-200 p-4 dark:border-zinc-800;
+}
+
+.ui-card__heading {
+  @apply min-w-0 flex-1;
+}
+
+.ui-card__actions {
+  @apply flex items-center gap-2;
+}
+
+.ui-card__body {
+  @apply p-4;
+}
+
+.ui-card__footer {
+  @apply border-t border-stone-200 p-4 dark:border-zinc-800;
+}
