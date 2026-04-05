@@ -1,2 +1,8 @@
 {
+	"html.validate.scripts": true,
+	"html.validate.styles": true,
+	"files.exclude": {
+		"playwright-report/**": true,
+		"test-results/**": true
+	}
 }
