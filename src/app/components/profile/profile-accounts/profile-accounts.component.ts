@@ -7,6 +7,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { LucideX } from '@lucide/angular';
 import type { AccountType } from '../../../services/user-profile/user-profile.service';
 import { UserProfileService } from '../../../services/user-profile/user-profile.service';
@@ -28,10 +30,14 @@ export class ProfileAccountsComponent implements OnInit {
   protected readonly LucideX = LucideX;
   protected readonly profileService = inject(UserProfileService);
   private readonly playerService = inject(PlayerService);
+  private readonly http = inject(HttpClient);
 
   protected readonly accountInputs = signal({ java: '', bedrock: '', admin: '' });
+  protected readonly gamePasswords = signal({ java: '', bedrock: '', admin: '' });
   protected readonly savingAccount = signal<AccountType | null>(null);
   protected readonly accountError = signal<string | null>(null);
+  /** Names from ops.json — only these appear in the admin dropdown. */
+  protected readonly opNames = signal<string[]>([]);
 
   /** Players not already linked to any account type */
   protected readonly availablePlayers = computed(() => {
@@ -55,11 +61,14 @@ export class ProfileAccountsComponent implements OnInit {
       .filter(n => !this.profileService.minecraftAccounts().bedrock || this.profileService.minecraftAccounts().bedrock !== n)
   );
 
-  protected readonly availableAdminPlayers = computed(() =>
-    this.playerService.players()
+  /** Admin dropdown is restricted to OP players only. */
+  protected readonly availableAdminPlayers = computed(() => {
+    const ops = new Set(this.opNames());
+    const current = this.profileService.minecraftAccounts().admin;
+    return this.playerService.players()
       .map(p => p.name)
-      .filter(n => !this.profileService.minecraftAccounts().admin || this.profileService.minecraftAccounts().admin !== n)
-  );
+      .filter(n => ops.has(n) && n !== current);
+  });
 
   protected findPlayer(username: string | null | undefined): Player | null {
     if (!username) return null;
@@ -85,20 +94,48 @@ export class ProfileAccountsComponent implements OnInit {
       bedrock: accts.bedrock ?? '',
       admin: accts.admin ?? '',
     });
+    firstValueFrom(this.http.get<string[]>('/api/ops'))
+      .then(names => this.opNames.set(names))
+      .catch(() => { /* non-critical — dropdown falls back to empty */ });
   }
 
   protected updateInput(type: AccountType, value: string): void {
     this.accountInputs.update(v => ({ ...v, [type]: value }));
+    // Clear the password whenever the username changes so stale passwords don't carry over.
+    this.gamePasswords.update(v => ({ ...v, [type]: '' }));
+    this.accountError.set(null);
+  }
+
+  protected updatePassword(type: AccountType, value: string): void {
+    this.gamePasswords.update(v => ({ ...v, [type]: value }));
   }
 
   protected async save(type: AccountType): Promise<void> {
     const username = this.accountInputs()[type].trim();
     if (!username) { this.accountError.set('Please enter a username.'); return; }
+
     this.accountError.set(null);
     this.savingAccount.set(type);
     try {
+      const password = this.gamePasswords()[type];
+      if (!password) {
+        this.accountError.set('Please enter your in-game password to verify ownership.');
+        return;
+      }
+      const result = await firstValueFrom(
+        this.http.post<{ valid: boolean; error?: string }>(
+          '/api/verify-minecraft-password',
+          { username, password },
+        )
+      );
+      if (!result.valid) {
+        this.accountError.set('Incorrect in-game password. Please try again.');
+        return;
+      }
+
       await this.profileService.linkAccount(type, username);
       this.accountInputs.update(v => ({ ...v, [type]: '' }));
+      this.gamePasswords.update(v => ({ ...v, [type]: '' }));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.accountError.set(msg.includes('permission') || msg.includes('insufficient')
@@ -115,6 +152,7 @@ export class ProfileAccountsComponent implements OnInit {
     try {
       await this.profileService.unlinkAccount(type);
       this.accountInputs.update(v => ({ ...v, [type]: '' }));
+      this.gamePasswords.update(v => ({ ...v, [type]: '' }));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.accountError.set(msg.includes('permission') || msg.includes('insufficient')

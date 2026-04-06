@@ -51,6 +51,10 @@
   @apply mb-4 text-center;
 }
 
+.detail-op-badge {
+  @apply mx-auto mb-1 inline-block rounded-full bg-orange-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-orange-400 ring-1 ring-orange-500/30;
+}
+
 .detail-name {
   @apply text-3xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white;
 }

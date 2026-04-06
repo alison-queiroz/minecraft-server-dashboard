@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import base64
 import hashlib
@@ -36,7 +36,6 @@ def _proxy_url(raw_url: str) -> str:
     return _WSRV_PROXY.format(urllib.parse.quote(raw_url, safe=""))
 
 
-# â”€â”€ base64 texture helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _extract_texture_url(b64_value: str) -> str | None:
     """Decodes a Minecraft texture property (base64 JSON) and returns the SKIN url."""
@@ -49,7 +48,6 @@ def _extract_texture_url(b64_value: str) -> str | None:
         return None
 
 
-# â”€â”€ SkinsRestorer skins-cache lookup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _sr_filename_candidates(identifier: str) -> list[str]:
     candidates = [
@@ -83,6 +81,7 @@ def _find_texture_from_sr_skins(identifier: str) -> str | None:
     if not os.path.isdir(_SR_SKINS_DIR):
         return None
     candidates = _sr_filename_candidates(identifier)
+    _SR_EXTENSIONS = [".customskin", ".playerskin", ".urlskin", ".skin", ".json", ""]
     search_dirs = [_SR_SKINS_DIR] + [
         os.path.join(_SR_SKINS_DIR, sub)
         for sub in ("url", "custom", "player", "legacy", "minecraft")
@@ -90,18 +89,33 @@ def _find_texture_from_sr_skins(identifier: str) -> str | None:
     ]
     for directory in search_dirs:
         for stem in candidates:
-            for ext in (".json", ".skin", ""):
+            for ext in _SR_EXTENSIONS:
                 path = os.path.join(directory, stem + ext)
-                if os.path.exists(path):
+                if not os.path.exists(path):
+                    continue
+                try:
+                    # Strategy 1: JSON envelope — file contains {"value": "<b64>", ...}
+                    # This is the common format for .customskin / .playerskin files.
                     value = _read_skin_value_from_file(path)
                     if value:
                         tex_url = _extract_texture_url(value)
                         if tex_url:
                             return tex_url
+
+                    # Strategy 2: file content IS the raw base64 texture property.
+                    # Some URL skin caches store the b64 JSON blob directly.
+                    with open(path, "r", encoding="utf-8") as fh:
+                        raw = fh.read().strip()
+                    decoded = base64.b64decode(raw + "===").decode("utf-8")
+                    data = json.loads(decoded)
+                    url = data.get("textures", {}).get("SKIN", {}).get("url", "")
+                    if url:
+                        return url
+                except Exception:
+                    logger.warning("Failed to parse SkinsRestorer skin file %s", path)
     return None
 
 
-# â”€â”€ MineSkin API fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _format_uuid(raw: str) -> str:
     """Returns a UUID with dashes from a 32-char hex string."""
@@ -128,10 +142,8 @@ def _resolve_mineskin_texture(short_id: str) -> str | None:
                 )
                 with urllib.request.urlopen(req, timeout=8) as resp:
                     data = json.loads(resp.read().decode())
-                # ─ v2 shape: skin.texture.url.skin (a nested dict, not a string) ─
-                # ─ v2 shape: skin.texture.data.value (base64 texture property) ──
-                # ─ v1 shape: data.texture.url (direct string) ───────────────────
-                # ─ v1 shape: data.texture.value (base64) ─────────────────────────
+                # v2: skin.texture.url.skin / skin.texture.data.value
+                # v1: data.texture.url / data.texture.value
                 URL_PATHS = [
                     ["skin", "texture", "url", "skin"],   # v2 nested URL dict
                     ["data", "texture", "url"],           # v1 direct string
@@ -166,7 +178,6 @@ def _resolve_mineskin_texture(short_id: str) -> str | None:
     return None
 
 
-# â”€â”€ URL skin resolution with caching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _resolve_url_skin(identifier: str) -> str:
     """
@@ -199,7 +210,6 @@ def _resolve_url_skin(identifier: str) -> str:
     return final
 
 
-# â”€â”€ SkinsRestorer player file â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _resolve_skinsrestorer(uuid: str, fallback: str) -> str:
     sr_file = os.path.join(_SR_PLAYERS_DIR, f"{uuid}.player")
@@ -250,7 +260,6 @@ def _resolve_bedrock_skin(uuid: str) -> str:
     return _MCHEADS_STEVE
 
 
-# ── non-image URL guard ─────────────────────────────────────────────────────
 
 _NON_IMAGE_HOSTS = (
     "minesk.in",

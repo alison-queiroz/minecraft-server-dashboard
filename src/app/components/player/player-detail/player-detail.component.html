@@ -15,6 +15,9 @@
         <h3 class="detail-name">
           {{ player.name }}
         </h3>
+        @if (player.isOp()) {
+          <span class="detail-op-badge">OP</span>
+        }
         <div class="detail-uuid-pill">
           <span class="detail-uuid">{{ player.uuid }}</span>
         </div>

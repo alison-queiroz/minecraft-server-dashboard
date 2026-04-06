@@ -94,8 +94,8 @@ def test_fetch_live_success(mocker):
     # Mock _parse_player to return levels so we can test the sorting behavior
     def mock_parse(filepath, _):
         if filepath == "file1.dat":
-            return {"name": "Noob", "level": 5}
-        return {"name": "Pro", "level": 100}
+            return {"name": "Noob", "level": 5, "uuid": "aaaa-1111"}
+        return {"name": "Pro", "level": 100, "uuid": "bbbb-2222"}
 
     mocker.patch("api.player_data._parse_player", side_effect=mock_parse)
 

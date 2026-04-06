@@ -5,7 +5,7 @@ from functools import wraps
 
 from flask import Flask, jsonify, request, abort
 
-from .player_data import get_players
+from .player_data import get_players, get_op_names
 from .firestore_sync import read_local_snapshots
 
 # Google Drive API imports
@@ -62,6 +62,13 @@ def require_auth(f):
 @require_auth
 def players_endpoint():
     return jsonify(get_players())
+
+
+@app.route("/api/ops", methods=["GET"])
+@require_auth
+def ops_endpoint():
+    """Returns the list of OP player names from ops.json."""
+    return jsonify(get_op_names())
 
 
 @app.route("/api/players/force-resync", methods=["POST"])
@@ -257,6 +264,82 @@ def analytics_endpoint():
 
     results = sorted(local, key=lambda s: s["ts"])
     return jsonify(results)
+
+
+# ── AuthMe password verification endpoint ───────────────────────────────────────
+
+_AUTHME_DB_PATH = os.environ.get(
+    "AUTHME_DB",
+    "/home/opc/minecraft/plugins/AuthMe/authme.db",
+)
+
+
+@app.route("/api/verify-minecraft-password", methods=["POST"])
+@require_auth
+def verify_minecraft_password():
+    """Verify a player's AuthMe in-game password against the SQLite database.
+
+    Accepts JSON: { "username": "...", "password": "..." }
+    Returns:       { "valid": true | false }
+    """
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username", "")).strip()
+    password = str(data.get("password", ""))
+
+    if not username or not password:
+        return jsonify({"valid": False, "error": "Missing username or password"}), 400
+
+    # Guard against excessively long inputs before touching the database.
+    if len(username) > 64 or len(password) > 256:
+        return jsonify({"valid": False}), 400
+
+    try:
+        import hashlib
+        import sqlite3
+        import bcrypt as _bcrypt
+
+        conn = sqlite3.connect(_AUTHME_DB_PATH)
+        try:
+            row = conn.execute(
+                "SELECT password FROM authme WHERE LOWER(username) = LOWER(?)",
+                (username,),
+            ).fetchone()
+        finally:
+            conn.close()
+
+        if row is None:
+            # Username not registered in AuthMe — treat as invalid.
+            return jsonify({"valid": False})
+
+        stored: str = row[0]
+
+        # ── BCrypt (primary hash) ──────────────────────────────────────────
+        if stored.startswith(("$2a$", "$2y$", "$2b$")):
+            normalized = ("$2b$" + stored[4:]) if stored.startswith(("$2a$", "$2y$")) else stored
+            valid = _bcrypt.checkpw(password.encode("utf-8"), normalized.encode("utf-8"))
+            return jsonify({"valid": valid})
+
+        # ── SHA256 (AuthMe legacy fallback: $SHA$<salt>$hash) ─────────────
+        # hash = sha256( sha256_hex(password) + salt )
+        if stored.startswith("$SHA$"):
+            parts = stored.split("$")  # ['', 'SHA', salt, hash]
+            if len(parts) == 4:
+                salt = parts[2]
+                expected = parts[3]
+                inner = hashlib.sha256(password.encode("utf-8")).hexdigest()
+                outer = hashlib.sha256((inner + salt).encode("utf-8")).hexdigest()
+                return jsonify({"valid": outer == expected})
+
+        # Unknown hash format — cannot verify.
+        logger.warning("Unknown AuthMe hash format for user %s: %s", username, stored[:10])
+        return jsonify({"valid": False})
+
+    except FileNotFoundError:
+        logger.warning("AuthMe DB not found at %s", _AUTHME_DB_PATH)
+        return jsonify({"valid": False, "error": "AuthMe database not available"}), 503
+    except Exception as exc:
+        logger.error("AuthMe password verification error: %s", exc)
+        return jsonify({"valid": False, "error": "Verification failed"}), 500
 
 
 # ── Advancements endpoint ──────────────────────────────────────────────────────

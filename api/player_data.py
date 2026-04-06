@@ -18,7 +18,7 @@ except ImportError:
 
 import nbtlib
 
-from .skin_resolver import get_skin_url
+from .skin_resolver import get_skin_url, _url_resolution_cache, _url_resolved_at
 from .firestore_sync import sync_players
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 _PLAYERDATA_DIR = os.path.join("world", "playerdata")
 _STATS_DIR = os.path.join("world", "stats")
 _USERCACHE_FILE = "usercache.json"
+_OPS_FILE = "ops.json"
+_SR_PLAYERS_DIR = os.path.join("plugins", "SkinsRestorer", "players")  # watched for skin changes
 _CACHE_TTL = 60  # seconds — also controls Firestore sync frequency
 
 _SYNC_LOCK_PATH = "/tmp/minecraft-api-bg-sync.lock"
@@ -67,6 +69,29 @@ class _Cache:
 
 
 _cache = _Cache()
+
+
+def _load_op_uuids() -> set[str]:
+    """Returns the set of UUIDs listed in ops.json (case-insensitive)."""
+    if not os.path.exists(_OPS_FILE):
+        return set()
+    try:
+        with open(_OPS_FILE, "r") as f:
+            return {entry["uuid"].lower() for entry in json.load(f) if "uuid" in entry}
+    except Exception:
+        logger.warning("Failed to parse %s", _OPS_FILE)
+        return set()
+
+
+def get_op_names() -> list[str]:
+    """Returns the list of OP player names from ops.json."""
+    if not os.path.exists(_OPS_FILE):
+        return []
+    try:
+        with open(_OPS_FILE, "r") as f:
+            return [entry["name"] for entry in json.load(f) if "name" in entry]
+    except Exception:
+        return []
 
 
 def _map_uuids() -> dict[str, str]:
@@ -149,11 +174,14 @@ def _fetch_live() -> list[dict[str, Any]]:
     if not os.path.exists(_PLAYERDATA_DIR):
         return []
     uuid_to_name = _map_uuids()
+    op_uuids = _load_op_uuids()
     players = [
         player
         for filepath in glob.glob(os.path.join(_PLAYERDATA_DIR, "*.dat"))
         if (player := _parse_player(filepath, uuid_to_name)) is not None
     ]
+    for p in players:
+        p["is_op"] = p["uuid"].lower() in op_uuids
     players.sort(key=lambda p: p["level"], reverse=True)
     return players
 
@@ -167,15 +195,16 @@ def get_players() -> list[dict[str, Any]]:
 
 
 class _FileWatcher:
-    """Watches a directory for .dat file mtime changes."""
+    """Watches a directory for file mtime changes."""
 
-    def __init__(self, directory: str) -> None:
+    def __init__(self, directory: str, pattern: str = "*.dat") -> None:
         self.directory = directory
+        self.pattern = pattern
         self._mtimes: dict[str, float] = {}
 
     def has_changes(self) -> bool:
         changed = False
-        for filepath in glob.glob(os.path.join(self.directory, "*.dat")):
+        for filepath in glob.glob(os.path.join(self.directory, self.pattern)):
             mtime = os.path.getmtime(filepath)
             if self._mtimes.get(filepath) != mtime:
                 self._mtimes[filepath] = mtime
@@ -191,8 +220,11 @@ def _background_sync_loop() -> None:
     - Debounce: waits 10 s of quiet before syncing (absorbs burst saves)
     - Rate-limit: minimum 60 s between consecutive Firestore writes
     - Backoff: on error, increases wait up to 5 min before retrying
+    - Also watches SkinsRestorer player files; evicts the URL cache when they
+      change so the next sync fetches the updated skin URL from disk.
     """
-    watcher = _FileWatcher(_PLAYERDATA_DIR)
+    playerdata_watcher = _FileWatcher(_PLAYERDATA_DIR)
+    sr_watcher = _FileWatcher(_SR_PLAYERS_DIR, pattern="*")
     last_sync: float = 0.0
     last_change: float = 0.0
     backoff: float = 0.0
@@ -202,8 +234,17 @@ def _background_sync_loop() -> None:
     while True:
         time.sleep(5)
 
-        if watcher.has_changes():
+        if playerdata_watcher.has_changes():
             last_change = time.time()
+
+        if sr_watcher.has_changes():
+            # A skin file changed — evict the URL resolution cache so the next
+            # _fetch_live() call reads fresh URLs from SkinsRestorer files.
+            _url_resolution_cache.clear()
+            _url_resolved_at.clear()
+            _cache.last_updated = 0.0  # force immediate player-data re-fetch
+            last_change = time.time()
+            logger.info("SkinsRestorer player files changed — skin URL cache cleared.")
 
         if last_change == 0.0:
             continue  # nothing has changed yet since startup
@@ -214,6 +255,9 @@ def _background_sync_loop() -> None:
 
         if quiet_for >= _DEBOUNCE and since_last >= _MIN_INTERVAL:
             try:
+                # Always force a fresh fetch so _fetch_live() is called even
+                # if the 60-second player cache has not expired yet.
+                _cache.last_updated = 0.0
                 get_players()
                 last_sync = time.time()
                 backoff = 0.0

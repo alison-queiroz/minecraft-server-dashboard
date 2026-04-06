@@ -13,6 +13,7 @@ export class Player {
   houseUrl: string | undefined;
   play_hours: number | undefined;
   advancement_count: number | undefined;
+  is_op: boolean | undefined;
 
   constructor(data: Partial<Player>) {
     this.name = data.name!;
@@ -27,10 +28,15 @@ export class Player {
     this.houseUrl = data.houseUrl;
     this.play_hours = data.play_hours;
     this.advancement_count = data.advancement_count;
+    this.is_op = data.is_op;
   }
 
   isBedrock(): boolean {
     return this.uuid.startsWith(BEDROCK_UUID_PREFIX);
+  }
+
+  isOp(): boolean {
+    return this.is_op === true;
   }
 
   avatarUrl(size = 64): string {

@@ -32,13 +32,23 @@
                list="java-players"
                placeholder="Java username..."
                class="account-input account-input--java" />
-        <app-action-button
-          [label]="savingAccount() === 'java' ? '...' : (profileService.minecraftAccounts().java ? 'Update' : 'Link')"
-          [disabled]="savingAccount() === 'java'"
-          variant="primary"
-          (pressed)="save('java')"
-        ></app-action-button>
       </div>
+      @if (accountInputs().java.trim()) {
+        <div class="account-form-row">
+          <input type="password"
+                 [value]="gamePasswords().java"
+                 (input)="updatePassword('java', $any($event.target).value)"
+                 placeholder="In-game password..."
+                 autocomplete="off"
+                 class="account-input" />
+          <app-action-button
+            [label]="savingAccount() === 'java' ? '...' : (profileService.minecraftAccounts().java ? 'Update' : 'Link')"
+            [disabled]="savingAccount() === 'java'"
+            variant="primary"
+            (pressed)="save('java')"
+          ></app-action-button>
+        </div>
+      }
     </div>
 
     <!-- Bedrock -->
@@ -65,13 +75,23 @@
                list="bedrock-players"
                placeholder="Bedrock username..."
                class="account-input account-input--bedrock" />
-        <app-action-button
-          [label]="savingAccount() === 'bedrock' ? '...' : (profileService.minecraftAccounts().bedrock ? 'Update' : 'Link')"
-          [disabled]="savingAccount() === 'bedrock'"
-          variant="blue"
-          (pressed)="save('bedrock')"
-        ></app-action-button>
       </div>
+      @if (accountInputs().bedrock.trim()) {
+        <div class="account-form-row">
+          <input type="password"
+                 [value]="gamePasswords().bedrock"
+                 (input)="updatePassword('bedrock', $any($event.target).value)"
+                 placeholder="In-game password..."
+                 autocomplete="off"
+                 class="account-input" />
+          <app-action-button
+            [label]="savingAccount() === 'bedrock' ? '...' : (profileService.minecraftAccounts().bedrock ? 'Update' : 'Link')"
+            [disabled]="savingAccount() === 'bedrock'"
+            variant="blue"
+            (pressed)="save('bedrock')"
+          ></app-action-button>
+        </div>
+      }
     </div>
 
     <!-- Admin -->
@@ -98,13 +118,23 @@
                list="admin-players"
                placeholder="Admin username..."
                class="account-input account-input--admin" />
-        <app-action-button
-          [label]="savingAccount() === 'admin' ? '...' : (profileService.minecraftAccounts().admin ? 'Update' : 'Link')"
-          [disabled]="savingAccount() === 'admin'"
-          variant="orange"
-          (pressed)="save('admin')"
-        ></app-action-button>
       </div>
+      @if (accountInputs().admin.trim()) {
+        <div class="account-form-row">
+          <input type="password"
+                 [value]="gamePasswords().admin"
+                 (input)="updatePassword('admin', $any($event.target).value)"
+                 placeholder="In-game password..."
+                 autocomplete="off"
+                 class="account-input" />
+          <app-action-button
+            [label]="savingAccount() === 'admin' ? '...' : (profileService.minecraftAccounts().admin ? 'Update' : 'Link')"
+            [disabled]="savingAccount() === 'admin'"
+            variant="orange"
+            (pressed)="save('admin')"
+          ></app-action-button>
+        </div>
+      }
     </div>
 
     <datalist id="java-players">
