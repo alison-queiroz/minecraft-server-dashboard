@@ -27,6 +27,17 @@ if %ERRORLEVEL% NEQ 0 (
 :node_found
 
 :: -------------------------------------------------------------------
+:: OPTIONAL FLAGS
+::   --skip-tests / --skip-checks / --deploy-only
+:: -------------------------------------------------------------------
+set SKIP_CHECKS=0
+for %%A in (%*) do (
+  if /I "%%~A"=="--skip-tests" set SKIP_CHECKS=1
+  if /I "%%~A"=="--skip-checks" set SKIP_CHECKS=1
+  if /I "%%~A"=="--deploy-only" set SKIP_CHECKS=1
+)
+
+:: -------------------------------------------------------------------
 :: ENVIRONMENT CONFIGURATION
 :: -------------------------------------------------------------------
 set SERVER_IP=163.176.228.223
@@ -42,21 +53,28 @@ set REMOTE_WWW_DIR=/var/www/dashboard
 set REMOTE_API_DIR=/home/opc/minecraft
 set TAR_FILE=deploy_build.tar.gz
 
-echo ==========================================================
-echo   0, 1, 2 AND 3. RUNNING QUALITY + TESTS IN PARALLEL
-echo ==========================================================
-:: Runs quality gate (lint + strict typecheck), Angular unit tests,
-:: Python unit tests, and Playwright e2e concurrently.
-:: CI=1 tells Playwright to start its own dev server and use 0 retries.
-set CI=1
-call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "QUALITY,UI,API,E2E" -c "yellow,cyan,green,magenta" "npm run ci:quality" "npm run test" ".venv\Scripts\python.exe -m pytest tests/" "npm run e2e:playwright"
-set CI=
+if "%SKIP_CHECKS%"=="1" (
+  echo ==========================================================
+  echo   0, 1, 2 AND 3. SKIPPING QUALITY + TESTS BY FLAG
+  echo ==========================================================
+  echo [WARNING] Running deploy-only mode. Checks were skipped.
+) else (
+  echo ==========================================================
+  echo   0, 1, 2 AND 3. RUNNING QUALITY + TESTS IN PARALLEL
+  echo ==========================================================
+  :: Runs quality gate (lint + strict typecheck), Angular unit tests,
+  :: Python unit tests, and Playwright e2e concurrently.
+  :: CI=1 tells Playwright to start its own dev server and use 0 retries.
+  set CI=1
+  call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "QUALITY,UI,API,E2E" -c "yellow,cyan,green,magenta" "npm run ci:quality" "npm run test" ".venv\Scripts\python.exe -m pytest tests/" "npm run e2e:playwright"
+  set CI=
 
-if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] One or more tests failed. Deployment aborted.
-    pause
-    exit /b 1
+  if %ERRORLEVEL% NEQ 0 (
+      color 0C
+      echo [ERROR] One or more tests failed. Deployment aborted.
+      pause
+      exit /b 1
+  )
 )
 
 echo ==========================================================

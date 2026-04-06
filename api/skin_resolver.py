@@ -221,6 +221,9 @@ def _resolve_skinsrestorer(uuid: str, fallback: str) -> str:
         identifier = data.get("skinIdentifier", {}).get("identifier", "")
         if not identifier:
             return fallback
+        local_tex = _find_texture_from_sr_skins(identifier)
+        if local_tex:
+            return local_tex
         if identifier.startswith("http"):
             return _resolve_url_skin(identifier)
         match = _SR_RECOMMENDATION_PATTERN.match(identifier)
@@ -274,5 +277,5 @@ def get_skin_url(name: str, uuid: str) -> str:
         return _proxy_url(identifier)
     if identifier == name and uuid.startswith(_BEDROCK_UUID_PREFIX):
         return _resolve_bedrock_skin(uuid)
-    return _MCHEADS_SKIN_URL.format(identifier)
+    return _proxy_url(_MCHEADS_SKIN_URL.format(identifier))
 

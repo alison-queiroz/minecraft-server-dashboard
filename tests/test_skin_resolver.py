@@ -92,7 +92,7 @@ def test_get_skin_url_bedrock(mocker):
 def test_get_skin_url_java(mocker):
     """Ensure standard Java names go through mc-heads."""
     mocker.patch("api.skin_resolver._resolve_skinsrestorer", return_value="Notch")
-    assert get_skin_url("Steve", "uuid-123") == "https://mc-heads.net/skin/Notch"
+    assert get_skin_url("Steve", "uuid-123") == "https://wsrv.nl/?url=https%3A%2F%2Fmc-heads.net%2Fskin%2FNotch"
 
 
 # ── _extract_texture_url ──────────────────────────────────────────────────────
