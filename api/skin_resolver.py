@@ -284,7 +284,11 @@ def get_skin_url(name: str, uuid: str) -> str:
             )
             return _MCHEADS_SKIN_URL.format(name)
         return _proxy_url(identifier)
-    if identifier == name and uuid.startswith(_BEDROCK_UUID_PREFIX):
+    # For bedrock players, always use the GeyserMC API when SR didn't return
+    # a direct texture URL.  The SR recommendation name (e.g. "ExVegano4795")
+    # won't match the Floodgate-prefixed server name (".ExVegano4795"), so the
+    # old `identifier == name` guard was silently bypassing GeyserMC resolution.
+    if uuid.startswith(_BEDROCK_UUID_PREFIX):
         return _resolve_bedrock_skin(uuid)
     return _proxy_url(_MCHEADS_SKIN_URL.format(identifier))
 
