@@ -18,6 +18,7 @@ export class SwipeNavigateDirective {
   @Output() readonly dragXChange = new EventEmitter<number>();
   @Output() readonly draggingChange = new EventEmitter<boolean>();
   @Output() readonly navigateDirection = new EventEmitter<'left' | 'right'>();
+  @Output() readonly previewIndexChange = new EventEmitter<number | null>();
 
   private touchStartX = 0;
   private touchStartY = 0;
@@ -48,13 +49,26 @@ export class SwipeNavigateDirective {
     }
 
     const delta = this.getDelta(event.touches);
-    if (!delta || !this.canContinueDrag(delta.dx, delta.dy)) {
+    if (!delta) {
+      return;
+    }
+
+    const wasHorizontal = this.isDraggingHorizontal;
+    if (!this.canContinueDrag(delta.dx, delta.dy)) {
       return;
     }
 
     const index = this.getCurrentIndex();
     if (!this.canDragForIndex(delta.dx, index)) {
       return;
+    }
+
+    // Emit the target page index the first time the drag direction is locked
+    if (!wasHorizontal && this.isDraggingHorizontal) {
+      const previewIdx = delta.dx < 0 ? index + 1 : index - 1;
+      if (previewIdx >= 0 && previewIdx < this.getItemCount()) {
+        this.previewIndexChange.emit(previewIdx);
+      }
     }
 
     if (this.appSwipeNavigateStopPropagation) {
@@ -175,10 +189,10 @@ export class SwipeNavigateDirective {
 
   private navigateToIndex(index: number, direction: 'left' | 'right', event: TouchEvent): void {
     const targetPath = this.appSwipeNavigatePageOrder[index];
-    this.resetDrag();
 
     const isInRange = index >= 0 && index < this.getItemCount();
     if (!isInRange) {
+      this.resetDrag();
       return;
     }
 
@@ -186,7 +200,11 @@ export class SwipeNavigateDirective {
       event.stopPropagation();
     }
 
+    // Emit BEFORE resetDrag so the component can read the committed dragX and previewOrigin
+    // values to compute where the preview was when the finger lifted.
     this.navigateDirection.emit(direction);
+    this.resetDrag();
+
     if (!this.appSwipeNavigateUseRouter) {
       return;
     }
@@ -199,6 +217,8 @@ export class SwipeNavigateDirective {
   }
 
   private resetDrag(): void {
+    this.isDraggingHorizontal = false;
+    this.previewIndexChange.emit(null);
     this.dragXChange.emit(0);
   }
 }
