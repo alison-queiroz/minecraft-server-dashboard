@@ -23,6 +23,18 @@ export interface SavedLocation {
   isPublic: boolean;
 }
 
+export interface SavedHome {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  z: number;
+  /** EssentialsX world id: 'world', 'world_nether', 'world_the_end' */
+  world: string;
+  /** When true other players can see this home on the player card */
+  isPublic: boolean;
+}
+
 export type AccountType = 'java' | 'bedrock' | 'admin';
 
 export interface MinecraftAccounts {
@@ -34,6 +46,7 @@ export interface MinecraftAccounts {
 export interface UserProfile {
   minecraftAccounts: MinecraftAccounts;
   savedLocations: SavedLocation[];
+  savedHomes: SavedHome[];
 }
 
 interface UsernameLookup {
@@ -41,7 +54,7 @@ interface UsernameLookup {
 }
 
 const DEFAULT_ACCOUNTS: MinecraftAccounts = { java: null, bedrock: null, admin: null };
-const DEFAULT_PROFILE: UserProfile = { minecraftAccounts: DEFAULT_ACCOUNTS, savedLocations: [] };
+const DEFAULT_PROFILE: UserProfile = { minecraftAccounts: DEFAULT_ACCOUNTS, savedLocations: [], savedHomes: [] };
 
 @Injectable({ providedIn: 'root' })
 export class UserProfileService {
@@ -56,6 +69,7 @@ export class UserProfileService {
   readonly isLoading = signal(false);
 
   readonly savedLocations = computed(() => this.profile().savedLocations);
+  readonly savedHomes = computed(() => this.profile().savedHomes ?? []);
   readonly minecraftAccounts = computed(() => this.profile().minecraftAccounts);
   /** Primary Java username for backward-compat display */
   readonly minecraftUsername = computed(() => this.profile().minecraftAccounts.java);
@@ -174,6 +188,113 @@ export class UserProfileService {
     this.profile.update(p => ({ ...p, savedLocations: updated }));
   }
 
+  async addHome(home: Omit<SavedHome, 'id'>): Promise<void> {
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid) return;
+
+    const id = crypto.randomUUID();
+    const newHome: SavedHome = { id, ...home };
+    const updated = [...(this.profile().savedHomes ?? []), newHome];
+
+    await this._persistHomes(uid, updated);
+    this.profile.update(p => ({ ...p, savedHomes: updated }));
+  }
+
+  /**
+   * Merges a batch of server homes into savedHomes in a single Firestore write.
+   * For each server home: adds it if not present by name, or updates coords if present.
+   * Preserves existing isPublic values.
+   */
+  async syncHomesFromServer(serverHomes: Omit<SavedHome, 'id' | 'isPublic'>[]): Promise<void> {
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid || serverHomes.length === 0) return;
+
+    const existing = this.profile().savedHomes ?? [];
+    const existingByName = new Map(existing.map(h => [h.name, h]));
+    let changed = false;
+
+    const updated: SavedHome[] = existing.map(h => {
+      const server = serverHomes.find(sh => sh.name === h.name);
+      if (server && (h.x !== server.x || h.y !== server.y || h.z !== server.z || h.world !== server.world)) {
+        changed = true;
+        return { ...h, x: server.x, y: server.y, z: server.z, world: server.world };
+      }
+      return h;
+    });
+
+    for (const sh of serverHomes) {
+      if (!existingByName.has(sh.name)) {
+        updated.push({ id: crypto.randomUUID(), isPublic: false, ...sh });
+        changed = true;
+      }
+    }
+
+    if (!changed) return;
+
+    await this._persistHomes(uid, updated);
+    this.profile.update(p => ({ ...p, savedHomes: updated }));
+  }
+
+  async updateHome(id: string, changes: Partial<Omit<SavedHome, 'id'>>): Promise<void> {
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid) return;
+
+    const updated = (this.profile().savedHomes ?? []).map(h =>
+      h.id === id ? { ...h, ...changes } : h
+    );
+
+    await this._persistHomes(uid, updated);
+    this.profile.update(p => ({ ...p, savedHomes: updated }));
+  }
+
+  async deleteHome(id: string): Promise<void> {
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid) return;
+
+    const updated = (this.profile().savedHomes ?? []).filter(h => h.id !== id);
+    await this._persistHomes(uid, updated);
+    this.profile.update(p => ({ ...p, savedHomes: updated }));
+  }
+
+  async updateAllHomesVisibility(isPublic: boolean): Promise<void> {
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid) return;
+
+    const updated = (this.profile().savedHomes ?? []).map(h => ({ ...h, isPublic }));
+    await this._persistHomes(uid, updated);
+    this.profile.update(p => ({ ...p, savedHomes: updated }));
+  }
+
+  /**
+   * Returns a live Observable of public homes for a given Minecraft username.
+   */
+  getPublicHomesStream(minecraftName: string): Observable<SavedHome[]> {
+    return new Observable(observer => {
+      let unsubscribeSnapshot: (() => void) | null = null;
+
+      getDoc(doc(this.db, 'usernames', minecraftName))
+        .then(usernameSnap => {
+          if (!usernameSnap.exists()) {
+            observer.next([]);
+            return;
+          }
+          const { uid } = usernameSnap.data() as { uid: string };
+          unsubscribeSnapshot = onSnapshot(
+            doc(this.db, 'users', uid),
+            userSnap => {
+              if (!userSnap.exists()) { observer.next([]); return; }
+              const profile = userSnap.data() as UserProfile;
+              observer.next((profile.savedHomes ?? []).filter(h => h.isPublic));
+            },
+            () => observer.next([])
+          );
+        })
+        .catch(() => observer.next([]));
+
+      return () => unsubscribeSnapshot?.();
+    });
+  }
+
   /**
    * Returns a live Observable of public saved locations for a given Minecraft
    * username. Backed by Firestore onSnapshot so it updates in real time across
@@ -217,6 +338,17 @@ export class UserProfileService {
       await updateDoc(ref, { savedLocations: locations });
     } else {
       await setDoc(ref, { ...DEFAULT_PROFILE, savedLocations: locations });
+    }
+  }
+
+  private async _persistHomes(uid: string, homes: SavedHome[]): Promise<void> {
+    const ref = doc(this.db, 'users', uid);
+    const snap = await getDoc(ref);
+
+    if (snap.exists()) {
+      await updateDoc(ref, { savedHomes: homes });
+    } else {
+      await setDoc(ref, { ...DEFAULT_PROFILE, savedHomes: homes });
     }
   }
 

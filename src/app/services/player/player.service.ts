@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { Player } from './player.model';
+import type { EssentialsHome } from './player.model';
 import { getApps, initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
@@ -16,6 +17,7 @@ interface ApiPlayerLiveData {
   last_seen?: string;
   play_hours?: number;
   advancement_count?: number;
+  homes?: EssentialsHome[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -77,6 +79,15 @@ export class PlayerService {
           const players = snapshot.docs
             .map(d => new Player(d.data() as Partial<Player>))
             .sort((a, b) => b.level - a.level);
+          const current = this.rawPlayers();
+          const changed = players.length !== current.length ||
+            players.some((p, i) =>
+              p.uuid !== current[i]?.uuid ||
+              p.level !== current[i]?.level ||
+              p.dimension !== current[i]?.dimension ||
+              p.last_seen !== current[i]?.last_seen
+            );
+          if (!changed) return;
           this.rawPlayers.set(players);
           // If Firestore docs predate advancement_count, enrich from HTTP API
           if (players.some(p => p.advancement_count === undefined)) {
@@ -126,6 +137,7 @@ export class PlayerService {
             last_seen:         api.last_seen ?? p.last_seen,
             play_hours:        api.play_hours ?? p.play_hours,
             advancement_count: api.advancement_count ?? p.advancement_count,
+            homes:             api.homes ?? p.homes,
           });
         }));
       }),

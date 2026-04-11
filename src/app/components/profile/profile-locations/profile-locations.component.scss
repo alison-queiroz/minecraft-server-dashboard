@@ -66,22 +66,6 @@
 	@apply px-3 py-1.5 text-xs;
 }
 
-.location-view {
-	@apply flex items-start justify-between gap-2;
-}
-
-.location-copy {
-	@apply min-w-0 flex-1;
-}
-
-.location-name {
-	@apply flex items-center gap-2 overflow-hidden text-sm font-bold text-zinc-900 dark:text-zinc-100;
-}
-
-.location-public-badge {
-	@apply inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-500;
-}
-
 .location-description {
 	@apply mt-0.5 text-xs text-zinc-500 dark:text-zinc-400;
 }
@@ -107,5 +91,9 @@
 }
 
 .location-hash {
-	@apply truncate font-mono text-xs text-zinc-500 dark:text-zinc-600;
+	@apply flex items-center gap-1.5 truncate font-mono text-xs text-zinc-500 dark:text-zinc-600;
+}
+
+.location-hash-rest {
+	@apply truncate;
 }

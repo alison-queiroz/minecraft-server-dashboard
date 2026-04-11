@@ -118,13 +118,16 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo [INFO] Executing remote backend updates and cleaning WWW folder...
-ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/* && pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && find %REMOTE_API_DIR%/api -name '*.pyc' -delete && find %REMOTE_API_DIR%/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null && sudo systemctl restart minecraft-api.service && sed -i '1s/^\xEF\xBB\xBF//;s/\r$//' /tmp/setup-nginx-map.sh && sudo bash /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
+ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/* && python3 -m pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && find %REMOTE_API_DIR%/api -name '*.pyc' -delete && find %REMOTE_API_DIR%/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null && sudo systemctl restart minecraft-api.service && sed -i '1s/^\xEF\xBB\xBF//;s/\r$//' /tmp/setup-nginx-map.sh && sudo bash /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
 if %ERRORLEVEL% NEQ 0 (
   color 0C
   echo [ERROR] Remote backend/nginx update failed. Deployment aborted.
   pause
   exit /b 1
 )
+
+echo [INFO] Waiting for API to come up, then forcing Firestore resync...
+ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sleep 5 && curl -sf -X POST http://127.0.0.1:5000/api/internal/force-resync && sleep 3 && echo '[INFO] Firestore resync triggered successfully.' || echo '[WARN] force-resync call failed - check API logs.'"
 
 echo [INFO] Backend deployment finished. Waiting for Angular build to complete...
 

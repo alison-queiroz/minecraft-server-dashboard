@@ -1,5 +1,13 @@
 const BEDROCK_UUID_PREFIX = '00000000-0000-0000-0009';
 
+export interface EssentialsHome {
+  name: string;
+  world: string;
+  x: number;
+  y: number;
+  z: number;
+}
+
 export class Player {
   name!: string;
   uuid!: string;
@@ -14,6 +22,7 @@ export class Player {
   play_hours: number | undefined;
   advancement_count: number | undefined;
   is_op: boolean | undefined;
+  homes: EssentialsHome[] | undefined;
 
   constructor(data: Partial<Player>) {
     this.name = data.name!;
@@ -29,6 +38,7 @@ export class Player {
     this.play_hours = data.play_hours;
     this.advancement_count = data.advancement_count;
     this.is_op = data.is_op;
+    this.homes = data.homes;
   }
 
   isBedrock(): boolean {

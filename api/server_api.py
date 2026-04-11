@@ -5,7 +5,7 @@ from functools import wraps
 
 from flask import Flask, jsonify, request, abort
 
-from .player_data import get_players, get_op_names
+from .player_data import get_players, get_op_names, read_essentials_homes, create_essentials_home, update_essentials_home, delete_essentials_home
 from .firestore_sync import read_local_snapshots
 
 # Google Drive API imports
@@ -64,6 +64,78 @@ def players_endpoint():
     return jsonify(get_players())
 
 
+@app.route("/api/players/<uuid>/homes", methods=["GET"])
+@require_auth
+def player_homes_endpoint(uuid: str):
+    """Returns the EssentialsX homes for the given player UUID.
+
+    The homes are also included in the player object returned by /api/players,
+    but this endpoint allows fetching them directly without loading all players.
+    UUID must be in the standard hyphenated format (e.g. 550e8400-e29b-41d4-a716-446655440000).
+    Non-hyphenated Bedrock UUIDs (starting with 00000000-0000-0000-0009) will
+    return an empty list since EssentialsX only manages Java players.
+    """
+    homes = read_essentials_homes(uuid)
+    return jsonify(homes)
+
+
+@app.route("/api/players/<uuid>/homes", methods=["POST"])
+@require_auth
+def create_player_home_endpoint(uuid: str):
+    """Create a new home in EssentialsX for the given player UUID.
+
+    Body JSON: { name, x, y, z, world }
+    Returns 409 if a home with that name already exists.
+    """
+    body = request.get_json(silent=True) or {}
+    name = body.get("name")
+    x = body.get("x")
+    y = body.get("y")
+    z = body.get("z")
+    world = body.get("world")
+    if any(v is None for v in (name, x, y, z, world)):
+        abort(400)
+    ok = create_essentials_home(uuid, str(name), float(x), float(y), float(z), str(world))
+    if not ok:
+        abort(409)
+    return jsonify({"ok": True}), 201
+
+
+@app.route("/api/players/<uuid>/homes/<path:name>", methods=["PUT"])
+@require_auth
+def update_player_home_endpoint(uuid: str, name: str):
+    """Update coordinates (and optionally rename) a home in EssentialsX.
+
+    Body JSON: { x, y, z, world, new_name? }
+    Returns 404 if the home or player file does not exist.
+    """
+    body = request.get_json(silent=True) or {}
+    x = body.get("x")
+    y = body.get("y")
+    z = body.get("z")
+    world = body.get("world")
+    if any(v is None for v in (x, y, z, world)):
+        abort(400)
+    new_name = body.get("new_name") or None
+    ok = update_essentials_home(uuid, name, float(x), float(y), float(z), str(world), new_name)
+    if not ok:
+        abort(404)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/players/<uuid>/homes/<path:name>", methods=["DELETE"])
+@require_auth
+def delete_player_home_endpoint(uuid: str, name: str):
+    """Delete a home from EssentialsX userdata YAML.
+
+    Returns 404 if the home or player file does not exist.
+    """
+    ok = delete_essentials_home(uuid, name)
+    if not ok:
+        abort(404)
+    return jsonify({"ok": True})
+
+
 @app.route("/api/ops", methods=["GET"])
 @require_auth
 def ops_endpoint():
@@ -82,6 +154,22 @@ def force_resync_endpoint():
     _url_resolution_cache.clear()      # forget all resolved skin URLs
     _url_resolved_at.clear()
     fresh = get_players()              # re-fetch immediately
+    return jsonify({"ok": True, "players": len(fresh)})
+
+
+@app.route("/api/internal/force-resync", methods=["POST"])
+def internal_force_resync_endpoint():
+    """Localhost-only force-resync used by the deploy pipeline.
+    Bypasses Firebase auth because it is only reachable from 127.0.0.1.
+    Returns 403 for any non-loopback caller."""
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        abort(403)
+    from .player_data import _cache
+    from .skin_resolver import _url_resolution_cache, _url_resolved_at
+    _cache.last_updated = 0.0
+    _url_resolution_cache.clear()
+    _url_resolved_at.clear()
+    fresh = get_players()
     return jsonify({"ok": True, "players": len(fresh)})
 
 

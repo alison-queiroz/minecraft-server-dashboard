@@ -13,13 +13,15 @@ import { UserProfileService } from '../../../services/user-profile/user-profile.
 import { LucideMap, LucideExternalLink, LucidePencil, LucideTrash2 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
+import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card.component';
+import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
 import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-profile-locations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, MapViewerComponent],
+  imports: [IconComponent, MapViewerComponent, ProfileItemCardComponent, DimensionTagComponent],
   templateUrl: './profile-locations.component.html',
   styleUrls: ['./profile-locations.component.scss'],
 })
@@ -137,6 +139,20 @@ export class ProfileLocationsComponent {
   protected mapUrl(hash: string): string {
     const base = this.mapBaseUrl.endsWith('/') ? this.mapBaseUrl : this.mapBaseUrl + '/';
     return base + (hash.startsWith('#') ? hash : '#' + hash);
+  }
+
+  /** Extracts the world ID from a BlueMap hash: '#world:-1:75:84' → 'world' */
+  protected hashWorld(hash: string): string {
+    const stripped = hash.startsWith('#') ? hash.slice(1) : hash;
+    const colon = stripped.indexOf(':');
+    return colon === -1 ? stripped : stripped.slice(0, colon);
+  }
+
+  /** Returns everything after the world ID: '#world:-1:75:84' → ':-1:75:84' */
+  protected hashRest(hash: string): string {
+    const stripped = hash.startsWith('#') ? hash.slice(1) : hash;
+    const colon = stripped.indexOf(':');
+    return colon === -1 ? '' : stripped.slice(colon);
   }
 
   protected previewOnMap(hash: string): void {

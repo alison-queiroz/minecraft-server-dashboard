@@ -107,6 +107,28 @@
         </div>
       }
 
+      <!-- Public Homes -->
+      @if (publicHomes().length > 0) {
+        <div class="detail-locations-section">
+          <p class="detail-section-label">Homes</p>
+          <div class="detail-locations-list">
+            @for (home of publicHomes(); track home.id) {
+              <a [routerLink]="['/map']" [fragment]="homeFragment(home)"
+                class="detail-location-link group">
+                <app-icon [icon]="LucideHouse" [size]="14" class="detail-location-icon"></app-icon>
+                <div class="detail-location-copy">
+                  <p class="detail-location-name">{{ home.name }}</p>
+                  <p class="detail-location-description">
+                    {{ homeWorldLabel(home.world) }}&nbsp;&middot;&nbsp;{{ home.x | number:'1.0-0' }},&nbsp;{{ home.y | number:'1.0-0' }},&nbsp;{{ home.z | number:'1.0-0' }}
+                  </p>
+                </div>
+                <app-icon [icon]="LucideExternalLink" [size]="12" class="detail-location-arrow"></app-icon>
+              </a>
+            }
+          </div>
+        </div>
+      }
+
       <!-- Advancements (Java only, collapsible) -->
       <app-player-advancements
         [uuid]="player.uuid"

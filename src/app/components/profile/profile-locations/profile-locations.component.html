@@ -49,8 +49,8 @@
 
   <div class="locations-list">
   @for (loc of profileService.savedLocations(); track loc.id) {
-    <div class="location-card">
-      @if (editingId() === loc.id) {
+    @if (editingId() === loc.id) {
+      <div class="location-card">
         <input [value]="editName()" (input)="editName.set($any($event.target).value)" maxlength="64"
           placeholder="Location name"
           class="ui-input location-edit-input" />
@@ -72,35 +72,32 @@
           <button (click)="cancelEdit()" class="ui-button ui-button--secondary location-edit-button">Cancel</button>
           <button (click)="saveEdit(loc.id)" [disabled]="saving()" class="ui-button ui-button--primary location-edit-button">{{ saving() ? 'Saving...' : 'Save' }}</button>
         </div>
-      } @else {
-        <div class="location-view">
-          <div class="location-copy">
-            <p class="location-name">
-              <span class="min-w-0 flex-1 truncate">{{ loc.name }}</span>
-              @if (loc.isPublic) {
-                <span class="location-public-badge">Public</span>
-              }
-            </p>
-            @if (loc.description) { <p class="location-description">{{ loc.description }}</p> }
-          </div>
-          <div class="location-actions">
-            <button (click)="previewOnMap(loc.mapHash)" class="location-action location-action--accent" title="Preview on map">
-              <app-icon [icon]="LucideMap" [size]="14"></app-icon>
-            </button>
-            <a [href]="mapUrl(loc.mapHash)" target="_blank" rel="noopener" class="location-action location-action--bright" title="Open in new tab">
-              <app-icon [icon]="LucideExternalLink" [size]="14"></app-icon>
-            </a>
-            <button (click)="startEdit(loc)" class="location-action location-action--bright" title="Edit">
-              <app-icon [icon]="LucidePencil" [size]="14"></app-icon>
-            </button>
-            <button (click)="deleteLocation(loc.id)" class="location-action location-action--danger" title="Delete">
-              <app-icon [icon]="LucideTrash2" [size]="14"></app-icon>
-            </button>
-          </div>
-        </div>
-        <p class="location-hash">{{ loc.mapHash }}</p>
-      }
-    </div>
+      </div>
+    } @else {
+      <app-profile-item-card [name]="loc.name" [isPublic]="loc.isPublic">
+        @if (loc.description) {
+          <p appItemMeta class="location-description">{{ loc.description }}</p>
+        }
+        <ng-container appItemActions>
+          <button (click)="previewOnMap(loc.mapHash)" class="location-action location-action--accent" title="Preview on map">
+            <app-icon [icon]="LucideMap" [size]="14"></app-icon>
+          </button>
+          <a [href]="mapUrl(loc.mapHash)" target="_blank" rel="noopener" class="location-action location-action--bright" title="Open in new tab">
+            <app-icon [icon]="LucideExternalLink" [size]="14"></app-icon>
+          </a>
+          <button (click)="startEdit(loc)" class="location-action location-action--bright" title="Edit">
+            <app-icon [icon]="LucidePencil" [size]="14"></app-icon>
+          </button>
+          <button (click)="deleteLocation(loc.id)" class="location-action location-action--danger" title="Delete">
+            <app-icon [icon]="LucideTrash2" [size]="14"></app-icon>
+          </button>
+        </ng-container>
+        <p appItemFooter class="location-hash">
+          <app-dimension-tag [world]="hashWorld(loc.mapHash)"></app-dimension-tag>
+          <span class="location-hash-rest">{{ hashRest(loc.mapHash) }}</span>
+        </p>
+      </app-profile-item-card>
+    }
   }
   </div>
 </section>

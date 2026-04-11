@@ -251,3 +251,129 @@ def test_file_watcher_no_change_on_second_call(mocker, tmp_path):
     watcher = _FileWatcher(str(tmp_path))
     watcher.has_changes()  # first call records mtimes
     assert watcher.has_changes() is False
+
+
+# ── read_essentials_homes ─────────────────────────────────────────────────────
+
+def test_read_essentials_homes_missing_file(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns an empty list when the player YAML file does not exist."""
+    from api.player_data import read_essentials_homes
+    mocker.patch("os.path.exists", return_value=False)
+    assert read_essentials_homes("some-uuid") == []
+
+
+def test_read_essentials_homes_yaml_unavailable(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns an empty list gracefully when PyYAML is not installed."""
+    import api.player_data as pd
+    orig = pd._YAML_AVAILABLE
+    pd._YAML_AVAILABLE = False
+    try:
+        assert pd.read_essentials_homes("some-uuid") == []
+    finally:
+        pd._YAML_AVAILABLE = orig
+
+
+def test_read_essentials_homes_no_homes_section(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns an empty list when the YAML has no 'homes' key."""
+    from api.player_data import read_essentials_homes
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="teleportenabled: true\n"))
+    assert read_essentials_homes("some-uuid") == []
+
+
+def test_read_essentials_homes_uses_world_name_key(mocker: "pytest_mock.MockerFixture", tmp_path: "pytest.TempPathFactory") -> None:
+    """Prefers the 'world-name' key over the 'world' UUID value."""
+    from api.player_data import read_essentials_homes, _ESSENTIALS_USERDATA_DIR
+    yaml_text = (
+        "homes:\n"
+        "  casa:\n"
+        "    world: ea0bedd7-d319-4848-959e-bdcdb6e8ce94\n"
+        "    world-name: world\n"
+        "    x: -122.334\n"
+        "    y: 102.0\n"
+        "    z: 41.345\n"
+    )
+    uid = "82657f6f-8a86-3af7-958b-f70b1d2b9c1b"
+    yml_file = tmp_path / f"{uid}.yml"
+    yml_file.write_text(yaml_text, encoding="utf-8")
+    mocker.patch("api.player_data._ESSENTIALS_USERDATA_DIR", str(tmp_path))
+    homes = read_essentials_homes(uid)
+    assert homes == [{"name": "casa", "world": "world", "x": -122.334, "y": 102.0, "z": 41.345}]
+
+
+def test_read_essentials_homes_falls_back_to_world_uuid_when_no_world_name(
+    mocker: "pytest_mock.MockerFixture",
+    tmp_path: "pytest.TempPathFactory",
+) -> None:
+    """Falls back to the 'world' key when 'world-name' is absent."""
+    from api.player_data import read_essentials_homes
+    yaml_text = (
+        "homes:\n"
+        "  base:\n"
+        "    world: world_nether\n"
+        "    x: 10.0\n"
+        "    y: 50.0\n"
+        "    z: -5.0\n"
+    )
+    uid = "some-uuid"
+    (tmp_path / f"{uid}.yml").write_text(yaml_text, encoding="utf-8")
+    mocker.patch("api.player_data._ESSENTIALS_USERDATA_DIR", str(tmp_path))
+    homes = read_essentials_homes(uid)
+    assert homes[0]["world"] == "world_nether"
+
+
+def test_read_essentials_homes_multiple_homes_multiple_worlds(
+    mocker: "pytest_mock.MockerFixture",
+    tmp_path: "pytest.TempPathFactory",
+) -> None:
+    """Parses multiple homes spanning different worlds correctly."""
+    from api.player_data import read_essentials_homes
+    yaml_text = (
+        "homes:\n"
+        "  home:\n"
+        "    world: ea0bedd7-uuid\n"
+        "    world-name: world\n"
+        "    x: 0.0\n"
+        "    y: 64.0\n"
+        "    z: 0.0\n"
+        "  nether:\n"
+        "    world: 9f80e0ae-uuid\n"
+        "    world-name: world_nether\n"
+        "    x: -100.0\n"
+        "    y: 52.0\n"
+        "    z: -337.0\n"
+    )
+    uid = "some-uuid"
+    (tmp_path / f"{uid}.yml").write_text(yaml_text, encoding="utf-8")
+    mocker.patch("api.player_data._ESSENTIALS_USERDATA_DIR", str(tmp_path))
+    homes = read_essentials_homes(uid)
+    assert len(homes) == 2
+    worlds = {h["name"]: h["world"] for h in homes}
+    assert worlds["home"] == "world"
+    assert worlds["nether"] == "world_nether"
+
+
+def test_read_essentials_homes_corrupted_yaml(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns an empty list without raising when the YAML is malformed."""
+    from api.player_data import read_essentials_homes
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data=": invalid: [yaml"))
+    assert read_essentials_homes("some-uuid") == []
+
+
+def test_parse_player_includes_homes(mocker: "pytest_mock.MockerFixture") -> None:
+    """_parse_player attaches the EssentialsX homes list to the returned dict."""
+    mocker.patch("os.path.getmtime", return_value=1700000000.0)
+    mocker.patch("api.player_data.get_skin_url", return_value="http://skin")
+    mocker.patch("nbtlib.load", return_value={
+        "XpLevel": 5, "Health": 20.0,
+        "Dimension": "minecraft:overworld", "Pos": [0, 64, 0],
+    })
+    mocker.patch(
+        "api.player_data.read_essentials_homes",
+        return_value=[{"name": "home", "world": "world", "x": 10.0, "y": 64.0, "z": -5.0}],
+    )
+    result = _parse_player("/path/to/some-uuid.dat", {"some-uuid": "Alex"})
+    assert result is not None
+    assert result["homes"] == [{"name": "home", "world": "world", "x": 10.0, "y": 64.0, "z": -5.0}]
+

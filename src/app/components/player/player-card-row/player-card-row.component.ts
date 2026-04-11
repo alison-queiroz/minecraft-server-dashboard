@@ -10,17 +10,18 @@ import {
   Output,
   inject,
 } from '@angular/core';
-import { NgClass, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import type { Player } from '../../../services/player/player.model';
 import { PlayerService } from '../../../services/player/player.service';
 import { PlayerFaceComponent } from '../../shared/player-face/player-face.component';
 import { TooltipDirective } from '../../../directives/tooltip.directive';
+import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
 
 @Component({
   selector: 'app-player-card-row',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, DecimalPipe, PlayerFaceComponent, TooltipDirective],
+  imports: [DecimalPipe, PlayerFaceComponent, TooltipDirective, DimensionTagComponent],
   templateUrl: './player-card-row.component.html',
   styleUrls: ['./player-card-row.component.scss'],
   host: {

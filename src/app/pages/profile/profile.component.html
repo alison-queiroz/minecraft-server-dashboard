@@ -44,6 +44,10 @@
         <app-icon [icon]="LucideMapPin" [size]="14"></app-icon>
         Locations
       </button>
+      <button class="profile-tab" [class.profile-tab--active]="activeTab() === 'homes'" (click)="setTab('homes')">
+        <app-icon [icon]="LucideHouse" [size]="14"></app-icon>
+        Homes
+      </button>
     </div>
 
     <!-- Tab panels -->
@@ -80,6 +84,13 @@
           [capturedHash]="capturedMapHash()"
           (previewRequested)="previewMap($event)">
         </app-profile-locations>
+      }
+
+      @if (activeTab() === 'homes') {
+        <app-profile-homes
+          [players]="linkedPlayers()"
+          (previewRequested)="previewMap($event)">
+        </app-profile-homes>
       }
       </div>
     </div>

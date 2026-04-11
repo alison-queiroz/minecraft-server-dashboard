@@ -9,7 +9,7 @@ import { RouterLink } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap, of } from 'rxjs';
 import { PlayerService } from '../../../services/player/player.service';
-import type { SavedLocation } from '../../../services/user-profile/user-profile.service';
+import type { SavedLocation, SavedHome } from '../../../services/user-profile/user-profile.service';
 import { UserProfileService } from '../../../services/user-profile/user-profile.service';
 import { SkinViewerComponent } from '../../shared/skin-viewer/skin-viewer.component';
 import { PlayerAdvancementsComponent } from '../player-advancements/player-advancements.component';
@@ -25,6 +25,12 @@ const DIMENSION_MAP: Record<string, string> = {
   'Overworld': 'world',
   'Nether':    'world_nether',
   'The End':   'world_the_end',
+};
+
+const HOME_WORLD_LABELS: Record<string, string> = {
+  world:          'Overworld',
+  world_nether:   'Nether',
+  world_the_end:  'The End',
 };
 
 @Component({
@@ -64,6 +70,17 @@ export class PlayerDetailComponent {
     { initialValue: [] as SavedLocation[] }
   );
 
+  protected readonly publicHomes = toSignal(
+    toObservable(this.service.selectedPlayer).pipe(
+      switchMap(player =>
+        player
+          ? this.userProfileService.getPublicHomesStream(player.name)
+          : of([] as SavedHome[])
+      )
+    ),
+    { initialValue: [] as SavedHome[] }
+  );
+
   /** Builds a BlueMap fragment from the player's position.
    *  Format: worldId:x:y:z:yaw:pitch:distance:orbitAngle:mode */
   protected playerMapFragment(player: Player): string {
@@ -92,5 +109,18 @@ export class PlayerDetailComponent {
       this.linkCopied.set(true);
       setTimeout(() => this.linkCopied.set(false), 2000);
     });
+  }
+
+  /** Builds a BlueMap fragment from a home's coordinates. */
+  protected homeFragment(home: SavedHome): string {
+    const x = Math.round(home.x);
+    const y = Math.round(home.y) + 2;
+    const z = Math.round(home.z);
+    return `${home.world}:${x}:${y}:${z}:0:0.36:500:0:0:free`;
+  }
+
+  /** Returns a human-readable world label for a home's world id. */
+  protected homeWorldLabel(world: string): string {
+    return HOME_WORLD_LABELS[world] ?? world;
   }
 }

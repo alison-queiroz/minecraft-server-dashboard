@@ -1,0 +1,16 @@
+<div class="item-view">
+  <div class="item-copy">
+    <p class="item-name">
+      <ng-content select="[appItemLeading]"></ng-content>
+      <span class="min-w-0 flex-1 truncate">{{ name }}</span>
+      @if (isPublic) {
+        <span class="item-badge">Public</span>
+      }
+    </p>
+    <ng-content select="[appItemMeta]"></ng-content>
+  </div>
+  <div class="item-actions">
+    <ng-content select="[appItemActions]"></ng-content>
+  </div>
+</div>
+<ng-content select="[appItemFooter]"></ng-content>

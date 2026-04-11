@@ -11,19 +11,21 @@ import {
 import { UserProfileService } from '../../services/user-profile/user-profile.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { PlayerService } from '../../services/player/player.service';
+import type { Player } from '../../services/player/player.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProfileAccountsComponent } from '../../components/profile/profile-accounts/profile-accounts.component';
 import { MapViewerComponent } from '../../components/shared/map-viewer/map-viewer.component';
 import { ProfileLocationsComponent } from '../../components/profile/profile-locations/profile-locations.component';
+import { ProfileHomesComponent } from '../../components/profile/profile-homes/profile-homes.component';
 import { UserAvatarComponent } from '../../components/shared/user-avatar/user-avatar.component';
 import { PlayerAdvancementsComponent } from '../../components/player/player-advancements/player-advancements.component';
-import { LucideUser, LucideTrophy, LucideMapPin, LucideArrowLeft } from '@lucide/angular';
+import { LucideUser, LucideTrophy, LucideMapPin, LucideArrowLeft, LucideHouse } from '@lucide/angular';
 import { IconComponent } from '../../components/shared/icon/icon.component';
 import { SwipeNavigateModule } from '../../directives/swipe-navigate.module';
 import { SWIPE_ANIMATION_RESET_MS } from '../../constants/ui.constants';
 
-type ProfileTab = 'account' | 'advancements' | 'locations';
-const PROFILE_TABS: readonly ProfileTab[] = ['account', 'advancements', 'locations'];
+type ProfileTab = 'account' | 'advancements' | 'locations' | 'homes';
+const PROFILE_TABS: readonly ProfileTab[] = ['account', 'advancements', 'locations', 'homes'];
 
 @Component({
   selector: 'app-profile',
@@ -33,6 +35,7 @@ const PROFILE_TABS: readonly ProfileTab[] = ['account', 'advancements', 'locatio
     ProfileAccountsComponent,
     MapViewerComponent,
     ProfileLocationsComponent,
+    ProfileHomesComponent,
     UserAvatarComponent,
     PlayerAdvancementsComponent,
     IconComponent,
@@ -52,6 +55,7 @@ export class ProfileComponent implements OnInit {
   protected readonly LucideTrophy    = LucideTrophy;
   protected readonly LucideMapPin    = LucideMapPin;
   protected readonly LucideArrowLeft = LucideArrowLeft;
+  protected readonly LucideHouse     = LucideHouse;
 
   protected readonly activeTab = signal<ProfileTab>('account');
   protected readonly capturedMapHash = signal('');
@@ -70,6 +74,7 @@ export class ProfileComponent implements OnInit {
       tabs.push('advancements');
     }
     tabs.push('locations');
+    tabs.push('homes');
     return tabs;
   });
 
@@ -79,6 +84,14 @@ export class ProfileComponent implements OnInit {
     const javaName = this.profileService.minecraftAccounts().java;
     if (!javaName) return null;
     return this.playerService.players().find(p => p.name === javaName && !p.isBedrock()) ?? null;
+  });
+
+  /** All linked Java + Admin players for the Homes tab. Bedrock excluded (EssentialsX is Java-only). */
+  protected readonly linkedPlayers = computed(() => {
+    const { java, admin } = this.profileService.minecraftAccounts();
+    const all = this.playerService.players();
+    const names = [java, admin].filter((n): n is string => !!n);
+    return names.map(name => all.find(p => p.name === name && !p.isBedrock())).filter((p): p is Player => !!p);
   });
 
   constructor() {

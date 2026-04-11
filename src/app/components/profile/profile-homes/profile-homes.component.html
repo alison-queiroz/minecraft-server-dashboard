@@ -1,0 +1,164 @@
+﻿<section class="homes-card">
+  <div class="homes-header">
+    <h2 class="homes-title">
+      <app-icon [icon]="LucideHouse" [size]="16" class="homes-title-icon"></app-icon>
+      Homes
+    </h2>
+    <div class="homes-header-actions">
+      @if (players().length) {
+        <button (click)="refreshFromServer()" [disabled]="syncing()"
+          class="homes-refresh"
+          title="Re-sync coordinates from the server">
+          <app-icon [icon]="LucideRefreshCw" [size]="11"></app-icon>
+          {{ syncing() ? 'Syncing...' : 'Sync from server' }}
+        </button>
+      }
+      @if (homes().length > 0) {
+        <button
+          (click)="setAllVisible(!allPublic())"
+          class="homes-select-all"
+          [title]="allPublic() ? 'Hide all from player cards' : 'Show all on player cards'">
+          <app-icon [icon]="LucideCheck" [size]="11"></app-icon>
+          {{ allPublic() ? 'Deselect All' : 'Select All' }}
+        </button>
+      }
+      <button (click)="toggleAddForm()"
+        class="homes-toggle"
+        [class.homes-toggle--idle]="!showAddForm()"
+        [class.homes-toggle--active]="showAddForm()">
+        @if (!showAddForm()) { Add home } @else { Cancel }
+      </button>
+    </div>
+  </div>
+
+  @if (!players().length) {
+    <p class="homes-empty">
+      Link your Java account in the <strong>Account</strong> tab to automatically import your in-game homes.
+    </p>
+  } @else if (syncing()) {
+    <p class="homes-syncing">Importing homes from server...</p>
+  }
+
+  @if (showAddForm()) {
+    <div class="home-form-card">
+      <input [value]="newName()" (input)="newName.set($any($event.target).value)"
+        placeholder="Home name (e.g. home, base, farm)" maxlength="64"
+        class="ui-input" />
+      <div class="home-coords-row">
+        <input [value]="newX()" (input)="newX.set($any($event.target).value)"
+          placeholder="X" type="number" class="ui-input home-coord-input" />
+        <input [value]="newY()" (input)="newY.set($any($event.target).value)"
+          placeholder="Y" type="number" class="ui-input home-coord-input" />
+        <input [value]="newZ()" (input)="newZ.set($any($event.target).value)"
+          placeholder="Z" type="number" class="ui-input home-coord-input" />
+      </div>
+      <select (change)="newWorld.set($any($event.target).value)"
+        class="ui-input home-world-select">
+        @for (opt of worldOptions; track opt.value) {
+          <option [value]="opt.value" [selected]="newWorld() === opt.value">{{ opt.label }}</option>
+        }
+      </select>
+      <label class="ui-toggle">
+        <div class="ui-toggle__control">
+          <input type="checkbox" class="ui-toggle__input"
+            [checked]="newPublic()"
+            (change)="newPublic.set($any($event.target).checked)" />
+          <div class="ui-toggle__track"></div>
+          <div class="ui-toggle__thumb"></div>
+        </div>
+        <span class="ui-toggle__text">
+          Show on player card
+          <span class="homes-toggle-note">(visible to all users)</span>
+        </span>
+      </label>
+      @if (addError()) { <p class="homes-error">{{ addError() }}</p> }
+      <button (click)="addHome()" [disabled]="saving()"
+        class="ui-button ui-button--primary home-form-submit">
+        {{ saving() ? 'Saving...' : 'Save home' }}
+      </button>
+    </div>
+  }
+
+  @if (homes().length === 0 && !showAddForm() && !syncing()) {
+    <p class="homes-empty">
+      @if (players().length) {
+        No homes found. Use <code class="homes-cmd">/sethome &lt;name&gt;</code> in-game, then come back here.
+      } @else {
+        No homes saved yet.
+      }
+    </p>
+  }
+
+  <div class="homes-list">
+    @for (group of groupedHomes(); track group.playerName) {
+      @if (group.playerName) {
+        <p class="homes-group-label">{{ group.playerName }}</p>
+      }
+      @for (home of group.homes; track home.id) {
+        @if (editingId() === home.id) {
+          <div class="home-card">
+            <!-- Edit form -->
+            <input [value]="editName()" (input)="editName.set($any($event.target).value)"
+              placeholder="Home name" maxlength="64"
+              class="ui-input home-edit-input" />
+            <div class="home-coords-row">
+              <input [value]="editX()" (input)="editX.set($any($event.target).value)"
+                placeholder="X" type="number" class="ui-input home-coord-input" />
+              <input [value]="editY()" (input)="editY.set($any($event.target).value)"
+                placeholder="Y" type="number" class="ui-input home-coord-input" />
+              <input [value]="editZ()" (input)="editZ.set($any($event.target).value)"
+                placeholder="Z" type="number" class="ui-input home-coord-input" />
+            </div>
+            <select (change)="editWorld.set($any($event.target).value)"
+              class="ui-input home-world-select">
+              @for (opt of worldOptions; track opt.value) {
+                <option [value]="opt.value" [selected]="editWorld() === opt.value">{{ opt.label }}</option>
+              }
+            </select>
+            <label class="ui-toggle">
+              <div class="ui-toggle__control">
+                <input type="checkbox" class="ui-toggle__input"
+                  [checked]="editPublic()"
+                  (change)="editPublic.set($any($event.target).checked)" />
+                <div class="ui-toggle__track"></div>
+                <div class="ui-toggle__thumb"></div>
+              </div>
+              <span class="ui-toggle__text">Show on player card</span>
+            </label>
+            <div class="home-edit-actions">
+              <button (click)="cancelEdit()" class="ui-button ui-button--secondary home-edit-button">
+                Cancel
+              </button>
+              <button (click)="saveEdit(home.id)" [disabled]="saving()"
+                class="ui-button ui-button--primary home-edit-button">
+                {{ saving() ? 'Saving...' : 'Save' }}
+              </button>
+            </div>
+          </div>
+        } @else {
+          <app-profile-item-card [name]="homeDisplayName(home.name)" [isPublic]="home.isPublic">
+            <app-icon appItemLeading [icon]="LucideHouse" [size]="13" class="home-name-icon"></app-icon>
+            <p appItemMeta class="home-coords">
+              <app-dimension-tag [world]="home.world"></app-dimension-tag>
+              {{ home.x | number:'1.0-1' }},&nbsp;{{ home.y | number:'1.0-1' }},&nbsp;{{ home.z | number:'1.0-1' }}
+            </p>
+            <ng-container appItemActions>
+              <button (click)="previewHomeOnMap(home)" class="home-action home-action--accent" title="Preview on map">
+                <app-icon [icon]="LucideMap" [size]="14"></app-icon>
+              </button>
+              <a [href]="homeMapUrl(home)" target="_blank" rel="noopener" class="home-action home-action--bright" title="Open in map">
+                <app-icon [icon]="LucideExternalLink" [size]="14"></app-icon>
+              </a>
+              <button (click)="startEdit(home)" class="home-action home-action--bright" title="Edit">
+                <app-icon [icon]="LucidePencil" [size]="14"></app-icon>
+              </button>
+              <button (click)="deleteHome(home)" class="home-action home-action--danger" title="Remove from dashboard and server">
+                <app-icon [icon]="LucideTrash2" [size]="14"></app-icon>
+              </button>
+            </ng-container>
+          </app-profile-item-card>
+        }
+      }
+    }
+  </div>
+</section>

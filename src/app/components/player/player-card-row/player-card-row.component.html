@@ -23,13 +23,11 @@
   </div>
 
   <div class="col-span-3 sm:col-span-2 min-w-0">
-    <span class="player-row-dimension"
+    <app-dimension-tag
+      class="player-row-dimension"
       [appTooltip]="player.dimension"
-      [ngClass]="{
-        'text-emerald-500': player.dimension === 'Overworld',
-        'text-orange-500': player.dimension === 'Nether',
-        'text-purple-500': player.dimension === 'The End'
-      }">{{ player.dimension }}</span>
+      [world]="player.dimension">
+    </app-dimension-tag>
   </div>
 
   <div class="col-span-1">
