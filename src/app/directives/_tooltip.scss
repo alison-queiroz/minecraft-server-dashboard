@@ -2,7 +2,7 @@
   position: fixed;
   z-index: 10000;
   pointer-events: none;
-  max-width: 240px;
+  max-width: min(240px, calc(100vw - 16px));
   padding: 4px 8px;
   border-radius: 6px;
   background: #18181b;
@@ -11,7 +11,7 @@
   font-size: 11px;
   font-family: ui-monospace, monospace;
   white-space: normal;
-  word-break: break-all;
+  word-break: break-word;
   line-height: 1.4;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }

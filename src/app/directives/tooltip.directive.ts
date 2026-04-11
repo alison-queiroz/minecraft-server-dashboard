@@ -122,9 +122,22 @@ export class TooltipDirective implements OnDestroy {
 
     const rect = this.el.nativeElement.getBoundingClientRect();
     const gap = 6;
-    tooltip.style.left = `${rect.left + rect.width / 2}px`;
-    tooltip.style.top = `${rect.top - gap}px`;
-    tooltip.style.transform = 'translate(-50%, -100%)';
+    const margin = 8; // min distance from viewport edge
+
+    // Measure the tooltip once it's in the DOM
+    const ttRect = tooltip.getBoundingClientRect();
+    const vw = this.document.documentElement.clientWidth;
+
+    // Ideal centre-aligned position
+    let left = rect.left + rect.width / 2 - ttRect.width / 2;
+    const top = rect.top - gap - ttRect.height;
+
+    // Clamp horizontally so the tooltip never overflows the viewport
+    left = Math.max(margin, Math.min(left, vw - ttRect.width - margin));
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.transform = '';
   }
 
   private hide(): void {

@@ -62,12 +62,11 @@ if "%SKIP_CHECKS%"=="1" (
   echo ==========================================================
   echo   0, 1, 2 AND 3. RUNNING QUALITY + TESTS IN PARALLEL
   echo ==========================================================
-  :: Runs quality gate (lint + strict typecheck), Angular unit tests,
-  :: Python unit tests, and Playwright e2e concurrently.
-  :: CI=1 tells Playwright to start its own dev server and use 0 retries.
-  set CI=1
-  call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "QUALITY,UI,API,E2E" -c "yellow,cyan,green,magenta" "npm run ci:quality" "npm run test" ".venv\Scripts\python.exe -m pytest tests/" "npm run e2e:playwright"
-  set CI=
+  rem Runs quality gate (lint + strict typecheck), Angular unit tests,
+  rem Python unit tests, and Playwright e2e concurrently.
+  rem CI=1 is NOT set here - playwright uses reuseExistingServer:true so
+  rem it will reuse a running dev server (VS Code task) or start a new one.
+  call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "QUALITY,UI,API,E2E" -c "yellow,cyan,green,magenta" "npm run ci:quality" "npm run test" "npm run test:api" "npm run e2e:playwright"
 
   if %ERRORLEVEL% NEQ 0 (
       color 0C
@@ -127,7 +126,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo [INFO] Waiting for API to come up, then forcing Firestore resync...
-ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sleep 5 && curl -sf -X POST http://127.0.0.1:5000/api/internal/force-resync && sleep 3 && echo '[INFO] Firestore resync triggered successfully.' || echo '[WARN] force-resync call failed - check API logs.'"
+ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sleep 5 && curl -sf -X POST http://127.0.0.1:5000/api/internal/force-resync && sleep 3 && echo '[INFO] Firestore resync triggered successfully.' ^|^| echo '[WARN] force-resync call failed - check API logs.'"
 
 echo [INFO] Backend deployment finished. Waiting for Angular build to complete...
 

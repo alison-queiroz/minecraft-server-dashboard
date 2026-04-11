@@ -35,6 +35,16 @@ export class AuthService {
       return;
     }
 
+    // E2E-only shortcut: unauthenticated tests set this flag so the guard and
+    // login page resolve immediately without waiting for Firebase.
+    const e2eUnauth = !environment.production &&
+      !!(globalThis as Record<string, unknown>)['__E2E_UNAUTHENTICATED__'];
+    if (e2eUnauth) {
+      this.currentUser.set(null);
+      this.isLoading.set(false);
+      return;
+    }
+
     onAuthStateChanged(this.auth, (user) => {
       this.currentUser.set(user);
       this.isLoading.set(false);

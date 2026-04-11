@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { mockFirebaseUnauthenticated } from './helpers';
 
 test.describe('Login page', () => {
   test.beforeEach(async ({ page }) => {
-    // Prevent actual Firebase connections during tests.
+    await mockFirebaseUnauthenticated(page);
+    // Also block any accidental sign-in attempts during login-page inspection.
     await page.route('**/firebase**', (route) => route.abort());
     await page.route('**/googleapis.com/**', (route) => route.abort());
   });
@@ -44,7 +46,7 @@ test.describe('Login page', () => {
 
 test.describe('Auth redirect', () => {
   test.beforeEach(async ({ page }) => {
-    // Abort Firebase so isLoading stays true briefly, then resolves with no user.
+    await mockFirebaseUnauthenticated(page);
     await page.route('**/firebase**', (route) => route.abort());
     await page.route('**/googleapis.com/**', (route) => route.abort());
   });

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { mockFirebaseUnauthenticated } from './helpers';
 
 /**
  * Accessibility smoke tests using Playwright's built-in a11y checks.
@@ -13,6 +14,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Accessibility – login page', () => {
   test.beforeEach(async ({ page }) => {
+    await mockFirebaseUnauthenticated(page);
     await page.route('**/firebase**', (route) => route.abort());
     await page.route('**/googleapis.com/**', (route) => route.abort());
     await page.goto('/login');

@@ -127,3 +127,16 @@ export async function mockFirebaseAuth(page: Page): Promise<void> {
     }),
   );
 }
+
+/**
+ * Resolves AuthService's isLoading immediately with no user, without
+ * contacting Firebase. Use this in login-page and auth-redirect tests
+ * where the browser should behave as if no user is signed in.
+ *
+ * Must be called BEFORE `page.goto()`.
+ */
+export async function mockFirebaseUnauthenticated(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    (globalThis as Record<string, unknown>)['__E2E_UNAUTHENTICATED__'] = true;
+  });
+}

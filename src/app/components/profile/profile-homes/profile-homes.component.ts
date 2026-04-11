@@ -13,10 +13,11 @@ import { DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import type { EssentialsHome } from '../../../services/player/player.model';
-import { LucideHouse, LucidePencil, LucideTrash2, LucideCheck, LucideRefreshCw, LucideMap, LucideExternalLink } from '@lucide/angular';
+import { LucideHouse, LucidePencil, LucideTrash2, LucideCheck, LucideRefreshCw, LucideMap, LucideExternalLink, LucideChevronDown } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card.component';
 import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
+import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
 import type { Player } from '../../../services/player/player.model';
 import { environment } from '../../../../environments/environment';
 
@@ -38,7 +39,7 @@ export interface LocalHome extends EssentialsHome {
   selector: 'app-profile-homes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent],
+  imports: [IconComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent],
   templateUrl: './profile-homes.component.html',
   styleUrls: ['./profile-homes.component.scss'],
 })
@@ -50,6 +51,7 @@ export class ProfileHomesComponent {
   protected readonly LucideRefreshCw  = LucideRefreshCw;
   protected readonly LucideMap        = LucideMap;
   protected readonly LucideExternalLink = LucideExternalLink;
+  protected readonly LucideChevronDown = LucideChevronDown;
 
   private readonly http = inject(HttpClient);
 
@@ -92,6 +94,9 @@ export class ProfileHomesComponent {
 
   protected readonly worldOptions = WORLD_OPTIONS;
 
+  /** Set of playerName values whose home group is currently collapsed. */
+  protected readonly collapsedGroups = signal<Set<string>>(new Set());
+
   protected readonly showAddForm  = signal(false);
   protected readonly newName      = signal('');
   protected readonly newX         = signal('');
@@ -99,6 +104,7 @@ export class ProfileHomesComponent {
   protected readonly newZ         = signal('');
   protected readonly newWorld     = signal('world');
   protected readonly newPublic    = signal(false);
+  protected readonly newMapHash   = signal('');  // drives the map picker iframe
   protected readonly addError     = signal<string | null>(null);
   protected readonly saving       = signal(false);
   protected readonly syncing      = signal(false);
@@ -173,6 +179,18 @@ export class ProfileHomesComponent {
     return results;
   }
 
+  protected toggleGroup(playerName: string): void {
+    this.collapsedGroups.update(s => {
+      const next = new Set(s);
+      if (next.has(playerName)) { next.delete(playerName); } else { next.add(playerName); }
+      return next;
+    });
+  }
+
+  protected isGroupCollapsed(playerName: string): boolean {
+    return this.collapsedGroups().has(playerName);
+  }
+
   protected toggleAddForm(): void {
     this.showAddForm.update(v => !v);
     this.addError.set(null);
@@ -182,6 +200,21 @@ export class ProfileHomesComponent {
     this.newZ.set('');
     this.newWorld.set('world');
     this.newPublic.set(false);
+    this.newMapHash.set('');
+  }
+
+  /** Called by the map picker when the user pins a location. */
+  protected onMapCapture(hash: string): void {
+    // Parse x/z/world from a BlueMap hash: #world:x:y:z:pitch:yaw:distance:...
+    const stripped = hash.startsWith('#') ? hash.slice(1) : hash;
+    const parts = stripped.split(':');
+    if (parts.length >= 4) {
+      const [world, xStr, yStr, zStr] = parts;
+      if (world) this.newWorld.set(world === 'world_nether' ? 'world_nether' : world === 'world_the_end' ? 'world_the_end' : 'world');
+      if (xStr) this.newX.set(String(Math.round(parseFloat(xStr))));
+      if (yStr) this.newY.set(String(Math.round(parseFloat(yStr))));
+      if (zStr) this.newZ.set(String(Math.round(parseFloat(zStr))));
+    }
   }
 
   protected async addHome(): Promise<void> {
@@ -198,7 +231,8 @@ export class ProfileHomesComponent {
     }
     // When multiple Java accounts are linked, adds to the first one.
     // To target a specific account use /sethome in-game.
-    const player = javaPlayers[0];
+    const [player] = javaPlayers;
+    if (!player) return;
     this.addError.set(null);
     this.saving.set(true);
     try {
@@ -308,7 +342,9 @@ export class ProfileHomesComponent {
     const javaPlayers = this.players().filter(p => !p.isBedrock());
     if (!javaPlayers.length) return null;
     if (javaPlayers.length === 1) {
-      return { uuid: javaPlayers[0].uuid, serverName: storedName };
+      const [first] = javaPlayers;
+      if (!first) return null;
+      return { uuid: first.uuid, serverName: storedName };
     }
     // Multi-account: match by "PlayerName:" prefix
     const owner = javaPlayers.find(p => storedName.startsWith(`${p.name}:`));

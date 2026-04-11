@@ -41,6 +41,13 @@
 
   @if (showAddForm()) {
     <div class="home-form-card">
+      <!-- Inline map picker -->
+      <div class="home-map-wrap">
+        <app-map-viewer
+          [navigateToHash]="newMapHash()"
+          (positionCaptured)="onMapCapture($event)">
+        </app-map-viewer>
+      </div>
       <input [value]="newName()" (input)="newName.set($any($event.target).value)"
         placeholder="Home name (e.g. home, base, farm)" maxlength="64"
         class="ui-input" />
@@ -92,9 +99,25 @@
   <div class="homes-list">
     @for (group of groupedHomes(); track group.playerName) {
       @if (group.playerName) {
-        <p class="homes-group-label">{{ group.playerName }}</p>
+        <button
+          type="button"
+          class="homes-group-header"
+          (click)="toggleGroup(group.playerName)"
+          [attr.aria-expanded]="!isGroupCollapsed(group.playerName)">
+          <span class="homes-group-label">
+            {{ group.playerName }}
+            <span class="homes-group-count">{{ group.homes.length }}</span>
+          </span>
+          <app-icon
+            [icon]="LucideChevronDown"
+            [size]="12"
+            [class.rotate-180]="!isGroupCollapsed(group.playerName)"
+            class="homes-group-chevron">
+          </app-icon>
+        </button>
       }
-      @for (home of group.homes; track home.id) {
+      @if (!group.playerName || !isGroupCollapsed(group.playerName)) {
+        @for (home of group.homes; track home.id) {
         @if (editingId() === home.id) {
           <div class="home-card">
             <!-- Edit form -->
@@ -157,6 +180,7 @@
               </button>
             </ng-container>
           </app-profile-item-card>
+        }
         }
       }
     }

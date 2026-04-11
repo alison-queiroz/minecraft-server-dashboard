@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:api": ".\\.venv\\Scripts\\python.exe -m pytest tests/",
     "backend:start": ".\\.venv\\Scripts\\python.exe .\\run.py",
     "backend:wait": "wait-on tcp:5000",
     "e2e": "ng e2e",

@@ -87,8 +87,29 @@
 	@apply flex flex-col gap-3;
 }
 
+.homes-group-header {
+	@apply flex w-full items-center justify-between rounded-xl border border-stone-200 bg-white
+	       px-3 py-2 transition-colors cursor-pointer text-left
+	       hover:border-emerald-300/50 hover:bg-stone-50
+	       dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800;
+}
+
 .homes-group-label {
-	@apply pt-2 pb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500;
+	@apply flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400;
+}
+
+.homes-group-count {
+	@apply inline-flex items-center justify-center rounded-full
+	       bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600
+	       dark:bg-emerald-500/20 dark:text-emerald-400;
+}
+
+.homes-group-chevron {
+	@apply text-zinc-400 transition-transform duration-200 dark:text-zinc-600;
+}
+
+.home-map-wrap {
+	@apply h-52 overflow-hidden rounded-xl border border-stone-200 dark:border-zinc-700;
 }
 
 .home-card {
