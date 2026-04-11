@@ -142,7 +142,7 @@
                   class="detail-location-link group">
                   <app-icon [icon]="LucideHouse" [size]="14" class="detail-location-icon"></app-icon>
                   <div class="detail-location-copy">
-                    <p class="detail-location-name">{{ home.name }}</p>
+                    <p class="detail-location-name">{{ homeDisplayName(home.name) }}</p>
                     <p class="detail-location-description">
                       {{ homeWorldLabel(home.world) }}&nbsp;&middot;&nbsp;{{ home.x | number:'1.0-0' }},&nbsp;{{ home.y | number:'1.0-0' }},&nbsp;{{ home.z | number:'1.0-0' }}
                     </p>

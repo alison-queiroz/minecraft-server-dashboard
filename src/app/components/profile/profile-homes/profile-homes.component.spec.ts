@@ -1,11 +1,18 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ProfileHomesComponent } from './profile-homes.component';
 import type { LocalHome } from './profile-homes.component';
 import { Player } from '../../../services/player/player.model';
+import { UserProfileService } from '../../../services/user-profile/user-profile.service';
+
+const mockUserProfileService = {
+  savedHomes: signal([]),
+  upsertHomesFromLocal: () => Promise.resolve(),
+  deleteHomeByName: () => Promise.resolve(),
+};
 
 const makeLocalHome = (overrides: Partial<LocalHome> = {}): LocalHome => ({
   id: 'home',
@@ -50,6 +57,7 @@ describe('ProfileHomesComponent', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: UserProfileService, useValue: mockUserProfileService },
       ],
     }).compileComponents();
 

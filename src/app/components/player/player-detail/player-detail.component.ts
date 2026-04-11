@@ -129,4 +129,10 @@ export class PlayerDetailComponent {
   protected homeWorldLabel(world: string): string {
     return HOME_WORLD_LABELS[world] ?? world;
   }
+
+  /** Strips a leading "PlayerName:" prefix from a stored home name. */
+  protected homeDisplayName(name: string): string {
+    const colon = name.indexOf(':');
+    return colon !== -1 ? name.slice(colon + 1) : name;
+  }
 }

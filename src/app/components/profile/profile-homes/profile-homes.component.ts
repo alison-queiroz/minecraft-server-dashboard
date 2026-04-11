@@ -20,6 +20,7 @@ import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
 import type { Player } from '../../../services/player/player.model';
 import { environment } from '../../../../environments/environment';
+import { UserProfileService } from '../../../services/user-profile/user-profile.service';
 
 export const WORLD_OPTIONS = [
   { value: 'world',        label: 'Overworld' },
@@ -54,6 +55,7 @@ export class ProfileHomesComponent {
   protected readonly LucideChevronDown = LucideChevronDown;
 
   private readonly http = inject(HttpClient);
+  private readonly userProfileService = inject(UserProfileService);
 
   protected readonly mapBaseUrl = environment.mapBaseUrl ?? 'https://exvegan-minecraft-map.duckdns.org/';
 
@@ -132,13 +134,21 @@ export class ProfileHomesComponent {
     this.syncing.set(true);
     try {
       const raw = await this._fetchAllPlayerHomes();
-      // Preserve any local isPublic toggles for homes that are still present
-      const prev = new Map(this.homes().map(h => [h.id, h.isPublic]));
+      // Restore isPublic: existing local state has priority (mid-session refresh),
+      // then fall back to Firestore (page reload / first open), then default false.
+      const prevLocal = new Map(this.homes().map(h => [h.id, h.isPublic]));
+      const firestoreByName = new Map(
+        this.userProfileService.savedHomes().map(h => [h.name, h.isPublic])
+      );
       this.homes.set(raw.map(h => ({
         ...h,
         id: h.name,
-        isPublic: prev.get(h.name) ?? false,
+        isPublic: prevLocal.has(h.name)
+          ? (prevLocal.get(h.name) ?? false)
+          : (firestoreByName.get(h.name) ?? false),
       })));
+      // Keep Firestore in sync: adds new homes, updates coords that changed in-game.
+      await this.userProfileService.upsertHomesFromLocal(this.homes());
     } finally {
       this.syncing.set(false);
     }
@@ -245,6 +255,7 @@ export class ProfileHomesComponent {
         id: storedName, name: storedName, x, y, z,
         world: this.newWorld(), isPublic: this.newPublic(),
       }]);
+      void this.userProfileService.upsertHomesFromLocal(this.homes());
       this.showAddForm.set(false);
     } catch {
       this.addError.set('Failed to create home on server.');
@@ -308,6 +319,7 @@ export class ProfileHomesComponent {
         world: this.editWorld(),
         isPublic: this.editPublic(),
       } : h));
+      await this.userProfileService.upsertHomesFromLocal(this.homes());
       this.editingId.set(null);
       this.editingHome.set(null);
     } finally {
@@ -331,6 +343,7 @@ export class ProfileHomesComponent {
       }
     }
     this.homes.update(hs => hs.filter(h => h.id !== home.id));
+    void this.userProfileService.deleteHomeByName(home.name);
   }
 
   /**
@@ -354,6 +367,7 @@ export class ProfileHomesComponent {
 
   protected setAllVisible(isPublic: boolean): void {
     this.homes.update(hs => hs.map(h => ({ ...h, isPublic })));
+    void this.userProfileService.upsertHomesFromLocal(this.homes());
   }
 
   /** Builds a BlueMap hash fragment for a home's coordinates. */

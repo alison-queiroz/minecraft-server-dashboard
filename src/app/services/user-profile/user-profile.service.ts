@@ -266,6 +266,46 @@ export class UserProfileService {
   }
 
   /**
+   * Upserts a set of local homes into Firestore.
+   * Homes already in Firestore are updated (coords + isPublic).
+   * Homes not yet in Firestore are added with the given isPublic value.
+   * Homes in Firestore that are absent from the local list are left untouched.
+   */
+  async upsertHomesFromLocal(
+    homes: readonly { name: string; x: number; y: number; z: number; world: string; isPublic: boolean }[]
+  ): Promise<void> {
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid || homes.length === 0) return;
+
+    const existing = this.profile().savedHomes ?? [];
+    const existingByName = new Map(existing.map(h => [h.name, h]));
+    const updated: SavedHome[] = [...existing];
+
+    for (const h of homes) {
+      const found = existingByName.get(h.name);
+      if (found) {
+        const idx = updated.findIndex(u => u.id === found.id);
+        if (idx >= 0) updated[idx] = { ...found, x: h.x, y: h.y, z: h.z, world: h.world, isPublic: h.isPublic };
+      } else {
+        updated.push({ id: crypto.randomUUID(), name: h.name, x: h.x, y: h.y, z: h.z, world: h.world, isPublic: h.isPublic });
+      }
+    }
+
+    await this._persistHomes(uid, updated);
+    this.profile.update(p => ({ ...p, savedHomes: updated }));
+  }
+
+  /** Removes a home from Firestore by its stored name. */
+  async deleteHomeByName(name: string): Promise<void> {
+    const uid = this.auth.currentUser()?.uid;
+    if (!uid) return;
+
+    const updated = (this.profile().savedHomes ?? []).filter(h => h.name !== name);
+    await this._persistHomes(uid, updated);
+    this.profile.update(p => ({ ...p, savedHomes: updated }));
+  }
+
+  /**
    * Returns a live Observable of public homes for a given Minecraft username.
    */
   getPublicHomesStream(minecraftName: string): Observable<SavedHome[]> {
