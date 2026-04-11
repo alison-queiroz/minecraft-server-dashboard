@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 title Oracle Cloud Full Deployment Pipeline
 color 0B
 
@@ -67,12 +68,13 @@ if "%SKIP_CHECKS%"=="1" (
   rem CI=1 is NOT set here - playwright uses reuseExistingServer:true so
   rem it will reuse a running dev server (VS Code task) or start a new one.
   call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "QUALITY,UI,API,E2E" -c "yellow,cyan,green,magenta" "npm run ci:quality" "npm run test" "npm run test:api" "npm run e2e:playwright"
+  set CHECKS_EXIT=!ERRORLEVEL!
 
-  if %ERRORLEVEL% NEQ 0 (
+  if !CHECKS_EXIT! NEQ 0 (
       color 0C
-      echo [ERROR] One or more tests failed. Deployment aborted.
+      echo [ERROR] One or more checks failed. Deployment aborted.
       pause
-      exit /b 1
+      exit /b !CHECKS_EXIT!
   )
 )
 

@@ -14,7 +14,7 @@ import { UserProfileService } from '../../../services/user-profile/user-profile.
 import { SkinViewerComponent } from '../../shared/skin-viewer/skin-viewer.component';
 import { PlayerAdvancementsComponent } from '../player-advancements/player-advancements.component';
 import {
-  LucideClock, LucideMapPin, LucideMap, LucideExternalLink, LucideHouse, LucideUser, LucideTimer, LucideShare2,
+  LucideClock, LucideMapPin, LucideMap, LucideExternalLink, LucideHouse, LucideUser, LucideTimer, LucideShare2, LucideChevronDown,
 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import type { Player } from '../../../services/player/player.model';
@@ -50,6 +50,12 @@ export class PlayerDetailComponent {
   protected readonly LucideUser         = LucideUser;
   protected readonly LucideTimer        = LucideTimer;
   protected readonly LucideShare2       = LucideShare2;
+  protected readonly LucideChevronDown  = LucideChevronDown;
+
+  /** Whether the Saved Locations section is collapsed. Starts collapsed. */
+  protected readonly locationsCollapsed = signal(true);
+  /** Whether the Homes section is collapsed. Starts collapsed. */
+  protected readonly homesCollapsed = signal(true);
 
   protected readonly service = inject(PlayerService);
   private readonly userProfileService = inject(UserProfileService);

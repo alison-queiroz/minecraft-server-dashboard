@@ -139,4 +139,21 @@ export async function mockFirebaseUnauthenticated(page: Page): Promise<void> {
   await page.addInitScript(() => {
     (globalThis as Record<string, unknown>)['__E2E_UNAUTHENTICATED__'] = true;
   });
+
+  // IMPORTANT: use fulfill (not abort) for Firebase/Google API calls.
+  // Aborting causes the Firebase SDK to hang waiting for its initialisation
+  // requests, which in turn prevents onAuthStateChanged from ever firing.
+  // A fast error response lets the SDK fail quickly and resolve auth state.
+  await page.route('**/identitytoolkit.googleapis.com/**', route =>
+    route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
+  );
+  await page.route('**/securetoken.googleapis.com/**', route =>
+    route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
+  );
+  await page.route('**/firebase.googleapis.com/**', route =>
+    route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
+  );
+  await page.route('**/firebaseapp.com/**', route =>
+    route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
+  );
 }

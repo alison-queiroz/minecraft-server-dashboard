@@ -4,9 +4,6 @@ import { mockFirebaseUnauthenticated } from './helpers';
 test.describe('Login page', () => {
   test.beforeEach(async ({ page }) => {
     await mockFirebaseUnauthenticated(page);
-    // Also block any accidental sign-in attempts during login-page inspection.
-    await page.route('**/firebase**', (route) => route.abort());
-    await page.route('**/googleapis.com/**', (route) => route.abort());
   });
 
   test('renders the page title and sign-in button', async ({ page }) => {
@@ -47,8 +44,6 @@ test.describe('Login page', () => {
 test.describe('Auth redirect', () => {
   test.beforeEach(async ({ page }) => {
     await mockFirebaseUnauthenticated(page);
-    await page.route('**/firebase**', (route) => route.abort());
-    await page.route('**/googleapis.com/**', (route) => route.abort());
   });
 
   test('redirects unauthenticated users from / to /login', async ({ page }) => {

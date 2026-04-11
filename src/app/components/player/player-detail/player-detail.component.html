@@ -88,44 +88,70 @@
       <!-- Public Saved Locations -->
       @if (publicLocations().length > 0) {
         <div class="detail-locations-section">
-          <p class="detail-section-label">Saved Locations</p>
-          <div class="detail-locations-list">
-            @for (loc of publicLocations(); track loc.id) {
-              <a [routerLink]="['/map']" [fragment]="locFragment(loc.mapHash)"
-                class="detail-location-link group">
-                <app-icon [icon]="LucideMap" [size]="14" class="detail-location-icon"></app-icon>
-                <div class="detail-location-copy">
-                  <p class="detail-location-name">{{ loc.name }}</p>
-                  @if (loc.description) {
-                    <p class="detail-location-description">{{ loc.description }}</p>
-                  }
-                </div>
-                <app-icon [icon]="LucideExternalLink" [size]="12" class="detail-location-arrow"></app-icon>
-              </a>
-            }
-          </div>
+          <button class="detail-section-header" (click)="locationsCollapsed.set(!locationsCollapsed())"
+            [attr.aria-expanded]="!locationsCollapsed()">
+            <span class="detail-section-header-left">
+              <app-icon [icon]="LucideMap" [size]="13"></app-icon>
+              Saved Locations
+              <span class="detail-section-count">{{ publicLocations().length }}</span>
+            </span>
+            <app-icon [icon]="LucideChevronDown" [size]="14"
+              [class.rotate-180]="!locationsCollapsed()"
+              class="detail-section-chevron">
+            </app-icon>
+          </button>
+          @if (!locationsCollapsed()) {
+            <div class="detail-locations-list">
+              @for (loc of publicLocations(); track loc.id) {
+                <a [routerLink]="['/map']" [fragment]="locFragment(loc.mapHash)"
+                  class="detail-location-link group">
+                  <app-icon [icon]="LucideMap" [size]="14" class="detail-location-icon"></app-icon>
+                  <div class="detail-location-copy">
+                    <p class="detail-location-name">{{ loc.name }}</p>
+                    @if (loc.description) {
+                      <p class="detail-location-description">{{ loc.description }}</p>
+                    }
+                  </div>
+                  <app-icon [icon]="LucideExternalLink" [size]="12" class="detail-location-arrow"></app-icon>
+                </a>
+              }
+            </div>
+          }
         </div>
       }
 
       <!-- Public Homes -->
       @if (publicHomes().length > 0) {
         <div class="detail-locations-section">
-          <p class="detail-section-label">Homes</p>
-          <div class="detail-locations-list">
-            @for (home of publicHomes(); track home.id) {
-              <a [routerLink]="['/map']" [fragment]="homeFragment(home)"
-                class="detail-location-link group">
-                <app-icon [icon]="LucideHouse" [size]="14" class="detail-location-icon"></app-icon>
-                <div class="detail-location-copy">
-                  <p class="detail-location-name">{{ home.name }}</p>
-                  <p class="detail-location-description">
-                    {{ homeWorldLabel(home.world) }}&nbsp;&middot;&nbsp;{{ home.x | number:'1.0-0' }},&nbsp;{{ home.y | number:'1.0-0' }},&nbsp;{{ home.z | number:'1.0-0' }}
-                  </p>
-                </div>
-                <app-icon [icon]="LucideExternalLink" [size]="12" class="detail-location-arrow"></app-icon>
-              </a>
-            }
-          </div>
+          <button class="detail-section-header" (click)="homesCollapsed.set(!homesCollapsed())"
+            [attr.aria-expanded]="!homesCollapsed()">
+            <span class="detail-section-header-left">
+              <app-icon [icon]="LucideHouse" [size]="13"></app-icon>
+              Homes
+              <span class="detail-section-count">{{ publicHomes().length }}</span>
+            </span>
+            <app-icon [icon]="LucideChevronDown" [size]="14"
+              [class.rotate-180]="!homesCollapsed()"
+              class="detail-section-chevron">
+            </app-icon>
+          </button>
+          @if (!homesCollapsed()) {
+            <div class="detail-locations-list">
+              @for (home of publicHomes(); track home.id) {
+                <a [routerLink]="['/map']" [fragment]="homeFragment(home)"
+                  class="detail-location-link group">
+                  <app-icon [icon]="LucideHouse" [size]="14" class="detail-location-icon"></app-icon>
+                  <div class="detail-location-copy">
+                    <p class="detail-location-name">{{ home.name }}</p>
+                    <p class="detail-location-description">
+                      {{ homeWorldLabel(home.world) }}&nbsp;&middot;&nbsp;{{ home.x | number:'1.0-0' }},&nbsp;{{ home.y | number:'1.0-0' }},&nbsp;{{ home.z | number:'1.0-0' }}
+                    </p>
+                  </div>
+                  <app-icon [icon]="LucideExternalLink" [size]="12" class="detail-location-arrow"></app-icon>
+                </a>
+              }
+            </div>
+          }
         </div>
       }
 
