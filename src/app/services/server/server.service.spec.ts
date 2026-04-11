@@ -21,6 +21,19 @@ const ONLINE_RESPONSE = {
   icon: 'data:image/png;base64,abc123',
 };
 
+// Java status response that includes a Floodgate Bedrock player in the sample.
+const ONLINE_WITH_BEDROCK_SAMPLE = {
+  ...ONLINE_RESPONSE,
+  players: {
+    online: 3, max: 10,
+    sample: [
+      { name: 'JavaPlayer1', id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
+      { name: 'BedrockPlayer', id: '00000000-0000-0000-0009-123456789abc' },
+      { name: 'JavaPlayer2', id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901' },
+    ],
+  },
+};
+
 const OFFLINE_RESPONSE = { online: false };
 
 /** Helper: create service and return it alongside its httpMock. */
@@ -135,7 +148,7 @@ describe('ServerService', () => {
     beforeEach(() => {
       ({ service } = createService());
       const httpMock = TestBed.inject(HttpTestingController);
-      httpMock.expectOne(JAVA_URL).flush(ONLINE_RESPONSE);
+      httpMock.expectOne(JAVA_URL).flush(ONLINE_WITH_BEDROCK_SAMPLE);
       httpMock.expectOne(BEDROCK_URL).flush(BEDROCK_ONLINE);
     });
 

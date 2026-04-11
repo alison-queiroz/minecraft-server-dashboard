@@ -4,5 +4,6 @@
 	"files.exclude": {
 		"playwright-report/**": true,
 		"test-results/**": true
-	}
+	},
+	"js/ts.tsdk.path": "node_modules\\typescript\\lib"
 }

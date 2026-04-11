@@ -244,10 +244,13 @@ def java_status_endpoint():
             )
             players_online = s.players.online if s.players else 0
             players_max = s.players.max if s.players else 0
+            players_sample = None
+            if s.players and s.players.sample:
+                players_sample = [{"name": p.name, "id": str(p.id)} for p in s.players.sample]
             return {
                 "online": True,
                 "version": s.version.name,
-                "players": {"online": players_online, "max": players_max},
+                "players": {"online": players_online, "max": players_max, "sample": players_sample},
                 "motd": {"clean": [motd_text]},
                 "protocol": {"version": s.version.protocol, "name": s.version.name},
             }

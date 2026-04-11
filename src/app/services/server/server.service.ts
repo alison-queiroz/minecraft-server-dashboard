@@ -18,7 +18,7 @@ export type ServerStatus = (typeof SERVER_STATUS)[keyof typeof SERVER_STATUS];
 interface ServerStatusResponse {
   online: boolean;
   version?: string;
-  players?: { online: number; max: number };
+  players?: { online: number; max: number; sample?: { name: string; id: string }[] | null };
   motd?: { clean: string[] };
   software?: string;
   icon?: string;
@@ -78,14 +78,12 @@ export class ServerService {
     this.http.get<ServerStatusResponse>(this.bedrockStatusUrl, SILENT).pipe(
       tap(res => {
         this.bedrockStatus.set(res.online ? SERVER_STATUS.ONLINE : SERVER_STATUS.OFFLINE);
-        this.bedrockOnlinePlayers.set(res.players?.online ?? 0);
         this.bedrockMaxPlayers.set(res.players?.max ?? 0);
         this.bedrockVersion.set(res.version ?? null);
         this.bedrockPort.set(res.port ?? null);
       }),
       catchError(() => {
         this.bedrockStatus.set(SERVER_STATUS.OFFLINE);
-        this.bedrockOnlinePlayers.set(0);
         this.bedrockMaxPlayers.set(0);
         return of(null);
       }),
@@ -102,6 +100,7 @@ export class ServerService {
     this.status.set(SERVER_STATUS.OFFLINE);
     this.onlinePlayers.set(0);
     this.maxPlayers.set(0);
+    this.bedrockOnlinePlayers.set(0);
   }
 
   private applyJavaOnlineState(res: ServerStatusResponse): void {
@@ -111,6 +110,9 @@ export class ServerService {
   private applyJavaPlayerState(res: ServerStatusResponse): void {
     this.onlinePlayers.set(res.players?.online ?? 0);
     this.maxPlayers.set(res.players?.max ?? 0);
+    const sample = res.players?.sample ?? [];
+    const bedrockCount = sample.filter(p => p.id.startsWith('00000000-0000-0000-0009')).length;
+    this.bedrockOnlinePlayers.set(bedrockCount);
   }
 
   private applyJavaMetadataState(res: ServerStatusResponse): void {
