@@ -116,6 +116,10 @@
 	@apply flex flex-col gap-2 rounded-xl border border-stone-200 p-4 dark:border-zinc-800;
 }
 
+.home-edit-name {
+	@apply text-sm font-semibold text-zinc-800 dark:text-zinc-200;
+}
+
 .home-edit-input {
 	@apply px-3 py-2;
 }

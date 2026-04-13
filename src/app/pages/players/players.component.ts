@@ -6,12 +6,13 @@ import { PlayerListComponent } from '../../components/player/player-list/player-
 import { PlayerDetailComponent } from '../../components/player/player-detail/player-detail.component';
 import { IconComponent } from '../../components/shared/icon/icon.component';
 import { LucideArrowLeft } from '@lucide/angular';
+import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
 
 @Component({
   selector: 'app-players',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PlayerListComponent, PlayerDetailComponent, IconComponent],
+  imports: [PlayerListComponent, PlayerDetailComponent, IconComponent, PageContainerComponent],
   templateUrl: './players.component.html',
   styleUrls: ['./players.component.scss'],
 })

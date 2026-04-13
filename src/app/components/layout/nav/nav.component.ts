@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import {
-  LucideHouse, LucideMoon, LucideServer, LucideSun, LucideUsers, LucideUserRound,
+  LucideMoon, LucideServer, LucideSun, LucideUsers, LucideUserRound,
   LucideMap, LucideX, LucideMenu,
   LucideDatabase, LucideChartLine,
 } from '@lucide/angular';
@@ -12,17 +12,17 @@ import { ThemeService } from '../../../services/theme/theme.service';
 import { ServerIconComponent } from '../../shared/server-icon/server-icon.component';
 import { UserAvatarComponent } from '../../shared/user-avatar/user-avatar.component';
 import { ServerStatusBadgeComponent } from '../../shared/server-status-badge/server-status-badge.component';
+import { IconHomeComponent } from '../../shared/icon-home/icon-home.component';
 
 @Component({
   selector: 'app-nav',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, ServerIconComponent, UserAvatarComponent, ServerStatusBadgeComponent, IconComponent],
+  imports: [RouterLink, RouterLinkActive, ServerIconComponent, UserAvatarComponent, ServerStatusBadgeComponent, IconComponent, IconHomeComponent],
   templateUrl: './nav.component.html',
   styleUrls: ['./nav.component.scss'],
 })
 export class NavComponent {
-  protected readonly LucideHouse    = LucideHouse;
   protected readonly LucideMoon     = LucideMoon;
   protected readonly LucideServer   = LucideServer;
   protected readonly LucideSun      = LucideSun;

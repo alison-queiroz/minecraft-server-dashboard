@@ -10,6 +10,7 @@ import { ServerMotdCardComponent } from '../../components/server/server-motd-car
 import { PlayersCta } from '../../components/server/players-cta/players-cta.component';
 import { LucideChevronLeft } from '@lucide/angular';
 import { IconComponent } from '../../components/shared/icon/icon.component';
+import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
 
 @Component({
   selector: 'app-server-status',
@@ -25,6 +26,7 @@ import { IconComponent } from '../../components/shared/icon/icon.component';
     ServerMotdCardComponent,
     PlayersCta,
     IconComponent,
+    PageContainerComponent,
   ],
   templateUrl: './server-status.component.html',
   styleUrls: ['./server-status.component.scss'],

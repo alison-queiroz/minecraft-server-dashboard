@@ -4,6 +4,8 @@ import { HomeConnectCardComponent } from '../../components/home/home-connect-car
 import { HomeQuickNavComponent } from '../../components/home/home-quick-nav/home-quick-nav.component';
 import { ServerBedrockCardComponent } from 'src/app/components/server/server-bedrock-card/server-bedrock-card.component';
 
+import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
+
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -12,7 +14,8 @@ import { ServerBedrockCardComponent } from 'src/app/components/server/server-bed
     ServerHeroCardComponent,
     HomeConnectCardComponent,
     HomeQuickNavComponent,
-    ServerBedrockCardComponent
+    ServerBedrockCardComponent,
+    PageContainerComponent,
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],

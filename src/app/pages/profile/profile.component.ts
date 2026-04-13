@@ -19,10 +19,13 @@ import { ProfileLocationsComponent } from '../../components/profile/profile-loca
 import { ProfileHomesComponent } from '../../components/profile/profile-homes/profile-homes.component';
 import { UserAvatarComponent } from '../../components/shared/user-avatar/user-avatar.component';
 import { PlayerAdvancementsComponent } from '../../components/player/player-advancements/player-advancements.component';
-import { LucideUser, LucideTrophy, LucideMapPin, LucideArrowLeft, LucideHouse } from '@lucide/angular';
+import { LucideUser, LucideTrophy, LucideArrowLeft } from '@lucide/angular';
 import { IconComponent } from '../../components/shared/icon/icon.component';
+import { IconHomeComponent } from '../../components/shared/icon-home/icon-home.component';
+import { IconMapPinComponent } from '../../components/shared/icon-map-pin/icon-map-pin.component';
 import { SwipeNavigateModule } from '../../directives/swipe-navigate.module';
 import { SWIPE_ANIMATION_RESET_MS } from '../../constants/ui.constants';
+import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
 
 type ProfileTab = 'account' | 'advancements' | 'locations' | 'homes';
 const PROFILE_TABS: readonly ProfileTab[] = ['account', 'advancements', 'locations', 'homes'];
@@ -39,7 +42,10 @@ const PROFILE_TABS: readonly ProfileTab[] = ['account', 'advancements', 'locatio
     UserAvatarComponent,
     PlayerAdvancementsComponent,
     IconComponent,
+    IconHomeComponent,
+    IconMapPinComponent,
     SwipeNavigateModule,
+    PageContainerComponent,
   ],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
@@ -53,9 +59,7 @@ export class ProfileComponent implements OnInit {
 
   protected readonly LucideUser      = LucideUser;
   protected readonly LucideTrophy    = LucideTrophy;
-  protected readonly LucideMapPin    = LucideMapPin;
   protected readonly LucideArrowLeft = LucideArrowLeft;
-  protected readonly LucideHouse     = LucideHouse;
 
   protected readonly activeTab = signal<ProfileTab>('account');
   protected readonly capturedMapHash = signal('');

@@ -1,4 +1,4 @@
-﻿<div class="profile-page">
+﻿<app-page-container class="flex flex-col gap-4">
 
   <!-- Fullscreen map overlay -->
   @if (showMap()) {
@@ -41,11 +41,11 @@
         </button>
       }
       <button class="profile-tab" [class.profile-tab--active]="activeTab() === 'locations'" (click)="setTab('locations')">
-        <app-icon [icon]="LucideMapPin" [size]="14"></app-icon>
+        <app-icon-map-pin [size]="14"></app-icon-map-pin>
         Locations
       </button>
       <button class="profile-tab" [class.profile-tab--active]="activeTab() === 'homes'" (click)="setTab('homes')">
-        <app-icon [icon]="LucideHouse" [size]="14"></app-icon>
+        <app-icon-home [size]="14"></app-icon-home>
         Homes
       </button>
     </div>
@@ -96,4 +96,4 @@
     </div>
 
   }
-</div>
+</app-page-container>

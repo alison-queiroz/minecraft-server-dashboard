@@ -18,28 +18,24 @@
           (positionCaptured)="onMapCapture($event)">
         </app-map-viewer>
       </div>
-      <input [value]="newLocName()" (input)="newLocName.set($any($event.target).value)"
-        placeholder="Location name (e.g. My House)" maxlength="64"
-        class="ui-input" />
-      <input [value]="newLocHash()" (input)="newLocHash.set($any($event.target).value)"
+      <app-ui-input [value]="newLocName()" (valueChange)="newLocName.set($event)"
+        placeholder="Location name (e.g. My House)" [maxlength]="64">
+      </app-ui-input>
+      <app-ui-input [value]="newLocHash()" (valueChange)="newLocHash.set($event)"
         placeholder="Map link or #world:x:y:z:... fragment"
-        class="ui-input ui-input--mono" />
-      <input [value]="newLocDesc()" (input)="newLocDesc.set($any($event.target).value)"
-        placeholder="Description (optional)" maxlength="160"
-        class="ui-input" />
-      <label class="ui-toggle">
-        <div class="ui-toggle__control">
-          <input type="checkbox" class="ui-toggle__input" [checked]="newLocPublic()" (change)="newLocPublic.set($any($event.target).checked)" />
-          <div class="ui-toggle__track"></div>
-          <div class="ui-toggle__thumb"></div>
-        </div>
-        <span class="ui-toggle__text">Show on player card <span class="locations-toggle-note">(visible to all users)</span></span>
-      </label>
+        class="ui-input--mono">
+      </app-ui-input>
+      <app-ui-input [value]="newLocDesc()" (valueChange)="newLocDesc.set($event)"
+        placeholder="Description (optional)" [maxlength]="160">
+      </app-ui-input>
+      <app-ui-toggle
+        [checked]="newLocPublic()"
+        (checkedChange)="newLocPublic.set($event)"
+        label="Show on player card"
+        note="(visible to all users)">
+      </app-ui-toggle>
       @if (addError()) { <p class="locations-error">{{ addError() }}</p> }
-      <button (click)="addLocation()" [disabled]="saving()"
-        class="ui-button ui-button--primary location-form-submit">
-        {{ saving() ? 'Saving...' : 'Save location' }}
-      </button>
+      <app-save-button [saving]="saving()" label="Save location" (save)="addLocation()" class="location-form-submit"></app-save-button>
     </div>
   }
 
@@ -51,26 +47,24 @@
   @for (loc of profileService.savedLocations(); track loc.id) {
     @if (editingId() === loc.id) {
       <div class="location-card">
-        <input [value]="editName()" (input)="editName.set($any($event.target).value)" maxlength="64"
-          placeholder="Location name"
-          class="ui-input location-edit-input" />
-        <input [value]="editHash()" (input)="editHash.set($any($event.target).value)"
+        <app-ui-input [value]="editName()" (valueChange)="editName.set($event)" [maxlength]="64"
+          placeholder="Location name" class="location-edit-input">
+        </app-ui-input>
+        <app-ui-input [value]="editHash()" (valueChange)="editHash.set($event)"
           placeholder="Map link or fragment"
-          class="ui-input ui-input--mono location-edit-input" />
-        <input [value]="editDesc()" (input)="editDesc.set($any($event.target).value)" maxlength="160"
-          placeholder="Description"
-          class="ui-input location-edit-input" />
-        <label class="ui-toggle">
-          <div class="ui-toggle__control">
-            <input type="checkbox" class="ui-toggle__input" [checked]="editPublic()" (change)="editPublic.set($any($event.target).checked)" />
-            <div class="ui-toggle__track"></div>
-            <div class="ui-toggle__thumb"></div>
-          </div>
-          <span class="ui-toggle__text">Show on player card</span>
-        </label>
+          class="ui-input--mono location-edit-input">
+        </app-ui-input>
+        <app-ui-input [value]="editDesc()" (valueChange)="editDesc.set($event)" [maxlength]="160"
+          placeholder="Description" class="location-edit-input">
+        </app-ui-input>
+        <app-ui-toggle
+          [checked]="editPublic()"
+          (checkedChange)="editPublic.set($event)"
+          label="Show on player card">
+        </app-ui-toggle>
         <div class="location-edit-actions">
-          <button (click)="cancelEdit()" class="ui-button ui-button--secondary location-edit-button">Cancel</button>
-          <button (click)="saveEdit(loc.id)" [disabled]="saving()" class="ui-button ui-button--primary location-edit-button">{{ saving() ? 'Saving...' : 'Save' }}</button>
+          <app-cancel-button [compact]="true" (cancelled)="cancelEdit()"></app-cancel-button>
+          <app-save-button [compact]="true" [saving]="saving()" (save)="saveEdit(loc.id)"></app-save-button>
         </div>
       </div>
     } @else {

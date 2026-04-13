@@ -15,13 +15,17 @@ import { IconComponent } from '../../shared/icon/icon.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
 import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card.component';
 import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
+import { UiToggleComponent } from '../../shared/ui-toggle/ui-toggle.component';
+import { SaveButtonComponent } from '../../shared/save-button/save-button.component';
+import { CancelButtonComponent } from '../../shared/cancel-button/cancel-button.component';
+import { UiInputComponent } from '../../shared/ui-input/ui-input.component';
 import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-profile-locations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, MapViewerComponent, ProfileItemCardComponent, DimensionTagComponent],
+  imports: [IconComponent, MapViewerComponent, ProfileItemCardComponent, DimensionTagComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, UiInputComponent],
   templateUrl: './profile-locations.component.html',
   styleUrls: ['./profile-locations.component.scss'],
 })

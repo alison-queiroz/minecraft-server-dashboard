@@ -279,7 +279,7 @@ describe('ProfileHomesComponent', () => {
       fixture.detectChanges();
 
       openAddForm();
-      const submit = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.home-form-submit');
+      const submit = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.home-form-submit button');
       submit?.click();
       await fixture.whenStable();
       fixture.detectChanges();
@@ -304,7 +304,7 @@ describe('ProfileHomesComponent', () => {
       const xInput = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('input[type="number"]')[0];
       if (xInput) { xInput.value = 'abc'; xInput.dispatchEvent(new Event('input')); }
 
-      const submit = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.home-form-submit');
+      const submit = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.home-form-submit button');
       submit?.click();
       await fixture.whenStable();
       fixture.detectChanges();

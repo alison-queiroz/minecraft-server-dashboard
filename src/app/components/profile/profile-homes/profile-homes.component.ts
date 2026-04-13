@@ -18,6 +18,11 @@ import { IconComponent } from '../../shared/icon/icon.component';
 import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card.component';
 import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
+import { UiToggleComponent } from '../../shared/ui-toggle/ui-toggle.component';
+import { SaveButtonComponent } from '../../shared/save-button/save-button.component';
+import { CancelButtonComponent } from '../../shared/cancel-button/cancel-button.component';
+import { IconHomeComponent } from '../../shared/icon-home/icon-home.component';
+import { UiInputComponent } from '../../shared/ui-input/ui-input.component';
 import type { Player } from '../../../services/player/player.model';
 import { environment } from '../../../../environments/environment';
 import { UserProfileService } from '../../../services/user-profile/user-profile.service';
@@ -40,7 +45,7 @@ export interface LocalHome extends EssentialsHome {
   selector: 'app-profile-homes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent],
+  imports: [IconComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, IconHomeComponent, UiInputComponent],
   templateUrl: './profile-homes.component.html',
   styleUrls: ['./profile-homes.component.scss'],
 })
@@ -112,13 +117,6 @@ export class ProfileHomesComponent {
   protected readonly syncing      = signal(false);
 
   protected readonly editingId    = signal<string | null>(null);
-  /** Reference to the home being edited — needed to resolve UUID and original server name. */
-  private readonly editingHome    = signal<LocalHome | null>(null);
-  protected readonly editName     = signal('');
-  protected readonly editX        = signal('');
-  protected readonly editY        = signal('');
-  protected readonly editZ        = signal('');
-  protected readonly editWorld    = signal('world');
   protected readonly editPublic   = signal(false);
 
   constructor() {
@@ -266,62 +264,19 @@ export class ProfileHomesComponent {
 
   protected startEdit(home: LocalHome): void {
     this.editingId.set(home.id);
-    this.editingHome.set(home);
-    // Show the bare name (without PlayerName: prefix) for a clean editing experience
-    this.editName.set(this.homeDisplayName(home.name));
-    this.editX.set(String(home.x));
-    this.editY.set(String(home.y));
-    this.editZ.set(String(home.z));
-    this.editWorld.set(home.world);
     this.editPublic.set(home.isPublic);
   }
 
   protected cancelEdit(): void {
     this.editingId.set(null);
-    this.editingHome.set(null);
   }
 
   protected async saveEdit(id: string): Promise<void> {
-    const original = this.homes().find(h => h.id === id);
-    if (!original) return;
-    const target = this._resolveServerTarget(original.name);
-    if (!target) return;
-    const javaPlayers = this.players().filter(p => !p.isBedrock());
-    const owner = javaPlayers.length > 1
-      ? javaPlayers.find(p => original.name.startsWith(`${p.name}:`))
-      : undefined;
-    const prefix = owner ? `${owner.name}:` : '';
-    const newStoredName = prefix + this.editName().trim();
-    const body: Record<string, unknown> = {
-      x: parseFloat(this.editX()),
-      y: parseFloat(this.editY()),
-      z: parseFloat(this.editZ()),
-      world: this.editWorld(),
-    };
-    if (this.editName().trim() !== target.serverName) {
-      body['new_name'] = this.editName().trim();
-    }
     this.saving.set(true);
     try {
-      await firstValueFrom(
-        this.http.put(
-          `/api/players/${target.uuid}/homes/${encodeURIComponent(target.serverName)}`,
-          body,
-        )
-      );
-      this.homes.update(hs => hs.map(h => h.id === id ? {
-        ...h,
-        id: newStoredName,
-        name: newStoredName,
-        x: parseFloat(this.editX()),
-        y: parseFloat(this.editY()),
-        z: parseFloat(this.editZ()),
-        world: this.editWorld(),
-        isPublic: this.editPublic(),
-      } : h));
+      this.homes.update(hs => hs.map(h => h.id === id ? { ...h, isPublic: this.editPublic() } : h));
       await this.userProfileService.upsertHomesFromLocal(this.homes());
       this.editingId.set(null);
-      this.editingHome.set(null);
     } finally {
       this.saving.set(false);
     }
@@ -375,7 +330,7 @@ export class ProfileHomesComponent {
     const x = Math.round(home.x);
     const y = Math.round(home.y) + 2;
     const z = Math.round(home.z);
-    return `#${home.world}:${x}:${y}:${z}:0:0.36:500:0:0:free`;
+    return `#${home.world}:${x}:${y}:${z}:0:0.36:1.5:0:0:free`;
   }
 
   /** Full BlueMap URL for a home. */

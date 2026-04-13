@@ -1,7 +1,7 @@
 ﻿<section class="homes-card">
   <div class="homes-header">
     <h2 class="homes-title">
-      <app-icon [icon]="LucideHouse" [size]="16" class="homes-title-icon"></app-icon>
+      <app-icon-home [size]="16" class="homes-title-icon"></app-icon-home>
       Homes
     </h2>
     <div class="homes-header-actions">
@@ -48,16 +48,19 @@
           (positionCaptured)="onMapCapture($event)">
         </app-map-viewer>
       </div>
-      <input [value]="newName()" (input)="newName.set($any($event.target).value)"
-        placeholder="Home name (e.g. home, base, farm)" maxlength="64"
-        class="ui-input" />
+      <app-ui-input [value]="newName()" (valueChange)="newName.set($event)"
+        placeholder="Home name (e.g. home, base, farm)" [maxlength]="64">
+      </app-ui-input>
       <div class="home-coords-row">
-        <input [value]="newX()" (input)="newX.set($any($event.target).value)"
-          placeholder="X" type="number" class="ui-input home-coord-input" />
-        <input [value]="newY()" (input)="newY.set($any($event.target).value)"
-          placeholder="Y" type="number" class="ui-input home-coord-input" />
-        <input [value]="newZ()" (input)="newZ.set($any($event.target).value)"
-          placeholder="Z" type="number" class="ui-input home-coord-input" />
+        <app-ui-input [value]="newX()" (valueChange)="newX.set($event)"
+          placeholder="X" type="number" class="home-coord-input">
+        </app-ui-input>
+        <app-ui-input [value]="newY()" (valueChange)="newY.set($event)"
+          placeholder="Y" type="number" class="home-coord-input">
+        </app-ui-input>
+        <app-ui-input [value]="newZ()" (valueChange)="newZ.set($event)"
+          placeholder="Z" type="number" class="home-coord-input">
+        </app-ui-input>
       </div>
       <select (change)="newWorld.set($any($event.target).value)"
         class="ui-input home-world-select">
@@ -65,24 +68,14 @@
           <option [value]="opt.value" [selected]="newWorld() === opt.value">{{ opt.label }}</option>
         }
       </select>
-      <label class="ui-toggle">
-        <div class="ui-toggle__control">
-          <input type="checkbox" class="ui-toggle__input"
-            [checked]="newPublic()"
-            (change)="newPublic.set($any($event.target).checked)" />
-          <div class="ui-toggle__track"></div>
-          <div class="ui-toggle__thumb"></div>
-        </div>
-        <span class="ui-toggle__text">
-          Show on player card
-          <span class="homes-toggle-note">(visible to all users)</span>
-        </span>
-      </label>
+      <app-ui-toggle
+        [checked]="newPublic()"
+        (checkedChange)="newPublic.set($event)"
+        label="Show on player card"
+        note="(visible to all users)">
+      </app-ui-toggle>
       @if (addError()) { <p class="homes-error">{{ addError() }}</p> }
-      <button (click)="addHome()" [disabled]="saving()"
-        class="ui-button ui-button--primary home-form-submit">
-        {{ saving() ? 'Saving...' : 'Save home' }}
-      </button>
+      <app-save-button [saving]="saving()" label="Save home" (save)="addHome()" class="home-form-submit"></app-save-button>
     </div>
   }
 
@@ -120,42 +113,20 @@
         @for (home of group.homes; track home.id) {
         @if (editingId() === home.id) {
           <div class="home-card">
-            <!-- Edit form -->
-            <input [value]="editName()" (input)="editName.set($any($event.target).value)"
-              placeholder="Home name" maxlength="64"
-              class="ui-input home-edit-input" />
-            <div class="home-coords-row">
-              <input [value]="editX()" (input)="editX.set($any($event.target).value)"
-                placeholder="X" type="number" class="ui-input home-coord-input" />
-              <input [value]="editY()" (input)="editY.set($any($event.target).value)"
-                placeholder="Y" type="number" class="ui-input home-coord-input" />
-              <input [value]="editZ()" (input)="editZ.set($any($event.target).value)"
-                placeholder="Z" type="number" class="ui-input home-coord-input" />
-            </div>
-            <select (change)="editWorld.set($any($event.target).value)"
-              class="ui-input home-world-select">
-              @for (opt of worldOptions; track opt.value) {
-                <option [value]="opt.value" [selected]="editWorld() === opt.value">{{ opt.label }}</option>
-              }
-            </select>
-            <label class="ui-toggle">
-              <div class="ui-toggle__control">
-                <input type="checkbox" class="ui-toggle__input"
-                  [checked]="editPublic()"
-                  (change)="editPublic.set($any($event.target).checked)" />
-                <div class="ui-toggle__track"></div>
-                <div class="ui-toggle__thumb"></div>
-              </div>
-              <span class="ui-toggle__text">Show on player card</span>
-            </label>
+            <!-- Visibility-only edit form: coords/name are managed on the server -->
+            <p class="home-edit-name">{{ homeDisplayName(home.name) }}</p>
+            <p class="home-coords">
+              <app-dimension-tag [world]="home.world"></app-dimension-tag>
+              {{ home.x | number:'1.0-1' }},&nbsp;{{ home.y | number:'1.0-1' }},&nbsp;{{ home.z | number:'1.0-1' }}
+            </p>
+            <app-ui-toggle
+              [checked]="editPublic()"
+              (checkedChange)="editPublic.set($event)"
+              label="Show on player card">
+            </app-ui-toggle>
             <div class="home-edit-actions">
-              <button (click)="cancelEdit()" class="ui-button ui-button--secondary home-edit-button">
-                Cancel
-              </button>
-              <button (click)="saveEdit(home.id)" [disabled]="saving()"
-                class="ui-button ui-button--primary home-edit-button">
-                {{ saving() ? 'Saving...' : 'Save' }}
-              </button>
+              <app-cancel-button [compact]="true" (cancelled)="cancelEdit()"></app-cancel-button>
+              <app-save-button [compact]="true" [saving]="saving()" (save)="saveEdit(home.id)"></app-save-button>
             </div>
           </div>
         } @else {

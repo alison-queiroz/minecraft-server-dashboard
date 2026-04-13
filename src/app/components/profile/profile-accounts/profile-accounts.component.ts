@@ -17,12 +17,13 @@ import type { Player } from '../../../services/player/player.model';
 import { PlayerFaceComponent } from '../../shared/player-face/player-face.component';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ActionButtonComponent } from '../../shared/action-button/action-button.component';
+import { UiInputComponent } from '../../shared/ui-input/ui-input.component';
 
 @Component({
   selector: 'app-profile-accounts',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PlayerFaceComponent, IconComponent, ActionButtonComponent],
+  imports: [PlayerFaceComponent, IconComponent, ActionButtonComponent, UiInputComponent],
   templateUrl: './profile-accounts.component.html',
   styleUrls: ['./profile-accounts.component.scss'],
 })
