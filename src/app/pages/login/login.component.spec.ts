@@ -131,6 +131,17 @@ describe('LoginComponent', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('.login-error')).toBeFalsy();
   });
+  it('shows fallback message when rejection is not an Error instance', async () => {
+    authStub.signInWithGoogle.mockRejectedValue('not_an_error_object');
+    const fixture = TestBed.createComponent(LoginComponent);
+    fixture.detectChanges();
+    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.login-button')!;
+    button.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('.login-error');
+    expect(errorEl?.textContent).toContain('Sign-in failed. Please try again.');
+  });
 });
 
 

@@ -4,8 +4,8 @@
   overflow: hidden;
 }
 
-.players-header {
-  @apply mx-auto w-full max-w-7xl flex flex-col h-full;
+.players-wrapper {
+  @apply mx-auto w-full max-w-7xl flex flex-col h-full overflow-hidden;
 }
 
 .players-header {

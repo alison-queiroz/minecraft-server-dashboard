@@ -6,6 +6,7 @@ import { Player } from '../../../services/player/player.model';
 
 class MockPlayerService {
   fetchAvatarIfNeeded(_url: string): void { return; }
+  getAvatarUrl(url: string): string { return url; }
 }
 
 describe('PlayerCardRowComponent', () => {
@@ -42,6 +43,95 @@ describe('PlayerCardRowComponent', () => {
     (fixture.nativeElement as HTMLElement).click();
 
     expect(fixture.componentInstance.selected.emit).toHaveBeenCalledTimes(1);
+  });
+
+  describe('IntersectionObserver for mc-heads players', () => {
+    const mcHeadsPlayer = new Player({
+      name: 'Alex',
+      uuid: 'bbbbbbbb-0000-0000-0000-000000000002',
+      level: 5,
+      health: 20,
+      dimension: 'Overworld',
+      pos: [0, 64, 0],
+      last_seen: 'now',
+      skin_url: 'https://mc-heads.net/skin/Alex',
+      is_raw_skin: false,
+    });
+
+    function makeMockObserver(observeSpy: ReturnType<typeof jest.fn>, disconnectSpy: ReturnType<typeof jest.fn>) {
+      return class MockIO {
+        constructor() { /* callback ignored */ }
+        observe = observeSpy;
+        disconnect = disconnectSpy;
+      };
+    }
+
+    function makeMockObserverWithCallback(disconnectSpy: ReturnType<typeof jest.fn>) {
+      let cb: ((entries: Partial<IntersectionObserverEntry>[]) => void) | undefined;
+      const MockIO = class {
+        constructor(callback: (entries: Partial<IntersectionObserverEntry>[]) => void) {
+          cb = callback;
+        }
+        observe = jest.fn();
+        disconnect = disconnectSpy;
+      };
+      return { MockIO, getCallback: () => cb };
+    }
+
+    afterEach(() => {
+      delete (globalThis as unknown as Record<string, unknown>).IntersectionObserver;
+    });
+
+    it('sets up IntersectionObserver for non-raw-avatar player', () => {
+      const observeSpy = jest.fn();
+      (globalThis as unknown as Record<string, unknown>).IntersectionObserver = makeMockObserver(observeSpy, jest.fn());
+
+      const f = TestBed.createComponent(PlayerCardRowComponent);
+      f.componentRef.setInput('player', mcHeadsPlayer);
+      f.detectChanges();
+
+      expect(observeSpy).toHaveBeenCalled();
+    });
+
+    it('calls fetchAvatarIfNeeded when the element intersects', () => {
+      const fetchSpy = jest.spyOn(TestBed.inject(PlayerService), 'fetchAvatarIfNeeded').mockImplementation(() => undefined);
+      const { MockIO, getCallback } = makeMockObserverWithCallback(jest.fn());
+      (globalThis as unknown as Record<string, unknown>).IntersectionObserver = MockIO;
+
+      const f = TestBed.createComponent(PlayerCardRowComponent);
+      f.componentRef.setInput('player', mcHeadsPlayer);
+      f.detectChanges();
+
+      getCallback()?.([{ isIntersecting: true }]);
+
+      expect(fetchSpy).toHaveBeenCalled();
+    });
+
+    it('does not call fetchAvatarIfNeeded when entry is not intersecting', () => {
+      const fetchSpy = jest.spyOn(TestBed.inject(PlayerService), 'fetchAvatarIfNeeded').mockImplementation(() => undefined);
+      const { MockIO, getCallback } = makeMockObserverWithCallback(jest.fn());
+      (globalThis as unknown as Record<string, unknown>).IntersectionObserver = MockIO;
+
+      const f = TestBed.createComponent(PlayerCardRowComponent);
+      f.componentRef.setInput('player', mcHeadsPlayer);
+      f.detectChanges();
+
+      getCallback()?.([{ isIntersecting: false }]);
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('disconnects observer on component destroy', () => {
+      const disconnectSpy = jest.fn();
+      (globalThis as unknown as Record<string, unknown>).IntersectionObserver = makeMockObserver(jest.fn(), disconnectSpy);
+
+      const f = TestBed.createComponent(PlayerCardRowComponent);
+      f.componentRef.setInput('player', mcHeadsPlayer);
+      f.detectChanges();
+      f.destroy();
+
+      expect(disconnectSpy).toHaveBeenCalled();
+    });
   });
 });
 

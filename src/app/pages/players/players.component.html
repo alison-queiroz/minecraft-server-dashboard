@@ -1,4 +1,4 @@
-<app-page-container>
+<div class="players-wrapper">
   <div class="players-header">
     @if (hasSelection()) {
       <button class="players-back-btn" (click)="playerService.selectedPlayerName.set(null)">
@@ -15,4 +15,4 @@
     <app-player-list class="players-list-panel" [class.players-panel--hidden]="hasSelection()"></app-player-list>
     <app-player-detail class="players-detail-panel" [class.players-panel--hidden]="!hasSelection()"></app-player-detail>
   </div>
-</app-page-container>
+</div>

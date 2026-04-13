@@ -82,6 +82,22 @@ describe('Player model', () => {
     });
   });
 
+  describe('isOp()', () => {
+    it('returns false when is_op is not set', () => {
+      expect(player.isOp()).toBe(false);
+    });
+
+    it('returns true when is_op is true', () => {
+      const op = new Player({ ...BASE, is_op: true });
+      expect(op.isOp()).toBe(true);
+    });
+
+    it('returns false when is_op is false', () => {
+      const notOp = new Player({ ...BASE, is_op: false });
+      expect(notOp.isOp()).toBe(false);
+    });
+  });
+
   describe('matchesSearch()', () => {
     it('should match by lowercase name', () => {
       expect(player.matchesSearch('steve')).toBe(true);

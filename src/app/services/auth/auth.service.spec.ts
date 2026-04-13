@@ -69,6 +69,44 @@ describe('AuthService', () => {
     const token = await service.getIdToken();
     expect(token).toBeNull();
   });
+
+  it('sets currentUser to null when __E2E_UNAUTHENTICATED__ flag is set', () => {
+    (globalThis as Record<string, unknown>)['__E2E_UNAUTHENTICATED__'] = true;
+    try {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([{ path: 'login', component: BlankComponent }]),
+          AuthService,
+        ],
+      });
+      const svc = TestBed.inject(AuthService);
+      expect(svc.currentUser()).toBeNull();
+      expect(svc.isLoading()).toBe(false);
+    } finally {
+      delete (globalThis as Record<string, unknown>)['__E2E_UNAUTHENTICATED__'];
+    }
+  });
+
+  it('signOut via e2eAuthEnabled path sets user to null and navigates', async () => {
+    (globalThis as { __E2E_AUTH_USER__?: unknown }).__E2E_AUTH_USER__ = { uid: 'test' };
+    try {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([{ path: 'login', component: BlankComponent }]),
+          AuthService,
+        ],
+      });
+      const svc = TestBed.inject(AuthService);
+      const routerSpy = jest.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      await svc.signOut();
+      expect(svc.currentUser()).toBeNull();
+      expect(routerSpy).toHaveBeenCalledWith(['/login']);
+    } finally {
+      delete (globalThis as { __E2E_AUTH_USER__?: unknown }).__E2E_AUTH_USER__;
+    }
+  });
 });
 
 

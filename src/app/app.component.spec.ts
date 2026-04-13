@@ -1,9 +1,10 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, signal } from '@angular/core';
+import { vi } from 'vitest';
 import { AppComponent } from './app.component';
 import { LoadingService } from './services/loading/loading.service';
 import { ThemeService } from './services/theme/theme.service';
@@ -104,6 +105,29 @@ describe('AppComponent', () => {
     loading.done();
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('.loading-bar')).toBeNull();
+  });
+
+  it('clears enterFrom after NavigationEnd fires when timeout elapses', async () => {
+    vi.useFakeTimers();
+    const fixture: ComponentFixture<AppComponent> = TestBed.createComponent(AppComponent);
+    const comp = fixture.componentInstance as unknown as {
+      onNavigateDirection(d: 'left' | 'right'): void;
+      enterFrom: { (): 'left' | 'right' | null };
+    };
+    const router = TestBed.inject(Router);
+    fixture.detectChanges();
+    httpMock.match(() => true);
+
+    comp.onNavigateDirection('right');
+    expect(comp.enterFrom()).toBe('right');
+
+    await router.navigate(['/server']);
+    vi.advanceTimersByTime(350);
+    fixture.detectChanges();
+    expect(comp.enterFrom()).toBeNull();
+
+    vi.useRealTimers();
+    httpMock.match(() => true);
   });
 });
 
