@@ -112,7 +112,7 @@ describe('AppComponent', () => {
     const fixture: ComponentFixture<AppComponent> = TestBed.createComponent(AppComponent);
     const comp = fixture.componentInstance as unknown as {
       onNavigateDirection(d: 'left' | 'right'): void;
-      enterFrom: { (): 'left' | 'right' | null };
+      enterFrom: () => 'left' | 'right' | null;
     };
     const router = TestBed.inject(Router);
     fixture.detectChanges();
