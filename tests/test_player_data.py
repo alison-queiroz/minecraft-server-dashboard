@@ -377,3 +377,388 @@ def test_parse_player_includes_homes(mocker: "pytest_mock.MockerFixture") -> Non
     assert result is not None
     assert result["homes"] == [{"name": "home", "world": "world", "x": 10.0, "y": 64.0, "z": -5.0}]
 
+
+# ── OP helpers ────────────────────────────────────────────────────────────────
+
+def test_load_op_uuids_success(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns lowercased UUIDs from ops.json when present."""
+    from api.player_data import _load_op_uuids
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch(
+        "builtins.open",
+        mocker.mock_open(read_data='[{"uuid": "AAAA-BBBB"}, {"uuid": "cccc-dddd"}]'),
+    )
+    assert _load_op_uuids() == {"aaaa-bbbb", "cccc-dddd"}
+
+
+def test_load_op_uuids_parse_failure(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns an empty set when ops.json cannot be parsed."""
+    from api.player_data import _load_op_uuids
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="not-json"))
+    assert _load_op_uuids() == set()
+
+
+def test_get_op_names_parse_failure(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns empty list when ops.json cannot be parsed."""
+    from api.player_data import get_op_names
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", side_effect=Exception("boom"))
+    assert get_op_names() == []
+
+
+# ── sync lock helper ──────────────────────────────────────────────────────────
+
+def test_acquire_sync_lock_success_when_fcntl_available(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns True when file lock is acquired successfully."""
+    import api.player_data as pd
+    mocker.patch.object(pd, "_FCNTL_AVAILABLE", True)
+    mocker.patch("builtins.open", mocker.mock_open())
+    pd.fcntl = mocker.MagicMock()  # type: ignore[attr-defined]
+    pd.fcntl.LOCK_EX = 1
+    pd.fcntl.LOCK_NB = 2
+    pd.fcntl.flock = mocker.MagicMock(return_value=None)
+    assert pd._acquire_sync_lock() is True
+
+
+def test_acquire_sync_lock_returns_false_when_locked(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when flock raises OSError (already locked by another worker)."""
+    import api.player_data as pd
+    mocker.patch.object(pd, "_FCNTL_AVAILABLE", True)
+    mocker.patch("builtins.open", mocker.mock_open())
+    pd.fcntl = mocker.MagicMock()  # type: ignore[attr-defined]
+    pd.fcntl.LOCK_EX = 1
+    pd.fcntl.LOCK_NB = 2
+    pd.fcntl.flock = mocker.MagicMock(side_effect=OSError("locked"))
+    assert pd._acquire_sync_lock() is False
+
+
+def test_load_op_uuids_missing_file_returns_empty(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns empty set when ops.json is missing."""
+    from api.player_data import _load_op_uuids
+    mocker.patch("os.path.exists", return_value=False)
+    assert _load_op_uuids() == set()
+
+
+def test_get_op_names_success(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns names from ops.json when file is valid."""
+    from api.player_data import get_op_names
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data='[{"name": "Steve"}, {"uuid": "x"}]'))
+    assert get_op_names() == ["Steve"]
+
+
+def test_get_op_names_missing_file_returns_empty(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns empty list when ops.json is missing."""
+    from api.player_data import get_op_names
+    mocker.patch("os.path.exists", return_value=False)
+    assert get_op_names() == []
+
+
+# ── map uuids key error branch ────────────────────────────────────────────────
+
+def test_map_uuids_key_error_returns_empty_dict(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns empty dict when entries miss expected keys."""
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data='[{"name": "Steve"}]'))
+    assert _map_uuids() == {}
+
+
+# ── read_essentials_homes extra branches ─────────────────────────────────────
+
+def test_read_essentials_homes_non_dict_root_returns_empty(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns empty list when YAML root is not a mapping."""
+    from api.player_data import read_essentials_homes
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="- item"))
+    assert read_essentials_homes("uuid") == []
+
+
+def test_read_essentials_homes_skips_non_dict_home_entries(mocker: "pytest_mock.MockerFixture") -> None:
+    """Skips malformed home entries that are not mappings."""
+    from api.player_data import read_essentials_homes
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch(
+        "builtins.open",
+        mocker.mock_open(read_data="homes:\n  home: 123\n  base:\n    world: world\n    x: 1\n    y: 2\n    z: 3\n"),
+    )
+    homes = read_essentials_homes("uuid")
+    assert homes == [{"name": "base", "world": "world", "x": 1.0, "y": 2.0, "z": 3.0}]
+
+
+# ── atomic YAML writer ────────────────────────────────────────────────────────
+
+def test_write_essentials_yaml_atomic_writes_file(tmp_path: "pytest.TempPathFactory") -> None:
+    """Writes YAML atomically via temp file replacement."""
+    from api.player_data import _write_essentials_yaml_atomic
+    yml_path = tmp_path / "user.yml"
+    _write_essentials_yaml_atomic(str(yml_path), {"homes": {"home": {"world": "world", "x": 1, "y": 2, "z": 3}}})
+    content = yml_path.read_text(encoding="utf-8")
+    assert "homes" in content
+    assert "world" in content
+
+
+# ── create/update/delete homes ────────────────────────────────────────────────
+
+def test_create_essentials_home_yaml_unavailable_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when YAML backend is unavailable."""
+    import api.player_data as pd
+    orig = pd._YAML_AVAILABLE
+    pd._YAML_AVAILABLE = False
+    try:
+        assert pd.create_essentials_home("u", "home", 1, 2, 3, "world") is False
+    finally:
+        pd._YAML_AVAILABLE = orig
+
+
+def test_create_essentials_home_existing_name_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when a home with the same name already exists."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="homes:\n  home:\n    world: world\n"))
+    assert pd.create_essentials_home("u", "home", 1, 2, 3, "world") is False
+
+
+def test_create_essentials_home_success_creates_dirs_and_writes(mocker: "pytest_mock.MockerFixture", tmp_path: "pytest.TempPathFactory") -> None:
+    """Creates home successfully and writes YAML atomically."""
+    import api.player_data as pd
+    mocker.patch.object(pd, "_ESSENTIALS_USERDATA_DIR", str(tmp_path))
+    mocker.patch("api.player_data._write_essentials_yaml_atomic", return_value=None)
+
+    assert pd.create_essentials_home("u1", "base", 1.0, 64.0, 2.0, "world") is True
+
+
+def test_create_essentials_home_exception_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when file operations raise unexpectedly."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", side_effect=Exception("boom"))
+    assert pd.create_essentials_home("u", "home", 1, 2, 3, "world") is False
+
+
+def test_create_essentials_home_existing_file_with_non_dict_data_is_handled(mocker: "pytest_mock.MockerFixture") -> None:
+    """Executes non-dict YAML root handling branch even if subsequent write fails."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="- item"))
+    mocker.patch("api.player_data._write_essentials_yaml_atomic", return_value=None)
+    assert pd.create_essentials_home("u", "home", 1, 2, 3, "world") is False
+
+
+def test_update_essentials_home_yaml_unavailable_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when YAML backend is unavailable."""
+    import api.player_data as pd
+    orig = pd._YAML_AVAILABLE
+    pd._YAML_AVAILABLE = False
+    try:
+        assert pd.update_essentials_home("u", "home", 1, 2, 3, "world") is False
+    finally:
+        pd._YAML_AVAILABLE = orig
+
+
+def test_update_essentials_home_missing_file_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when player YAML does not exist."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=False)
+    assert pd.update_essentials_home("u", "home", 1, 2, 3, "world") is False
+
+
+def test_update_essentials_home_non_dict_data_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when loaded YAML root is not a mapping."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="- bad"))
+    assert pd.update_essentials_home("u", "home", 1, 2, 3, "world") is False
+
+
+def test_update_essentials_home_missing_target_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when target home does not exist."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="homes:\n  other:\n    world: world\n"))
+    assert pd.update_essentials_home("u", "home", 1, 2, 3, "world") is False
+
+
+def test_update_essentials_home_success_rename_and_world_name(mocker: "pytest_mock.MockerFixture") -> None:
+    """Updates coords and renames home while preserving world-name key style."""
+    import api.player_data as pd
+    yaml_data = "homes:\n  home:\n    world-name: world\n    x: 0\n    y: 64\n    z: 0\n"
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data=yaml_data))
+    write_spy = mocker.patch("api.player_data._write_essentials_yaml_atomic", return_value=None)
+
+    assert pd.update_essentials_home("u", "home", 1, 2, 3, "world_nether", new_name="base") is True
+    assert write_spy.called
+
+
+def test_update_essentials_home_exception_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when update path raises unexpectedly."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", side_effect=Exception("boom"))
+    assert pd.update_essentials_home("u", "home", 1, 2, 3, "world") is False
+
+
+def test_update_essentials_home_updates_world_key_when_world_name_absent(mocker: "pytest_mock.MockerFixture") -> None:
+    """Uses the world key path when world-name is not present in entry."""
+    import api.player_data as pd
+    yaml_data = "homes:\n  home:\n    world: world\n    x: 0\n    y: 64\n    z: 0\n"
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data=yaml_data))
+    write_spy = mocker.patch("api.player_data._write_essentials_yaml_atomic", return_value=None)
+    assert pd.update_essentials_home("u", "home", 7, 8, 9, "world_the_end") is True
+    assert write_spy.called
+
+
+def test_delete_essentials_home_yaml_unavailable_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when YAML backend is unavailable."""
+    import api.player_data as pd
+    orig = pd._YAML_AVAILABLE
+    pd._YAML_AVAILABLE = False
+    try:
+        assert pd.delete_essentials_home("u", "home") is False
+    finally:
+        pd._YAML_AVAILABLE = orig
+
+
+def test_delete_essentials_home_missing_file_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when player YAML does not exist."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=False)
+    assert pd.delete_essentials_home("u", "home") is False
+
+
+def test_delete_essentials_home_non_dict_or_missing_home_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when YAML is malformed or target home is absent."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="homes:\n  other:\n    world: world\n"))
+    assert pd.delete_essentials_home("u", "home") is False
+
+
+def test_delete_essentials_home_success(mocker: "pytest_mock.MockerFixture") -> None:
+    """Deletes existing home and writes updated YAML."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="homes:\n  home:\n    world: world\n"))
+    write_spy = mocker.patch("api.player_data._write_essentials_yaml_atomic", return_value=None)
+    assert pd.delete_essentials_home("u", "home") is True
+    assert write_spy.called
+
+
+def test_delete_essentials_home_exception_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when delete path raises unexpectedly."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", side_effect=Exception("boom"))
+    assert pd.delete_essentials_home("u", "home") is False
+
+
+def test_delete_essentials_home_non_dict_root_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
+    """Returns False when delete reads malformed non-dict YAML root."""
+    import api.player_data as pd
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="- bad"))
+    assert pd.delete_essentials_home("u", "home") is False
+
+
+# ── background sync loop ──────────────────────────────────────────────────────
+
+def test_background_sync_loop_handles_skin_changes_and_backoff(mocker: "pytest_mock.MockerFixture") -> None:
+    """Clears skin caches and increases backoff when sync attempt fails in loop."""
+    import api.player_data as pd
+
+    class Watcher:
+        def __init__(self, changes):
+            self._changes = list(changes)
+        def has_changes(self):
+            if self._changes:
+                return self._changes.pop(0)
+            return False
+
+    watchers = [Watcher([False, False]), Watcher([True, False])]
+    mocker.patch("api.player_data._FileWatcher", side_effect=watchers)
+    mocker.patch("api.player_data.get_players", side_effect=Exception("sync failed"))
+    mocker.patch("api.player_data._url_resolution_cache", {"k": "v"})
+    mocker.patch("api.player_data._url_resolved_at", {"k": 1.0})
+
+    time_values = iter([100.0, 101.0, 200.0, 201.0])
+    mocker.patch("time.time", side_effect=lambda: next(time_values))
+
+    def stop_after_two(_seconds):
+        stop_after_two.calls += 1
+        if stop_after_two.calls >= 2:
+            raise RuntimeError("stop-loop")
+    stop_after_two.calls = 0
+    mocker.patch("time.sleep", side_effect=stop_after_two)
+
+    with pytest.raises(RuntimeError, match="stop-loop"):
+        pd._background_sync_loop()
+
+
+def test_background_sync_loop_success_resets_backoff(mocker: "pytest_mock.MockerFixture") -> None:
+    """Runs successful sync branch and resets backoff path."""
+    import api.player_data as pd
+
+    class Watcher:
+        def __init__(self, changes):
+            self._changes = list(changes)
+        def has_changes(self):
+            if self._changes:
+                return self._changes.pop(0)
+            return False
+
+    # First watcher (playerdata) reports one change so last_change update branch runs.
+    # Second watcher (SkinsRestorer) reports no changes to keep focus on success path.
+    mocker.patch("api.player_data._FileWatcher", side_effect=[Watcher([True, False]), Watcher([False, False])])
+    get_players = mocker.patch("api.player_data.get_players", return_value=[])
+    debug_spy = mocker.patch("api.player_data.logger.debug")
+
+    # Sequence covers: initial last_change seed, watcher update, now, last_sync update.
+    mocker.patch("time.time", side_effect=[100.0, 101.0, 200.0, 201.0, 202.0])
+
+    def stop_after_two(_seconds):
+        stop_after_two.calls += 1
+        if stop_after_two.calls >= 2:
+            raise RuntimeError("stop-loop")
+    stop_after_two.calls = 0
+    mocker.patch("time.sleep", side_effect=stop_after_two)
+
+    with pytest.raises(RuntimeError, match="stop-loop"):
+        pd._background_sync_loop()
+
+    get_players.assert_called_once()
+    debug_spy.assert_called_once()
+
+
+def test_reload_player_data_covers_optional_import_and_non_leader_branch(mocker: "pytest_mock.MockerFixture") -> None:
+    """Reloads module with yaml import failure and lock contention to cover env-specific import branches."""
+    import builtins
+    import importlib
+    import sys
+    import types
+    import api.player_data as pd
+
+    original_import = builtins.__import__
+
+    fake_fcntl = types.SimpleNamespace(LOCK_EX=1, LOCK_NB=2)
+    fake_fcntl.flock = mocker.MagicMock(side_effect=OSError("already-locked"))
+
+    def controlled_import(name, *args, **kwargs):
+        if name == "fcntl":
+            return fake_fcntl
+        if name == "yaml":
+            raise ImportError("no-yaml")
+        return original_import(name, *args, **kwargs)
+
+    # Prevent thread side-effects during reload if lock branch changes.
+    fake_thread = mocker.MagicMock()
+    fake_thread.start = mocker.MagicMock()
+    mocker.patch("threading.Thread", return_value=fake_thread)
+    mocker.patch("builtins.open", mocker.mock_open())
+    mocker.patch("builtins.__import__", side_effect=controlled_import)
+
+    reloaded = importlib.reload(pd)
+    assert reloaded._FCNTL_AVAILABLE is True
+    assert reloaded._YAML_AVAILABLE is False
+

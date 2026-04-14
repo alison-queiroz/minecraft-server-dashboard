@@ -657,3 +657,332 @@ def test_bedrock_endpoint_real_fetch_exception(client, mocker):
     response = client.get("/api/bedrock-status")
     assert response.status_code == 200
     assert response.json["online"] is False
+
+
+# ── homes / ops / internal-resync endpoints ─────────────────────────────────
+
+def test_player_homes_endpoint_returns_homes(client, mocker):
+    """Returns homes for a player UUID through the dedicated homes endpoint."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch(
+        "api.server_api.read_essentials_homes",
+        return_value=[{"name": "home", "world": "world", "x": 1.0, "y": 64.0, "z": 2.0}],
+    )
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.get("/api/players/aaaa-bbbb/homes", headers=headers)
+    assert response.status_code == 200
+    assert response.json[0]["name"] == "home"
+
+
+def test_create_player_home_endpoint_validates_body(client, mocker):
+    """Returns 400 when create home payload is missing required fields."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.post("/api/players/uuid/homes", headers=headers, json={"name": "home"})
+    assert response.status_code == 400
+
+
+def test_create_player_home_endpoint_conflict(client, mocker):
+    """Returns 409 when create_essentials_home reports existing home."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api.create_essentials_home", return_value=False)
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.post(
+        "/api/players/uuid/homes",
+        headers=headers,
+        json={"name": "home", "x": 1, "y": 64, "z": 2, "world": "world"},
+    )
+    assert response.status_code == 409
+
+
+def test_create_player_home_endpoint_success(client, mocker):
+    """Creates a home and returns 201 with ok=true."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api.create_essentials_home", return_value=True)
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.post(
+        "/api/players/uuid/homes",
+        headers=headers,
+        json={"name": "home", "x": 1, "y": 64, "z": 2, "world": "world"},
+    )
+    assert response.status_code == 201
+    assert response.json == {"ok": True}
+
+
+def test_update_player_home_endpoint_validates_body(client, mocker):
+    """Returns 400 when update payload is missing required coordinates/world."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.put("/api/players/uuid/homes/home", headers=headers, json={"x": 1})
+    assert response.status_code == 400
+
+
+def test_update_player_home_endpoint_not_found(client, mocker):
+    """Returns 404 when update_essentials_home fails to find the target."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api.update_essentials_home", return_value=False)
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.put(
+        "/api/players/uuid/homes/home",
+        headers=headers,
+        json={"x": 1, "y": 64, "z": 2, "world": "world", "new_name": "new-home"},
+    )
+    assert response.status_code == 404
+
+
+def test_update_player_home_endpoint_success(client, mocker):
+    """Updates an existing home and returns ok=true."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api.update_essentials_home", return_value=True)
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.put(
+        "/api/players/uuid/homes/home",
+        headers=headers,
+        json={"x": 1, "y": 64, "z": 2, "world": "world"},
+    )
+    assert response.status_code == 200
+    assert response.json == {"ok": True}
+
+
+def test_delete_player_home_endpoint_not_found(client, mocker):
+    """Returns 404 when deleting a missing home."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api.delete_essentials_home", return_value=False)
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.delete("/api/players/uuid/homes/home", headers=headers)
+    assert response.status_code == 404
+
+
+def test_delete_player_home_endpoint_success(client, mocker):
+    """Deletes a home and returns ok=true."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api.delete_essentials_home", return_value=True)
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.delete("/api/players/uuid/homes/home", headers=headers)
+    assert response.status_code == 200
+    assert response.json == {"ok": True}
+
+
+def test_ops_endpoint_returns_names(client, mocker):
+    """Returns OP player names from ops.json helper."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api.get_op_names", return_value=["Steve", "Alex"])
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.get("/api/ops", headers=headers)
+    assert response.status_code == 200
+    assert response.json == ["Steve", "Alex"]
+
+
+def test_internal_force_resync_rejects_non_loopback(client):
+    """Returns 403 for non-loopback callers."""
+    response = client.post("/api/internal/force-resync", environ_overrides={"REMOTE_ADDR": "10.0.0.2"})
+    assert response.status_code == 403
+
+
+def test_internal_force_resync_allows_loopback(client, mocker):
+    """Allows localhost caller and returns player count."""
+    from unittest.mock import MagicMock
+
+    mocker.patch("api.server_api.get_players", return_value=[{"name": "Steve"}, {"name": "Alex"}])
+    mocker.patch("api.player_data._cache", MagicMock(last_updated=123.0))
+    mocker.patch("api.skin_resolver._url_resolution_cache", {})
+    mocker.patch("api.skin_resolver._url_resolved_at", {})
+
+    response = client.post("/api/internal/force-resync", environ_overrides={"REMOTE_ADDR": "127.0.0.1"})
+    assert response.status_code == 200
+    assert response.json == {"ok": True, "players": 2}
+
+
+def test_backups_endpoint_protected_mode_missing_credentials_returns_500(client, mocker):
+    """In protected mode, missing Drive credentials returns 500 instead of dev fallback []."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch(
+        "api.server_api.service_account.Credentials.from_service_account_file",
+        side_effect=FileNotFoundError("drive-service-account.json not found"),
+    )
+
+    headers = {"Authorization": "Bearer token"}
+    response = client.get("/api/backups", headers=headers)
+    assert response.status_code == 500
+    assert response.json == {"error": "Failed to fetch backups"}
+
+
+# ── verify-minecraft-password endpoint ───────────────────────────────────────
+
+def test_verify_minecraft_password_missing_fields_returns_400(client, mocker):
+    """Returns 400 when username or password is missing."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
+    mocker.patch("api.server_api._init_firebase")
+
+    response = client.post("/api/verify-minecraft-password", json={"username": "", "password": ""})
+    assert response.status_code == 400
+    assert response.json["valid"] is False
+
+
+def test_verify_minecraft_password_rejects_overlong_inputs(client, mocker):
+    """Returns 400 for excessively long username/password values."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
+    mocker.patch("api.server_api._init_firebase")
+
+    response = client.post(
+        "/api/verify-minecraft-password",
+        json={"username": "a" * 65, "password": "x"},
+    )
+    assert response.status_code == 400
+    assert response.json == {"valid": False}
+
+
+def test_verify_minecraft_password_unknown_user_returns_false(client, mocker):
+    """Returns valid=false when username is not present in AuthMe DB."""
+    from unittest.mock import MagicMock
+    import types
+    import sys
+
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
+    mocker.patch("api.server_api._init_firebase")
+
+    fake_conn = MagicMock()
+    fake_conn.execute.return_value.fetchone.return_value = None
+    mocker.patch("sqlite3.connect", return_value=fake_conn)
+
+    fake_bcrypt = types.SimpleNamespace(checkpw=lambda *_: False)
+    mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    response = client.post(
+        "/api/verify-minecraft-password",
+        json={"username": "Steve", "password": "secret"},
+    )
+    assert response.status_code == 200
+    assert response.json == {"valid": False}
+
+
+def test_verify_minecraft_password_bcrypt_branch_normalizes_prefix(client, mocker):
+    """Normalizes $2a$/$2y$ bcrypt hashes to $2b$ and verifies with bcrypt.checkpw."""
+    from unittest.mock import MagicMock
+    import types
+    import sys
+
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
+    mocker.patch("api.server_api._init_firebase")
+
+    fake_conn = MagicMock()
+    fake_conn.execute.return_value.fetchone.return_value = ("$2a$10$abcdefghijklmnopqrstuvwxyzABCDE1234567890abcd",)
+    mocker.patch("sqlite3.connect", return_value=fake_conn)
+
+    checkpw = mocker.Mock(return_value=True)
+    fake_bcrypt = types.SimpleNamespace(checkpw=checkpw)
+
+    mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    response = client.post(
+        "/api/verify-minecraft-password",
+        json={"username": "Steve", "password": "secret"},
+    )
+    assert response.status_code == 200
+    assert response.json == {"valid": True}
+    assert checkpw.call_args.args[1].decode("utf-8").startswith("$2b$")
+
+
+def test_verify_minecraft_password_sha_branch(client, mocker):
+    """Verifies AuthMe legacy $SHA$<salt>$hash entries."""
+    from unittest.mock import MagicMock
+    import hashlib
+    import types
+    import sys
+
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
+    mocker.patch("api.server_api._init_firebase")
+
+    password = "secret"
+    salt = "pepper"
+    inner = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    expected = hashlib.sha256((inner + salt).encode("utf-8")).hexdigest()
+    stored = f"$SHA${salt}${expected}"
+
+    fake_conn = MagicMock()
+    fake_conn.execute.return_value.fetchone.return_value = (stored,)
+    mocker.patch("sqlite3.connect", return_value=fake_conn)
+
+    fake_bcrypt = types.SimpleNamespace(checkpw=lambda *_: False)
+    mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    response = client.post(
+        "/api/verify-minecraft-password",
+        json={"username": "Steve", "password": password},
+    )
+    assert response.status_code == 200
+    assert response.json == {"valid": True}
+
+
+def test_verify_minecraft_password_unknown_hash_format_returns_false(client, mocker):
+    """Returns valid=false for unsupported hash formats."""
+    from unittest.mock import MagicMock
+    import types
+    import sys
+
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
+    mocker.patch("api.server_api._init_firebase")
+
+    fake_conn = MagicMock()
+    fake_conn.execute.return_value.fetchone.return_value = ("plain-text-hash",)
+    mocker.patch("sqlite3.connect", return_value=fake_conn)
+
+    fake_bcrypt = types.SimpleNamespace(checkpw=lambda *_: False)
+    mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    response = client.post(
+        "/api/verify-minecraft-password",
+        json={"username": "Steve", "password": "secret"},
+    )
+    assert response.status_code == 200
+    assert response.json == {"valid": False}
+
+
+def test_verify_minecraft_password_db_missing_returns_503(client, mocker):
+    """Returns 503 when the AuthMe DB file does not exist."""
+    import types
+    import sys
+
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
+    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("sqlite3.connect", side_effect=FileNotFoundError("missing db"))
+
+    fake_bcrypt = types.SimpleNamespace(checkpw=lambda *_: False)
+    mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    response = client.post(
+        "/api/verify-minecraft-password",
+        json={"username": "Steve", "password": "secret"},
+    )
+    assert response.status_code == 503
+    assert response.json["valid"] is False
+
+
+def test_verify_minecraft_password_unexpected_error_returns_500(client, mocker):
+    """Returns 500 when password verification raises an unexpected exception."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
+    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("sqlite3.connect", side_effect=RuntimeError("boom"))
+
+    response = client.post(
+        "/api/verify-minecraft-password",
+        json={"username": "Steve", "password": "secret"},
+    )
+    assert response.status_code == 500
+    assert response.json["valid"] is False

@@ -17,6 +17,13 @@ applyTo: "**/*.ts,**/*.html,**/*.scss,**/*.py,tsconfig*.json,eslint.config.*,ang
 - `tsconfig.app.json` must have `"rootDir": "./src"` to prevent TS output-layout warnings
 - `angularCompilerOptions` must include `strictInjectionParameters`, `strictInputAccessModifiers`, `strictTemplates`
 
+### Variable Declarations
+- Always use `const`. Never use `let` unless the binding is genuinely reassigned later in the same scope.
+- Never use `any` or `unknown` — always use a specific type.
+
+### Template Bindings
+- Never use `ngModel` or `ngModelChange` (legacy two-way binding). Use `[value]` + `(input)` with signal-based binding instead: `[value]="sig()" (input)="sig.set($any($event.target).value)"`.
+
 ### Imports
 - Always use `import type { Foo }` for type-only imports (enforced by `@typescript-eslint/consistent-type-imports`)
 - If a file imports both a type and a value from the same module, split into two import statements: one `import type`, one `import`
@@ -52,6 +59,9 @@ applyTo: "**/*.ts,**/*.html,**/*.scss,**/*.py,tsconfig*.json,eslint.config.*,ang
 ## ESLint
 
 Key rules to keep in every `eslint.config.js` for Angular+TypeScript projects:
+- `prefer-const`: `error` — always `const`, only `let` when the binding is genuinely reassigned
+- `@typescript-eslint/no-explicit-any`: `error` — no `any` in production or test code
+- `@typescript-eslint/no-restricted-types`: ban `unknown`
 - `@typescript-eslint/consistent-type-imports`: `warn`, `prefer: type-imports`
 - `@typescript-eslint/no-unused-vars`: `error`, ignore `^_` prefix for vars and args
 - `@typescript-eslint/no-floating-promises`: `warn`
@@ -67,6 +77,7 @@ Key rules to keep in every `eslint.config.js` for Angular+TypeScript projects:
 
 - Every new component and directive gets a `*.spec.ts` file in the same folder
 - Use **Vitest** as the unit test runner to leverage the Vite ecosystem. Migrate any legacy Karma configurations to Vitest
+- Never use `/* v8 ignore */` or `/* istanbul ignore */` comments. Write tests to cover the branch instead.
 - Always configure tests to run zoneless (e.g., using `provideExperimentalZonelessChangeDetection()` in `TestBed.configureTestingModule`) to align with Signal-based change detection and avoid Zone.js flakiness
 - Regression tests: when a bug is fixed, add a test for the broken branch (e.g., `isRaw=true` vs `isRaw=false` skin rendering)
 - Use `import type { ComponentFixture }` (type-only) + separate `import { TestBed }` to satisfy the lint rule
@@ -84,13 +95,17 @@ Key rules to keep in every `eslint.config.js` for Angular+TypeScript projects:
   ```python
   mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
   mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "mocked_user_id"})
+  ```
 
 - Always test the unauthorized path (no token -> 401) before testing the authorized path
 - Mock I/O functions (get_players, file readers) to keep tests fast and hermetic — tests must not read from disk or network
 - Docstrings on every test function: one sentence explaining what it asserts
+- Use coverage in CI and local checks: `pytest --cov=api --cov-report=term-missing`
+- For strict quality gates, require full coverage with `--cov-fail-under=100`
 
 ## CI / GitHub Actions
 - Use `browser-actions/setup-chrome@v1` with `id: setup-chrome`; reference the output as `steps.setup-chrome.outputs.chrome-path` — the id must match exactly
 - Ensure caching is enabled for both npm/yarn and pip to accelerate build times
 - Separate jobs for: lint, typecheck, unit tests, e2e tests, Python tests
-- `ci:quality` script in `package.json` should run lint + typecheck + unit tests in sequence
+- `ci:quality` script in `package.json` should run lint + typecheck + frontend unit tests + Python unit tests in sequence
+- Add a coverage-focused script (for example `ci:quality:coverage`) to run frontend and backend coverage reports

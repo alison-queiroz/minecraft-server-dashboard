@@ -24,11 +24,15 @@ interface MapMessagePayload {
   href?: string;
 }
 
-function asMapMessagePayload(data: unknown): MapMessagePayload | null {
+function asMapMessagePayload(data: MessageEvent['data']): MapMessagePayload | null {
   if (!data || typeof data !== 'object') {
     return null;
   }
-  return data as MapMessagePayload;
+  const payload = data as Record<string, string | undefined>;
+  const result: MapMessagePayload = {};
+  if (payload['type'] !== undefined) result.type = payload['type'];
+  if (payload['href'] !== undefined) result.href = payload['href'];
+  return result;
 }
 
 @Component({

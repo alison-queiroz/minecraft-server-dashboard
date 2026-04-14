@@ -4,6 +4,37 @@ import '@analogjs/vitest-angular/setup-snapshots';
 import { setupTestBed } from '@analogjs/vitest-angular/setup-testbed';
 import { afterEach, vi } from 'vitest';
 
+vi.mock('skinview3d', () => {
+  class MockSkinViewer {
+    canvas: HTMLCanvasElement;
+    controls = { enablePan: false };
+    animation: object | null = null;
+    width: number;
+    height: number;
+
+    constructor(options: { canvas?: HTMLCanvasElement; width?: number; height?: number }) {
+      this.canvas = options.canvas ?? globalThis.document.createElement('canvas');
+      this.width = options.width ?? 200;
+      this.height = options.height ?? 192;
+    }
+
+    loadSkin(_url: string): void {
+      return undefined;
+    }
+
+    dispose(): void {
+      return undefined;
+    }
+  }
+
+  class MockIdleAnimation {}
+
+  return {
+    SkinViewer: MockSkinViewer,
+    IdleAnimation: MockIdleAnimation,
+  };
+});
+
 interface TouchInitLike {
   identifier?: number;
   target: EventTarget;
@@ -28,7 +59,7 @@ Object.defineProperty(globalThis, 'jest', {
 
 if (typeof globalThis.Response === 'undefined') {
   class MockResponse {}
-  globalThis.Response = MockResponse as unknown as typeof Response;
+  globalThis.Response = MockResponse as typeof Response;
 }
 
 if (typeof globalThis.fetch === 'undefined') {
@@ -50,7 +81,7 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     }
   }
 
-  globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+  globalThis.ResizeObserver = MockResizeObserver as typeof ResizeObserver;
 }
 
 if (typeof globalThis.Touch === 'undefined') {
@@ -76,7 +107,7 @@ if (typeof globalThis.Touch === 'undefined') {
     }
   }
 
-  globalThis.Touch = MockTouch as unknown as typeof Touch;
+  globalThis.Touch = MockTouch as typeof Touch;
 }
 
 if (!('clipboard' in navigator)) {

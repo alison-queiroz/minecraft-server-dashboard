@@ -131,6 +131,78 @@ describe('TooltipDirective', () => {
 
     expect(document.querySelector('.app-tooltip')?.textContent).toBe('Updated text');
   });
+
+  it('shows tooltip on focus and hides on blur', () => {
+    spanEl.nativeElement.dispatchEvent(new FocusEvent('focus'));
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
+
+    spanEl.nativeElement.dispatchEvent(new FocusEvent('blur'));
+    expect(document.querySelector('.app-tooltip')).toBeNull();
+  });
+
+  it('cancels long-press and hides tooltip on touchcancel', () => {
+    jest.useFakeTimers();
+    const touchStart = new TouchEvent('touchstart', {
+      touches: [new Touch({ identifier: 1, target: spanEl.nativeElement, clientX: 10, clientY: 10 })],
+    });
+    spanEl.nativeElement.dispatchEvent(touchStart);
+    jest.advanceTimersByTime(600);
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
+
+    spanEl.nativeElement.dispatchEvent(new TouchEvent('touchcancel'));
+    expect(document.querySelector('.app-tooltip')).toBeNull();
+  });
+
+  it('hides tooltip on pointerdown when target is not a Node instance', () => {
+    spanEl.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
+
+    // Create a PointerEvent whose target is not a Node (simulated by an object that is not a Node)
+    const fakeEvent = { target: {} } as unknown as PointerEvent;
+    const dir = spanEl.injector.get(TooltipDirective);
+    dir.onDocumentPointerDown(fakeEvent);
+
+    expect(document.querySelector('.app-tooltip')).toBeNull();
+  });
+
+  it('does not hide tooltip on pointerdown when the host element is the target', () => {
+    spanEl.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
+
+    spanEl.nativeElement.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    // Clicking the host itself should NOT hide the tooltip
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
+  });
+  it('onTouchStart: does nothing (no timer) when touches list is empty', () => {
+    jest.useFakeTimers();
+    // TouchEvent with empty touches array — e.touches[0] is undefined → guard returns
+    spanEl.nativeElement.dispatchEvent(new TouchEvent('touchstart', { touches: [] }));
+    jest.advanceTimersByTime(600);
+    expect(document.querySelector('.app-tooltip')).toBeNull();
+  });
+
+  it('onTouchMove: cancels nothing and does not throw when touches list is empty', () => {
+    jest.useFakeTimers();
+    // Start a valid long press
+    spanEl.nativeElement.dispatchEvent(new TouchEvent('touchstart', {
+      touches: [new Touch({ identifier: 1, target: spanEl.nativeElement, clientX: 10, clientY: 10 })],
+    }));
+    // touchmove with no touches — e.touches[0] is undefined → guard returns without cancelling
+    expect(() => {
+      spanEl.nativeElement.dispatchEvent(new TouchEvent('touchmove', { touches: [] }));
+    }).not.toThrow();
+    jest.advanceTimersByTime(600);
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
+  });
+
+  it('text setter hides tooltip when set to empty string while tooltip is visible', () => {
+    spanEl.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(document.querySelector('.app-tooltip')).toBeTruthy();
+
+    const dir = spanEl.injector.get(TooltipDirective);
+    dir.text = '';
+    expect(document.querySelector('.app-tooltip')).toBeNull();
+  });
 });
 
 

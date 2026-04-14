@@ -49,10 +49,6 @@ export interface UserProfile {
   savedHomes: SavedHome[];
 }
 
-interface UsernameLookup {
-  uid?: string;
-}
-
 const DEFAULT_ACCOUNTS: MinecraftAccounts = { java: null, bedrock: null, admin: null };
 const DEFAULT_PROFILE: UserProfile = { minecraftAccounts: DEFAULT_ACCOUNTS, savedLocations: [], savedHomes: [] };
 
@@ -414,8 +410,7 @@ export class UserProfileService {
     }
   }
 
-  private belongsToUser(data: unknown, uid: string): boolean {
-    const lookup = data as UsernameLookup | undefined;
-    return !lookup?.uid || lookup.uid === uid;
+  private belongsToUser(data: { uid?: string } | null | undefined, uid: string): boolean {
+    return !data?.uid || data.uid === uid;
   }
 }

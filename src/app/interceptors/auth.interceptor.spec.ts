@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import type { TestRequest } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 
 import { authInterceptor } from './auth.interceptor';
@@ -45,7 +46,7 @@ describe('authInterceptor', () => {
   it('attaches Authorization: Bearer header to /api/ requests when token is available', async () => {
     setup('my-id-token');
 
-    let req: any;
+    let req: TestRequest | undefined;
     http.get('/api/status').subscribe(); // Subscribe to trigger the HTTP request
 
     // Give enough time for the observable chain to process
@@ -66,7 +67,7 @@ describe('authInterceptor', () => {
   it('passes /api/ requests through without Authorization when token is null', async () => {
     setup(null);
 
-    let req: any;
+    let req: TestRequest | undefined;
     http.get('/api/status').subscribe(); // Subscribe to trigger the HTTP request
 
     await new Promise(resolve => setTimeout(resolve, 10));

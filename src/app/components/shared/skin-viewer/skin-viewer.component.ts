@@ -16,7 +16,7 @@ import { RAW_SKIN_RENDER_DELAY_MS } from '../../../constants/ui.constants';
 interface SkinViewerLike {
   canvas: HTMLCanvasElement;
   controls?: { enablePan: boolean };
-  animation: unknown;
+  animation: object | null;
   width: number;
   height: number;
   loadSkin(url: string): void;
@@ -100,46 +100,52 @@ export class SkinViewerComponent implements OnDestroy {
   private async render3D(blobUrl: string, originalUrl: string): Promise<void> {
     if (!this.skinContainer) return;
     if (originalUrl === this.currentSkinUrl) return;
+    const doc = globalThis.document;
+    if (!doc?.createElement) return;
     this.currentSkinUrl = originalUrl;
 
     const containerEl = this.skinContainer.nativeElement;
 
     if (!this.skinViewer) {
-      const { SkinViewer, IdleAnimation } = await import('skinview3d');
+      try {
+        const { SkinViewer, IdleAnimation } = await import('skinview3d');
 
-      // Guard: component may have been destroyed while awaiting the import
-      if (!this.skinContainer) return;
+        // Guard: component may have been destroyed while awaiting the import
+        if (!this.skinContainer) return;
 
-      const initW = Math.max(containerEl.clientWidth  || 220, 60);
-      const initH = Math.max(containerEl.clientHeight || 192, 60);
+        const initW = Math.max(containerEl.clientWidth  || 220, 60);
+        const initH = Math.max(containerEl.clientHeight || 192, 60);
 
-      this.skinViewer = new SkinViewer({
-        canvas: document.createElement('canvas'),
-        width: initW,
-        height: initH,
-        zoom: 0.85,
-        skin: blobUrl,
-      });
-      this.skinViewer.animation = new IdleAnimation();
-      if (this.skinViewer.controls) {
-        this.skinViewer.controls.enablePan = true;
-      }
-      containerEl.innerHTML = '';
-      containerEl.appendChild(this.skinViewer.canvas);
-
-      // Keep canvas in sync with container dimensions
-      this.resizeObserver?.disconnect();
-      this.resizeObserver = new ResizeObserver((entries) => {
-        const entry = entries[0];
-        if (!this.skinViewer) return;
-        if (!entry) return;
-        const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0) {
-          this.skinViewer.width  = width;
-          this.skinViewer.height = height;
+        this.skinViewer = new SkinViewer({
+          canvas: doc.createElement('canvas'),
+          width: initW,
+          height: initH,
+          zoom: 0.85,
+          skin: blobUrl,
+        });
+        this.skinViewer.animation = new IdleAnimation();
+        if (this.skinViewer.controls) {
+          this.skinViewer.controls.enablePan = true;
         }
-      });
-      this.resizeObserver.observe(containerEl);
+        containerEl.innerHTML = '';
+        containerEl.appendChild(this.skinViewer.canvas);
+
+        // Keep canvas in sync with container dimensions
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = new ResizeObserver((entries) => {
+          const entry = entries[0];
+          if (!this.skinViewer) return;
+          if (!entry) return;
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            this.skinViewer.width  = width;
+            this.skinViewer.height = height;
+          }
+        });
+        this.resizeObserver.observe(containerEl);
+      } catch {
+        this.currentSkinUrl = null;
+      }
     } else {
       this.skinViewer.loadSkin(blobUrl);
     }

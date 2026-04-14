@@ -96,4 +96,55 @@ describe('ThemeService', () => {
     flush();
     expect(localStorage.getItem(STORAGE_KEY)).toBe('dark');
   });
+
+  it('falls back to dark when matchMedia prefers-color-scheme is dark (no localStorage)', () => {
+    Object.defineProperty(globalThis, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: () => ({
+        matches: true,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+        media: '(prefers-color-scheme: dark)',
+        onchange: null,
+      }),
+    });
+      const service = TestBed.inject(ThemeService);
+    flush();
+    expect(service.theme()).toBe('dark');
+  });
+
+  it('falls back to light when matchMedia prefers-color-scheme is light (no localStorage)', () => {
+    Object.defineProperty(globalThis, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: () => ({
+        matches: false,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+        media: '(prefers-color-scheme: dark)',
+        onchange: null,
+      }),
+    });
+      const service = TestBed.inject(ThemeService);
+    flush();
+    expect(service.theme()).toBe('light');
+  });
+
+  it('writeTheme silently ignores localStorage.setItem errors (covers writeTheme catch)', () => {
+    const service = TestBed.inject(ThemeService);
+    jest.spyOn(globalThis.localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    expect(() => {
+      service.setTheme('light');
+      flush();
+    }).not.toThrow();
+  });
 });

@@ -62,7 +62,7 @@
           placeholder="Z" type="number" class="home-coord-input">
         </app-ui-input>
       </div>
-      <select (change)="newWorld.set($any($event.target).value)"
+      <select (change)="newWorld.set($any($event.target).value)" aria-label="Home world"
         class="ui-input home-world-select">
         @for (opt of worldOptions; track opt.value) {
           <option [value]="opt.value" [selected]="newWorld() === opt.value">{{ opt.label }}</option>

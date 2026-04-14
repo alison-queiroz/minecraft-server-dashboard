@@ -211,6 +211,27 @@ def test_find_texture_from_sr_skins_no_valid_texture(mocker, tmp_path):
     assert result is None
 
 
+def test_find_texture_from_sr_skins_reads_raw_base64_blob(mocker, tmp_path):
+    """Parses files where the entire content is the raw base64 texture payload."""
+    import base64
+    import hashlib
+    import json as _json
+    import api.skin_resolver as sr
+
+    payload = {"textures": {"SKIN": {"url": "https://textures.minecraft.net/texture/rawblob"}}}
+    raw_b64 = base64.b64encode(_json.dumps(payload).encode()).decode()
+
+    stem = hashlib.sha256("raw-identifier".encode()).hexdigest()
+    skin_file = tmp_path / (stem + ".json")
+    # Ensure strategy 1 yields no value key, forcing strategy 2 parsing.
+    skin_file.write_text(raw_b64, encoding="utf-8")
+
+    mocker.patch.object(sr, "_SR_SKINS_DIR", str(tmp_path))
+    mocker.patch("os.path.isdir", side_effect=lambda p: p == str(tmp_path))
+
+    assert sr._find_texture_from_sr_skins("raw-identifier") == "https://textures.minecraft.net/texture/rawblob"
+
+
 # ── _format_uuid ──────────────────────────────────────────────────────────────
 
 def test_format_uuid_inserts_dashes():
@@ -383,3 +404,18 @@ def test_resolve_skinsrestorer_url_identifier_calls_resolve_url_skin(mocker):
     result = _resolve_skinsrestorer("uuid-123", "fallback")
     mock_resolve.assert_called_once_with("http://minesk.in/abc")
     assert result == "https://textures.minecraft.net/texture/resolved"
+
+
+def test_resolve_skinsrestorer_returns_local_texture_when_available(mocker):
+    """Prefers a local SkinsRestorer texture hit before URL/recommendation logic."""
+    import json as _json
+
+    player_json = _json.dumps({"skinIdentifier": {"identifier": "sr-recommendation-Notch"}})
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data=player_json))
+    mocker.patch(
+        "api.skin_resolver._find_texture_from_sr_skins",
+        return_value="https://textures.minecraft.net/texture/local-hit",
+    )
+
+    assert _resolve_skinsrestorer("uuid-local", "fallback") == "https://textures.minecraft.net/texture/local-hit"

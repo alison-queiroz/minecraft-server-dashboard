@@ -79,12 +79,12 @@ describe('PlayerCardRowComponent', () => {
     }
 
     afterEach(() => {
-      delete (globalThis as unknown as Record<string, unknown>).IntersectionObserver;
+      delete (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'];
     });
 
     it('sets up IntersectionObserver for non-raw-avatar player', () => {
       const observeSpy = jest.fn();
-      (globalThis as unknown as Record<string, unknown>).IntersectionObserver = makeMockObserver(observeSpy, jest.fn());
+      (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'] = makeMockObserver(observeSpy, jest.fn());
 
       const f = TestBed.createComponent(PlayerCardRowComponent);
       f.componentRef.setInput('player', mcHeadsPlayer);
@@ -96,7 +96,7 @@ describe('PlayerCardRowComponent', () => {
     it('calls fetchAvatarIfNeeded when the element intersects', () => {
       const fetchSpy = jest.spyOn(TestBed.inject(PlayerService), 'fetchAvatarIfNeeded').mockImplementation(() => undefined);
       const { MockIO, getCallback } = makeMockObserverWithCallback(jest.fn());
-      (globalThis as unknown as Record<string, unknown>).IntersectionObserver = MockIO;
+      (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'] = MockIO;
 
       const f = TestBed.createComponent(PlayerCardRowComponent);
       f.componentRef.setInput('player', mcHeadsPlayer);
@@ -110,7 +110,7 @@ describe('PlayerCardRowComponent', () => {
     it('does not call fetchAvatarIfNeeded when entry is not intersecting', () => {
       const fetchSpy = jest.spyOn(TestBed.inject(PlayerService), 'fetchAvatarIfNeeded').mockImplementation(() => undefined);
       const { MockIO, getCallback } = makeMockObserverWithCallback(jest.fn());
-      (globalThis as unknown as Record<string, unknown>).IntersectionObserver = MockIO;
+      (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'] = MockIO;
 
       const f = TestBed.createComponent(PlayerCardRowComponent);
       f.componentRef.setInput('player', mcHeadsPlayer);
@@ -123,7 +123,7 @@ describe('PlayerCardRowComponent', () => {
 
     it('disconnects observer on component destroy', () => {
       const disconnectSpy = jest.fn();
-      (globalThis as unknown as Record<string, unknown>).IntersectionObserver = makeMockObserver(jest.fn(), disconnectSpy);
+      (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'] = makeMockObserver(jest.fn(), disconnectSpy);
 
       const f = TestBed.createComponent(PlayerCardRowComponent);
       f.componentRef.setInput('player', mcHeadsPlayer);

@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { LucideSearch } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { PlayerService } from '../../../services/player/player.service';
@@ -8,7 +7,7 @@ import { PlayerService } from '../../../services/player/player.service';
   selector: 'app-player-search',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, IconComponent],
+  imports: [IconComponent],
   templateUrl: './player-search.component.html',
   styleUrls: ['./player-search.component.scss'],
 })

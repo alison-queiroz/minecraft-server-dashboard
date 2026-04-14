@@ -277,6 +277,17 @@ describe('PlayerService', () => {
       httpMock.expectOne('/api/players').flush([]);
       expect(service.players().length).toBe(MOCK_PLAYERS.length);
     });
+    it('falls back to existing player fields when API response has null/undefined values', () => {
+      service.callEnrichFromApi();
+      // Partial response: level/health/dimension are null — should keep existing player values via ??
+      httpMock.expectOne('/api/players').flush([{
+        name: 'Steve', level: null, health: null, dimension: null,
+        pos: null, last_seen: null, play_hours: null, advancement_count: null, homes: null,
+      }]);
+      const steve = service.players().find((p: Player) => p.name === 'Steve');
+      expect(steve?.level).toBe(10);
+      expect(steve?.health).toBe(20);
+    });
 
     it('handles HTTP errors silently', () => {
       service.callEnrichFromApi();

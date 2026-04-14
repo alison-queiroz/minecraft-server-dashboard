@@ -5,8 +5,8 @@
     </span>
     <input
       type="text"
-      [ngModel]="service.searchTerm()"
-      (ngModelChange)="service.searchTerm.set($event)"
+      [value]="service.searchTerm()"
+      (input)="service.searchTerm.set($any($event.target).value)"
       placeholder="Search by name, UUID or dimension..."
       class="search-input"
     />

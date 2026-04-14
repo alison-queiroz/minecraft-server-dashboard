@@ -42,6 +42,7 @@ testem.log
 Thumbs.db
 
 .coverage
+coverage.xml
 */__pycache__/*
 
 # Playwright e2e output

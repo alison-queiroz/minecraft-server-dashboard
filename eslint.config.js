@@ -25,6 +25,22 @@ module.exports = defineConfig(
     },
     processor: angular.processInlineTemplates,
     rules: {
+      // Variable declarations
+      'prefer-const': 'error',
+
+      // Type safety: forbid `any` and `unknown`
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-restricted-types': [
+        'error',
+        {
+          types: {
+            unknown: {
+              message: 'Avoid `unknown`; use a specific type instead.',
+            },
+          },
+        },
+      ],
+
       // Import hygiene
       'no-duplicate-imports': 'off',
       '@typescript-eslint/consistent-type-imports': ['warn', { prefer: 'type-imports' }],
@@ -85,7 +101,7 @@ module.exports = defineConfig(
     files: ['**/*.spec.ts'],
     rules: {
       // Keep tests strict, but practical for async/timers and explicit stubs.
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-restricted-types': 'off',
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/unbound-method': 'off',

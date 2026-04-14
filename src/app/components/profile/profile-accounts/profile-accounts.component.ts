@@ -137,7 +137,7 @@ export class ProfileAccountsComponent implements OnInit {
       await this.profileService.linkAccount(type, username);
       this.accountInputs.update(v => ({ ...v, [type]: '' }));
       this.gamePasswords.update(v => ({ ...v, [type]: '' }));
-    } catch (err: unknown) {
+    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.accountError.set(msg.includes('permission') || msg.includes('insufficient')
         ? 'Permission denied. Check your Firestore rules or try again.'
@@ -154,7 +154,7 @@ export class ProfileAccountsComponent implements OnInit {
       await this.profileService.unlinkAccount(type);
       this.accountInputs.update(v => ({ ...v, [type]: '' }));
       this.gamePasswords.update(v => ({ ...v, [type]: '' }));
-    } catch (err: unknown) {
+    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.accountError.set(msg.includes('permission') || msg.includes('insufficient')
         ? 'Permission denied. Check your Firestore rules or try again.'
