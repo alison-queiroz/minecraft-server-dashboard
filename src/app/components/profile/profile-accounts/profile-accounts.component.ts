@@ -18,6 +18,7 @@ import { PlayerFaceComponent } from '../../shared/player-face/player-face.compon
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ActionButtonComponent } from '../../shared/action-button/action-button.component';
 import { UiInputComponent } from '../../shared/ui-input/ui-input.component';
+import { MinecraftCredentialService } from '../../../services/minecraft-credential/minecraft-credential.service';
 
 @Component({
   selector: 'app-profile-accounts',
@@ -32,6 +33,7 @@ export class ProfileAccountsComponent implements OnInit {
   protected readonly profileService = inject(UserProfileService);
   private readonly playerService = inject(PlayerService);
   private readonly http = inject(HttpClient);
+  private readonly minecraftCredentialService = inject(MinecraftCredentialService);
 
   protected readonly accountInputs = signal({ java: '', bedrock: '', admin: '' });
   protected readonly gamePasswords = signal({ java: '', bedrock: '', admin: '' });
@@ -123,13 +125,8 @@ export class ProfileAccountsComponent implements OnInit {
         this.accountError.set('Please enter your in-game password to verify ownership.');
         return;
       }
-      const result = await firstValueFrom(
-        this.http.post<{ valid: boolean; error?: string }>(
-          '/api/verify-minecraft-password',
-          { username, password },
-        )
-      );
-      if (!result.valid) {
+      const valid = await this.minecraftCredentialService.verify(username, password);
+      if (!valid) {
         this.accountError.set('Incorrect in-game password. Please try again.');
         return;
       }

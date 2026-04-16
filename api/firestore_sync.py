@@ -19,11 +19,12 @@ _LOCAL_SNAPSHOTS_PATH = os.environ.get(
 _LOCAL_SNAPSHOTS_MAX_DAYS = 365
 
 _firebase_initialized = False
+_firebase_init_warned = False
 
 
 def _ensure_firebase() -> bool:
     """Initialize Firebase Admin SDK if not already done. Returns True on success."""
-    global _firebase_initialized
+    global _firebase_initialized, _firebase_init_warned
     if _firebase_initialized:
         return True
     try:
@@ -40,7 +41,11 @@ def _ensure_firebase() -> bool:
         _firebase_initialized = True
         return True
     except Exception as exc:
-        logger.warning("Firebase init failed in sync thread: %s", exc)
+        if not _firebase_init_warned:
+            logger.warning("Firebase init failed in sync thread: %s", exc)
+            _firebase_init_warned = True
+        else:
+            logger.debug("Firebase init failed in sync thread: %s", exc)
         return False
 
 

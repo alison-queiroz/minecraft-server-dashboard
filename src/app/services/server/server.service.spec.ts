@@ -57,7 +57,6 @@ describe('ServerService', () => {
     TestBed.inject(HttpTestingController).verify();
   });
 
-  // â”€â”€â”€ Java server ONLINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Java server is ONLINE', () => {
     let service: ServerService;
 
@@ -97,7 +96,6 @@ describe('ServerService', () => {
 
   });
 
-  // â”€â”€â”€ Java server OFFLINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Java server is OFFLINE', () => {
     let service: ServerService;
 
@@ -113,7 +111,6 @@ describe('ServerService', () => {
     });
   });
 
-  // â”€â”€â”€ Java server HTTP error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Java server returns an HTTP error', () => {
     let service: ServerService;
 
@@ -134,7 +131,6 @@ describe('ServerService', () => {
     });
   });
 
-  // â”€â”€â”€ Bedrock ONLINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Bedrock server is ONLINE', () => {
     let service: ServerService;
 
@@ -167,7 +163,6 @@ describe('ServerService', () => {
     });
   });
 
-  // â”€â”€ setInterval refresh path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('setInterval triggers a refresh of both statuses', () => {
     it('calls fetchStatus and fetchBedrockStatus again after the interval fires', () => {
       let intervalCallback: (() => void) | undefined;
@@ -194,7 +189,6 @@ describe('ServerService', () => {
     });
   });
 
-  // â”€â”€â”€ Bedrock OFFLINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Bedrock server is OFFLINE', () => {
     let service: ServerService;
 
@@ -211,7 +205,6 @@ describe('ServerService', () => {
     });
   });
 
-  // â”€â”€â”€ Bedrock HTTP error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   describe('when Bedrock server returns an HTTP error', () => {
     let service: ServerService;
 

@@ -118,8 +118,6 @@ describe('UserProfileService', () => {
     expect(service.minecraftUsername()).toBeNull();
   });
 
-  // â”€â”€ loadProfile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
   describe('loadProfile()', () => {
     it('does nothing when not authenticated', async () => {
       TestBed.resetTestingModule();
@@ -161,9 +159,20 @@ describe('UserProfileService', () => {
       await service.loadProfile();
       expect(service.isLoading()).toBe(false);
     });
-  });
 
-  // â”€â”€ linkAccount â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    it('sets isLoaded to true after a successful load', async () => {
+      expect(service.isLoaded()).toBe(false);
+      await service.loadProfile();
+      expect(service.isLoaded()).toBe(true);
+    });
+
+    it('does not call Firestore again when loadProfile() is called twice for the same user', async () => {
+      await service.loadProfile();
+      mockGetDoc.mockClear();
+      await service.loadProfile();
+      expect(mockGetDoc).not.toHaveBeenCalled();
+    });
+  });
 
   describe('linkAccount()', () => {
     it('does nothing when not authenticated', async () => {
@@ -215,8 +224,6 @@ describe('UserProfileService', () => {
       expect(mockDeleteDoc).not.toHaveBeenCalled();
     });
   });
-
-  // â”€â”€ unlinkAccount â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('unlinkAccount()', () => {
     it('does nothing when not authenticated', async () => {
@@ -270,12 +277,11 @@ describe('UserProfileService', () => {
     });
   });
 
-  // â”€â”€ Location CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-  describe('addLocation()', () => {
-    it('does nothing when not authenticated', async () => {
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
+  describe('Location CRUD', () => {
+    describe('addLocation()', () => {
+      it('does nothing when not authenticated', async () => {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
         providers: [
           UserProfileService,
           { provide: AuthService, useValue: makeAuthStub(null) },
@@ -353,8 +359,6 @@ describe('UserProfileService', () => {
       expect(service.savedLocations()).toHaveLength(0);
     });
   });
-
-  // â”€â”€ Home CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('addHome()', () => {
     it('does nothing when not authenticated', async () => {
@@ -476,8 +480,6 @@ describe('UserProfileService', () => {
     });
   });
 
-  // â”€â”€ syncHomesFromServer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
   describe('syncHomesFromServer()', () => {
     it('does nothing when not authenticated', async () => {
       TestBed.resetTestingModule();
@@ -529,8 +531,6 @@ describe('UserProfileService', () => {
       expect(mockUpdateDoc).not.toHaveBeenCalled();
     });
   });
-
-  // â”€â”€ upsertHomesFromLocal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('upsertHomesFromLocal()', () => {
     it('does nothing when not authenticated', async () => {
@@ -598,6 +598,8 @@ describe('UserProfileService', () => {
     });
   });
 
+  }); // end describe('Location CRUD')
+
   describe('linkAccount() previous username belongs to another user', () => {
     it('does NOT delete reverse-lookup when previous username belongs to a different user', async () => {
       mockGetDoc
@@ -608,8 +610,6 @@ describe('UserProfileService', () => {
       expect(mockDeleteDoc).not.toHaveBeenCalled();
     });
   });
-
-  // â”€â”€ getPublicHomesStream â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('getPublicHomesStream()', () => {
     it('emits empty array when username doc does not exist', async () => {
@@ -674,7 +674,7 @@ describe('UserProfileService', () => {
     });
   });
 
-  // â”€â”€ getPublicLocationsStream â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── getPublicLocationsStream ──────────────────────────────────────────────
 
   describe('getPublicLocationsStream()', () => {
     it('emits empty array when username doc does not exist', async () => {

@@ -36,6 +36,14 @@ export async function mockFirebaseAuth(page: Page): Promise<void> {
     // Consumed by AuthService in dev mode to bypass Firebase restore during e2e.
     (globalThis as Record<string, unknown>)['__E2E_AUTH_USER__'] = user;
 
+    // Consumed by UserProfileService to skip Firestore calls and return a
+    // pre-linked profile so the auth guard's Minecraft account check passes.
+    (globalThis as Record<string, unknown>)['__E2E_PROFILE__'] = {
+      minecraftAccounts: { java: 'TestPlayer', bedrock: null, admin: null },
+      savedLocations: [],
+      savedHomes: [],
+    };
+
     // @ts-expect-error – runtime patch before module loading
     window.__PLAYWRIGHT_MOCK_USER__ = user;
 

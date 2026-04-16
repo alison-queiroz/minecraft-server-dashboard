@@ -86,18 +86,13 @@ def test_backups_endpoint_google_api_failure(client, mocker):
     assert response.json == {"error": "Failed to fetch backups"}
 
 
-def test_backups_endpoint_dev_mode_missing_drive_credentials_returns_empty_list(client, mocker):
-    """In dev fallback mode, missing Drive SA key should return [] instead of 500."""
+def test_backups_endpoint_firebase_unavailable_returns_503(client, mocker):
+    """Returns 503 when Firebase is unavailable (auth cannot be verified)."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
-    mocker.patch(
-        "api.server_api.service_account.Credentials.from_service_account_file",
-        side_effect=FileNotFoundError("drive-service-account.json not found"),
-    )
 
     response = client.get("/api/backups")
 
-    assert response.status_code == 200
-    assert response.json == []
+    assert response.status_code == 503
 
 
 def test_require_auth_invalid_token(client, mocker):
@@ -112,20 +107,13 @@ def test_require_auth_invalid_token(client, mocker):
 
     assert response.status_code == 401
 
-def test_require_auth_dev_fallback(client, mocker):
-    """Ensure the endpoint allows access without a token if Firebase fails to initialize (dev mode)."""
-    # Force _FIREBASE_INITIALIZED to False
+def test_require_auth_firebase_unavailable_returns_503(client, mocker):
+    """Ensure the endpoint returns 503 when Firebase fails to initialize."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
 
-    # Mock get_players so we don't try to read actual NBT files during the test
-    mocked_players = [{"name": "DevSteve", "level": 10}]
-    mocker.patch("api.server_api.get_players", return_value=mocked_players)
-
-    # Request WITHOUT headers
     response = client.get("/api/players")
 
-    assert response.status_code == 200
-    assert response.json == mocked_players
+    assert response.status_code == 503
 
 def test_init_firebase_success(mocker):
     """Ensure Firebase initializes correctly when the credentials file exists."""
@@ -350,11 +338,8 @@ def test_analytics_returns_sorted_local_snapshots(client, mocker):
         {"ts": 1700000010, "count": 1, "online": ["Steve"]},
     ]
     mocker.patch("api.server_api.read_local_snapshots", return_value=list(snapshots))
-
-    # Firestore unavailable — skip the remote merge
-    mocker.patch("api.server_api._init_firebase")
-    import api.server_api as srv
-    srv._FIREBASE_INITIALIZED = False  # disable Firestore merge branch
+    # Firestore unavailable — the except branch is taken and only local data is returned
+    mocker.patch("firebase_admin.firestore.client", side_effect=Exception("no firestore"))
 
     headers = {"Authorization": "Bearer fake_token"}
     response = client.get("/api/analytics?period=week", headers=headers)
@@ -371,9 +356,8 @@ def test_analytics_returns_empty_list_when_no_snapshots(client, mocker):
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
     mocker.patch("api.server_api.read_local_snapshots", return_value=[])
-    mocker.patch("api.server_api._init_firebase")
-    import api.server_api as srv
-    srv._FIREBASE_INITIALIZED = False
+    # Firestore unavailable — the except branch is taken and only local data is returned
+    mocker.patch("firebase_admin.firestore.client", side_effect=Exception("no firestore"))
 
     headers = {"Authorization": "Bearer fake_token"}
     response = client.get("/api/analytics?period=day", headers=headers)
@@ -832,22 +816,25 @@ def test_backups_endpoint_protected_mode_missing_credentials_returns_500(client,
 
 def test_verify_minecraft_password_missing_fields_returns_400(client, mocker):
     """Returns 400 when username or password is missing."""
-    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
-    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "test_uid"})
 
-    response = client.post("/api/verify-minecraft-password", json={"username": "", "password": ""})
+    headers = {"Authorization": "Bearer fake_token"}
+    response = client.post("/api/verify-minecraft-password", json={"username": "", "password": ""}, headers=headers)
     assert response.status_code == 400
     assert response.json["valid"] is False
 
 
 def test_verify_minecraft_password_rejects_overlong_inputs(client, mocker):
     """Returns 400 for excessively long username/password values."""
-    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
-    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "test_uid"})
 
+    headers = {"Authorization": "Bearer fake_token"}
     response = client.post(
         "/api/verify-minecraft-password",
         json={"username": "a" * 65, "password": "x"},
+        headers=headers,
     )
     assert response.status_code == 400
     assert response.json == {"valid": False}
@@ -859,8 +846,9 @@ def test_verify_minecraft_password_unknown_user_returns_false(client, mocker):
     import types
     import sys
 
-    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
-    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "test_uid"})
+    mocker.patch("api.server_api._check_rate_limit", return_value=True)
 
     fake_conn = MagicMock()
     fake_conn.execute.return_value.fetchone.return_value = None
@@ -868,9 +856,11 @@ def test_verify_minecraft_password_unknown_user_returns_false(client, mocker):
 
     fake_bcrypt = types.SimpleNamespace(checkpw=lambda *_: False)
     mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    headers = {"Authorization": "Bearer fake_token"}
     response = client.post(
         "/api/verify-minecraft-password",
         json={"username": "Steve", "password": "secret"},
+        headers=headers,
     )
     assert response.status_code == 200
     assert response.json == {"valid": False}
@@ -882,8 +872,9 @@ def test_verify_minecraft_password_bcrypt_branch_normalizes_prefix(client, mocke
     import types
     import sys
 
-    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
-    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "test_uid"})
+    mocker.patch("api.server_api._check_rate_limit", return_value=True)
 
     fake_conn = MagicMock()
     fake_conn.execute.return_value.fetchone.return_value = ("$2a$10$abcdefghijklmnopqrstuvwxyzABCDE1234567890abcd",)
@@ -893,9 +884,11 @@ def test_verify_minecraft_password_bcrypt_branch_normalizes_prefix(client, mocke
     fake_bcrypt = types.SimpleNamespace(checkpw=checkpw)
 
     mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    headers = {"Authorization": "Bearer fake_token"}
     response = client.post(
         "/api/verify-minecraft-password",
         json={"username": "Steve", "password": "secret"},
+        headers=headers,
     )
     assert response.status_code == 200
     assert response.json == {"valid": True}
@@ -909,8 +902,9 @@ def test_verify_minecraft_password_sha_branch(client, mocker):
     import types
     import sys
 
-    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
-    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "test_uid"})
+    mocker.patch("api.server_api._check_rate_limit", return_value=True)
 
     password = "secret"
     salt = "pepper"
@@ -924,9 +918,11 @@ def test_verify_minecraft_password_sha_branch(client, mocker):
 
     fake_bcrypt = types.SimpleNamespace(checkpw=lambda *_: False)
     mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    headers = {"Authorization": "Bearer fake_token"}
     response = client.post(
         "/api/verify-minecraft-password",
         json={"username": "Steve", "password": password},
+        headers=headers,
     )
     assert response.status_code == 200
     assert response.json == {"valid": True}
@@ -938,8 +934,9 @@ def test_verify_minecraft_password_unknown_hash_format_returns_false(client, moc
     import types
     import sys
 
-    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
-    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "test_uid"})
+    mocker.patch("api.server_api._check_rate_limit", return_value=True)
 
     fake_conn = MagicMock()
     fake_conn.execute.return_value.fetchone.return_value = ("plain-text-hash",)
@@ -947,9 +944,11 @@ def test_verify_minecraft_password_unknown_hash_format_returns_false(client, moc
 
     fake_bcrypt = types.SimpleNamespace(checkpw=lambda *_: False)
     mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    headers = {"Authorization": "Bearer fake_token"}
     response = client.post(
         "/api/verify-minecraft-password",
         json={"username": "Steve", "password": "secret"},
+        headers=headers,
     )
     assert response.status_code == 200
     assert response.json == {"valid": False}
@@ -960,15 +959,18 @@ def test_verify_minecraft_password_db_missing_returns_503(client, mocker):
     import types
     import sys
 
-    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
-    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "test_uid"})
+    mocker.patch("api.server_api._check_rate_limit", return_value=True)
     mocker.patch("sqlite3.connect", side_effect=FileNotFoundError("missing db"))
 
     fake_bcrypt = types.SimpleNamespace(checkpw=lambda *_: False)
     mocker.patch.dict(sys.modules, {"bcrypt": fake_bcrypt})
+    headers = {"Authorization": "Bearer fake_token"}
     response = client.post(
         "/api/verify-minecraft-password",
         json={"username": "Steve", "password": "secret"},
+        headers=headers,
     )
     assert response.status_code == 503
     assert response.json["valid"] is False
@@ -976,13 +978,16 @@ def test_verify_minecraft_password_db_missing_returns_503(client, mocker):
 
 def test_verify_minecraft_password_unexpected_error_returns_500(client, mocker):
     """Returns 500 when password verification raises an unexpected exception."""
-    mocker.patch("api.server_api._FIREBASE_INITIALIZED", False)
-    mocker.patch("api.server_api._init_firebase")
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "test_uid"})
+    mocker.patch("api.server_api._check_rate_limit", return_value=True)
     mocker.patch("sqlite3.connect", side_effect=RuntimeError("boom"))
 
+    headers = {"Authorization": "Bearer fake_token"}
     response = client.post(
         "/api/verify-minecraft-password",
         json={"username": "Steve", "password": "secret"},
+        headers=headers,
     )
     assert response.status_code == 500
     assert response.json["valid"] is False

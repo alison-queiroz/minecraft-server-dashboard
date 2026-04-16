@@ -8,21 +8,34 @@ import type { Mock } from 'vitest';
 
 import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth/auth.service';
+import { UserProfileService } from '../services/user-profile/user-profile.service';
+
+const makeMinecraftAccounts = (java: string | null = null) => ({ java, bedrock: null, admin: null });
+
+const makeProfileStub = (java: string | null = 'Steve') => ({
+  minecraftAccounts: signal(makeMinecraftAccounts(java)),
+  isLoading: signal(false),
+  isLoaded: signal(false),
+  loadProfile: jest.fn().mockResolvedValue(undefined),
+});
 
 describe('authGuard', () => {
   let isLoading = signal(false);
   let currentUser = signal<User | null>(null);
   let mockRouter: { navigate: Mock };
+  let profileStub: ReturnType<typeof makeProfileStub>;
 
   beforeEach(() => {
     isLoading = signal(false);
     currentUser = signal<User | null>(null);
     mockRouter = { navigate: jest.fn() };
+    profileStub = makeProfileStub('Steve');
 
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthService, useValue: { isLoading, currentUser } },
         { provide: Router, useValue: mockRouter },
+        { provide: UserProfileService, useValue: profileStub },
       ],
     });
   });
@@ -35,7 +48,7 @@ describe('authGuard', () => {
     );
   }
 
-  it('returns true when the user is authenticated', async () => {
+  it('returns true when the user is authenticated and has a linked Java account', async () => {
     currentUser.set({ uid: 'user-abc' } as User);
     expect(await runGuard()).toBe(true);
   });
@@ -47,10 +60,24 @@ describe('authGuard', () => {
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
   });
 
-  it('does not navigate to /login when the user is authenticated', async () => {
+  it('does not navigate to /login when the user is authenticated and has a linked Java account', async () => {
     currentUser.set({ uid: 'user-abc' } as User);
     await runGuard();
     expect(mockRouter.navigate).not.toHaveBeenCalled();
+  });
+
+  it('redirects to /login when Firebase-authed but no Java account is linked', async () => {
+    currentUser.set({ uid: 'user-abc' } as User);
+    profileStub.minecraftAccounts.set(makeMinecraftAccounts(null));
+    const result = await runGuard();
+    expect(result).toBe(false);
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('calls loadProfile() to ensure the profile is loaded before checking', async () => {
+    currentUser.set({ uid: 'user-abc' } as User);
+    await runGuard();
+    expect(profileStub.loadProfile).toHaveBeenCalled();
   });
 });
 

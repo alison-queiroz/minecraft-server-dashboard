@@ -7,6 +7,8 @@ import { signal } from '@angular/core';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../services/auth/auth.service';
 import { ServerService } from '../../services/server/server.service';
+import { UserProfileService } from '../../services/user-profile/user-profile.service';
+import { MinecraftCredentialService } from '../../services/minecraft-credential/minecraft-credential.service';
 
 const makeAuthStub = () => ({
   currentUser: signal(null),
@@ -34,6 +36,18 @@ const makeServerStub = () => ({
   bedrockProtocol: signal(null),
 });
 
+const makeProfileStub = () => ({
+  minecraftAccounts: signal({ java: null as string | null, bedrock: null, admin: null }),
+  isLoading: signal(false),
+  isLoaded: signal(false),
+  loadProfile: jest.fn().mockResolvedValue(undefined),
+  linkAccount: jest.fn().mockResolvedValue(undefined),
+});
+
+const makeMinecraftStub = () => ({
+  verify: jest.fn().mockResolvedValue(true),
+});
+
 const flushMicrotasks = (): Promise<void> => new Promise<void>((resolve) => queueMicrotask(resolve));
 
 describe('LoginComponent', () => {
@@ -51,6 +65,8 @@ describe('LoginComponent', () => {
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authStub },
         { provide: ServerService, useValue: makeServerStub() },
+        { provide: UserProfileService, useValue: makeProfileStub() },
+        { provide: MinecraftCredentialService, useValue: makeMinecraftStub() },
       ],
     }).compileComponents();
 
@@ -141,6 +157,77 @@ describe('LoginComponent', () => {
     fixture.detectChanges();
     const errorEl = (fixture.nativeElement as HTMLElement).querySelector('.login-error');
     expect(errorEl?.textContent).toContain('Sign-in failed. Please try again.');
+  });
+
+  it('advances to the Minecraft step after a successful Google sign-in', async () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    fixture.detectChanges();
+    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.login-button')!;
+    button.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const comp = fixture.componentInstance as unknown as { step: ReturnType<typeof signal<string>> };
+    expect(comp.step()).toBe('minecraft');
+    expect((fixture.nativeElement as HTMLElement).querySelector('#mc-name')).toBeTruthy();
+  });
+
+  it('shows an error when submitting Minecraft credentials with missing fields', async () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    const comp = fixture.componentInstance as unknown as {
+      step: ReturnType<typeof signal<string>>;
+      submitMinecraft(): Promise<void>;
+    };
+    (comp.step as ReturnType<typeof signal<string>> & { set(v: string): void }).set('minecraft');
+    fixture.detectChanges();
+    await comp.submitMinecraft();
+    fixture.detectChanges();
+    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('.login-error');
+    expect(errorEl?.textContent).toContain('Please enter your in-game name and password.');
+  });
+
+  it('shows an error when the Minecraft credentials are invalid', async () => {
+    const mcStub = TestBed.inject(MinecraftCredentialService) as unknown as { verify: ReturnType<typeof jest.fn> };
+    mcStub.verify.mockResolvedValueOnce(false);
+
+    const fixture = TestBed.createComponent(LoginComponent);
+    const comp = fixture.componentInstance as unknown as {
+      step: ReturnType<typeof signal<string>> & { set(v: string): void };
+      mcName: ReturnType<typeof signal<string>> & { set(v: string): void };
+      mcPassword: ReturnType<typeof signal<string>> & { set(v: string): void };
+      submitMinecraft(): Promise<void>;
+    };
+    comp.step.set('minecraft');
+    comp.mcName.set('Steve');
+    comp.mcPassword.set('wrongpassword');
+    fixture.detectChanges();
+
+    await comp.submitMinecraft();
+    fixture.detectChanges();
+
+    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('.login-error');
+    expect(errorEl?.textContent).toContain('Incorrect in-game credentials');
+  });
+
+  it('links the account and navigates to / when credentials are valid', async () => {
+    const profileStub = TestBed.inject(UserProfileService) as unknown as {
+      linkAccount: ReturnType<typeof jest.fn>;
+    };
+
+    const fixture = TestBed.createComponent(LoginComponent);
+    const comp = fixture.componentInstance as unknown as {
+      step: ReturnType<typeof signal<string>> & { set(v: string): void };
+      mcName: ReturnType<typeof signal<string>> & { set(v: string): void };
+      mcPassword: ReturnType<typeof signal<string>> & { set(v: string): void };
+      submitMinecraft(): Promise<void>;
+    };
+    comp.step.set('minecraft');
+    comp.mcName.set('Steve');
+    comp.mcPassword.set('correct');
+    fixture.detectChanges();
+
+    await comp.submitMinecraft();
+
+    expect(profileStub.linkAccount).toHaveBeenCalledWith('java', 'Steve');
   });
 });
 

@@ -434,6 +434,7 @@ def _background_sync_loop() -> None:
     # Trigger an immediate sync on startup so Firestore reflects the current
     # code (e.g. newly added EssentialsX homes) without waiting for a .dat change.
     last_change = time.time() - _DEBOUNCE
+    next_sync_after: float = 0.0  # 0 = fire immediately on first iteration
 
     while True:
         time.sleep(5)
@@ -449,10 +450,9 @@ def _background_sync_loop() -> None:
             logger.info("SkinsRestorer player files changed — skin URL cache cleared.")
 
         now = time.time()
-        quiet_for   = now - last_change
-        since_last  = now - last_sync + backoff
+        quiet_for = now - last_change
 
-        if quiet_for >= _DEBOUNCE and since_last >= _MIN_INTERVAL:
+        if quiet_for >= _DEBOUNCE and now >= next_sync_after:
             try:
                 # Always force a fresh fetch so _fetch_live() is called even
                 # if the 60-second player cache has not expired yet.
@@ -460,10 +460,12 @@ def _background_sync_loop() -> None:
                 get_players()
                 last_sync = time.time()
                 backoff = 0.0
+                next_sync_after = last_sync + _MIN_INTERVAL
                 logger.debug("Event-driven sync completed.")
             except Exception:
                 backoff = min(backoff + 60.0, 300.0)
-                logger.warning("Background player sync failed (backoff %.0fs)", backoff, exc_info=True)
+                next_sync_after = now + _MIN_INTERVAL + backoff
+                logger.warning("Background player sync failed (next retry in %.0fs)", _MIN_INTERVAL + backoff, exc_info=True)
 
 
 _bg_sync_thread: threading.Thread | None = None

@@ -64,6 +64,13 @@ export class UserProfileService {
   readonly profile = signal<UserProfile>(DEFAULT_PROFILE);
   readonly isLoading = signal(false);
 
+  /** True once the profile has been successfully loaded for the current user. */
+  readonly isLoaded = signal(false);
+
+  /** Prevents concurrent loads for the same UID. */
+  private _loadedUid: string | null = null;
+  private _loadingPromise: Promise<void> | null = null;
+
   readonly savedLocations = computed(() => this.profile().savedLocations);
   readonly savedHomes = computed(() => this.profile().savedHomes ?? []);
   readonly minecraftAccounts = computed(() => this.profile().minecraftAccounts);
@@ -75,9 +82,32 @@ export class UserProfileService {
   async loadProfile(): Promise<void> {
     const uid = this.auth.currentUser()?.uid;
     if (!uid) return;
+    // Return immediately if already loaded for this user session.
+    if (this._loadedUid === uid) return;
+    // Deduplicate concurrent calls (e.g. guard fires on multiple routes at once).
+    if (this._loadingPromise) return this._loadingPromise;
 
+    this._loadingPromise = this._doLoadProfile(uid);
+    try {
+      await this._loadingPromise;
+    } finally {
+      this._loadingPromise = null;
+    }
+  }
+
+  private async _doLoadProfile(uid: string): Promise<void> {
     this.isLoading.set(true);
     try {
+      // E2E test bypass – avoids real Firestore calls in Playwright tests.
+      const e2eProfile = !environment.production
+        ? (globalThis as { __E2E_PROFILE__?: Partial<UserProfile> }).__E2E_PROFILE__
+        : undefined;
+      if (e2eProfile) {
+        this.profile.set({ ...DEFAULT_PROFILE, ...e2eProfile });
+        this._loadedUid = uid;
+        return;
+      }
+
       const snap = await getDoc(doc(this.db, 'users', uid));
       if (snap.exists()) {
         const raw = snap.data() as Partial<UserProfile> & { minecraftUsername?: string };
@@ -89,8 +119,10 @@ export class UserProfileService {
       } else {
         this.profile.set(DEFAULT_PROFILE);
       }
+      this._loadedUid = uid;
     } finally {
       this.isLoading.set(false);
+      this.isLoaded.set(true);
     }
   }
 

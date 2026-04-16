@@ -1,6 +1,10 @@
+import hashlib
+import hmac
 import logging
 import os
+import threading
 import time
+from collections import defaultdict
 from functools import wraps
 
 from flask import Flask, jsonify, request, abort
@@ -35,7 +39,26 @@ def _init_firebase():
         _FIREBASE_INITIALIZED = True
         logger.info("Firebase Admin SDK initialized.")
     except Exception as exc:
-        logger.warning("Firebase Admin SDK not available (%s). API is UNPROTECTED.", exc)
+        logger.warning("Firebase Admin SDK not available (%s). Refusing all API requests.", exc)
+
+
+# ── In-memory rate limiter (per Firebase UID, falls back to IP) ───────────────
+_RL_WINDOW = 60   # seconds
+_RL_MAX = 10      # max verify attempts per window per key
+_rl_lock = threading.Lock()
+_rl_attempts: dict[str, list[float]] = defaultdict(list)
+
+
+def _check_rate_limit(key: str) -> bool:
+    """Returns True if the request is within limits, False if it should be rejected."""
+    now = time.time()
+    with _rl_lock:
+        window = [t for t in _rl_attempts[key] if now - t < _RL_WINDOW]
+        _rl_attempts[key] = window
+        if len(window) >= _RL_MAX:
+            return False
+        _rl_attempts[key].append(now)
+        return True
 
 
 def require_auth(f):
@@ -43,7 +66,9 @@ def require_auth(f):
     def decorated(*args, **kwargs):
         _init_firebase()
         if not _FIREBASE_INITIALIZED:
-            return f(*args, **kwargs)
+            # Firebase unavailable — refuse all requests rather than silently
+            # falling back to unauthenticated access.
+            abort(503)
         from firebase_admin import auth as firebase_auth
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
@@ -384,8 +409,20 @@ def verify_minecraft_password():
     if len(username) > 64 or len(password) > 256:
         return jsonify({"valid": False}), 400
 
+    # Rate-limit per authenticated Firebase UID (falling back to remote IP).
+    from firebase_admin import auth as _fa
+    rl_key = request.remote_addr or "unknown"
     try:
-        import hashlib
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            decoded = _fa.verify_id_token(auth_header[len("Bearer "):])
+            rl_key = decoded.get("uid", rl_key)
+    except Exception:
+        pass  # fall back to IP-based key
+    if not _check_rate_limit(rl_key):
+        return jsonify({"valid": False, "error": "Too many attempts. Please wait."}), 429
+
+    try:
         import sqlite3
         import bcrypt as _bcrypt
 
@@ -419,7 +456,8 @@ def verify_minecraft_password():
                 expected = parts[3]
                 inner = hashlib.sha256(password.encode("utf-8")).hexdigest()
                 outer = hashlib.sha256((inner + salt).encode("utf-8")).hexdigest()
-                return jsonify({"valid": outer == expected})
+                # Use constant-time comparison to prevent timing oracle attacks.
+                return jsonify({"valid": hmac.compare_digest(outer, expected)})
 
         # Unknown hash format — cannot verify.
         logger.warning("Unknown AuthMe hash format for user %s: %s", username, stored[:10])
