@@ -110,7 +110,9 @@ test.describe('Authenticated post-login flows', () => {
     await nav.getByRole('link', { name: 'Profile', exact: true }).first().click();
     await expect(page).toHaveURL(/\/profile/);
 
-    await nav.getByRole('link', { name: 'Analytics', exact: true }).first().click();
+    // Open the "More" dropdown to access Analytics
+    await nav.getByRole('button', { name: 'More navigation options' }).click();
+    await nav.getByRole('link', { name: 'Analytics', exact: true }).click();
     await expect(page).toHaveURL(/\/analytics/);
   });
 

@@ -34,6 +34,26 @@
   @apply border-emerald-500/30 bg-emerald-500/10 text-emerald-400;
 }
 
+.nav-dropdown {
+  @apply relative;
+}
+
+.more-button {
+  @apply flex items-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-bold text-zinc-600 transition-all hover:bg-stone-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100;
+}
+
+.dropdown-menu {
+  @apply absolute top-full right-0 z-50 mt-2 flex flex-col gap-1 rounded-xl border border-stone-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none;
+}
+
+.dropdown-link {
+  @apply flex items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-4 py-2.5 text-sm font-bold text-zinc-600 transition-all hover:bg-stone-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100;
+}
+
+.dropdown-link.is-active {
+  @apply bg-emerald-500/10 text-emerald-400;
+}
+
 .nav-actions {
   @apply flex shrink-0 items-center gap-3;
 }

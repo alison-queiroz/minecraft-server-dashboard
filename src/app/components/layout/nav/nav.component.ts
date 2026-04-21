@@ -3,7 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideMoon, LucideServer, LucideSun, LucideUsers, LucideUserRound,
   LucideMap, LucideX, LucideMenu,
-  LucideDatabase, LucideChartLine,
+  LucideDatabase, LucideChartLine, LucideMoreVertical,
 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ServerService } from '../../../services/server/server.service';
@@ -33,12 +33,14 @@ export class NavComponent {
   protected readonly LucideMenu     = LucideMenu;
   protected readonly LucideDatabase = LucideDatabase;
   protected readonly LucideChartLine = LucideChartLine;
+  protected readonly LucideMoreVertical = LucideMoreVertical;
   protected readonly LucideServiceHub = LucideServer;
 
   protected readonly serverService = inject(ServerService);
   protected readonly auth = inject(AuthService);
   protected readonly themeService = inject(ThemeService);
   protected readonly menuOpen = signal(false);
+  protected readonly moreDropdownOpen = signal(false);
 
   toggleMenu(): void {
     this.menuOpen.update(v => !v);
@@ -46,6 +48,14 @@ export class NavComponent {
 
   closeMenu(): void {
     this.menuOpen.set(false);
+  }
+
+  toggleMoreDropdown(): void {
+    this.moreDropdownOpen.update(v => !v);
+  }
+
+  closeMoreDropdown(): void {
+    this.moreDropdownOpen.set(false);
   }
 
   toggleTheme(): void {

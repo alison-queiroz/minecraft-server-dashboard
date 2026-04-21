@@ -32,28 +32,46 @@
         <app-icon [icon]="LucideUserRound" [size]="14"></app-icon>
         Profile
       </a>
-      <a routerLink="/map" routerLinkActive="is-active"
-        class="nav-link">
-        <app-icon [icon]="LucideMap" [size]="14"></app-icon>
-        Map
-      </a>
-      <!-- Backup -->
-      <a routerLink="/backups" routerLinkActive="is-active"
-        class="nav-link">
-        <app-icon [icon]="LucideDatabase" [size]="14"></app-icon>
-        Backups
-      </a>
-      <!-- Analytics -->
-      <a routerLink="/analytics" routerLinkActive="is-active"
-        class="nav-link">
-        <app-icon [icon]="LucideChartLine" [size]="14"></app-icon>
-        Analytics
-      </a>
-      <a routerLink="/services" routerLinkActive="is-active"
-        class="nav-link">
-        <app-icon [icon]="LucideServiceHub" [size]="14"></app-icon>
-        Services
-      </a>
+
+      <!-- More dropdown -->
+      <div class="nav-dropdown">
+        <button (click)="toggleMoreDropdown()"
+          [class.is-active]="moreDropdownOpen()"
+          class="nav-link more-button"
+          type="button"
+          aria-label="More navigation options">
+          <app-icon [icon]="LucideMoreVertical" [size]="14"></app-icon>
+          More
+        </button>
+        @if (moreDropdownOpen()) {
+          <div class="dropdown-menu">
+            <a routerLink="/map" routerLinkActive="is-active"
+              (click)="closeMoreDropdown()"
+              class="dropdown-link">
+              <app-icon [icon]="LucideMap" [size]="14"></app-icon>
+              Map
+            </a>
+            <a routerLink="/backups" routerLinkActive="is-active"
+              (click)="closeMoreDropdown()"
+              class="dropdown-link">
+              <app-icon [icon]="LucideDatabase" [size]="14"></app-icon>
+              Backups
+            </a>
+            <a routerLink="/analytics" routerLinkActive="is-active"
+              (click)="closeMoreDropdown()"
+              class="dropdown-link">
+              <app-icon [icon]="LucideChartLine" [size]="14"></app-icon>
+              Analytics
+            </a>
+            <a routerLink="/services" routerLinkActive="is-active"
+              (click)="closeMoreDropdown()"
+              class="dropdown-link">
+              <app-icon [icon]="LucideServiceHub" [size]="14"></app-icon>
+              Services
+            </a>
+          </div>
+        }
+      </div>
     </div>
 
     <!-- Right side: status badge + hamburger -->
