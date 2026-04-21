@@ -49,6 +49,11 @@
         <app-icon [icon]="LucideChartLine" [size]="14"></app-icon>
         Analytics
       </a>
+      <a routerLink="/services" routerLinkActive="is-active"
+        class="nav-link">
+        <app-icon [icon]="LucideServiceHub" [size]="14"></app-icon>
+        Services
+      </a>
     </div>
 
     <!-- Right side: status badge + hamburger -->
@@ -143,6 +148,12 @@
         class="mobile-link">
         <app-icon [icon]="LucideChartLine" [size]="16"></app-icon>
         Analytics
+      </a>
+      <a routerLink="/services" routerLinkActive="is-active"
+        (click)="closeMenu()"
+        class="mobile-link">
+        <app-icon [icon]="LucideServiceHub" [size]="16"></app-icon>
+        Services
       </a>
 
       <!-- Sign-out row (mobile) -->

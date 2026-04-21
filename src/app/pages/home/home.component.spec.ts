@@ -75,11 +75,11 @@ describe('HomeComponent', () => {
     expect(el.querySelector('app-home-quick-nav')).toBeTruthy();
   });
 
-  it('renders the connect card', () => {
+  it('renders the connection card', () => {
     const fixture = TestBed.createComponent(HomeComponent);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('app-home-connect-card')).toBeTruthy();
+    expect(el.querySelector('app-server-connection-card')).toBeTruthy();
   });
 });
 

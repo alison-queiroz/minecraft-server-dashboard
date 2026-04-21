@@ -1,50 +1,86 @@
-<div class="connection-card">
-  <div class="server-card-header">
-    <h3 class="server-card-title">
-      <app-icon [icon]="LucideWifi" [size]="12" [strokeWidth]="2.5"></app-icon>
-      Connection Details
-    </h3>
-  </div>
-  <div class="connection-list">
-    <!-- Hostname -->
-    <div class="connection-row">
-      <div class="connection-info">
-        <div class="connection-icon-box">
-          <app-icon [icon]="LucideGlobe" [size]="16"></app-icon>
-        </div>
-        <div>
-          <p class="connection-label">Hostname</p>
-          <code class="connection-value connection-value--accent">{{ serverService.hostname() || 'exvegan.duckdns.org' }}</code>
-        </div>
-      </div>
-      <app-copy-button [value]="serverService.hostname() || 'exvegan.duckdns.org'"></app-copy-button>
+@if (compact) {
+  <div class="connection-card connection-card--compact">
+    <div class="server-card-header">
+      <h3 class="server-card-title">
+        <app-icon [icon]="LucideWifi" [size]="12" [strokeWidth]="2.5"></app-icon>
+        How to Connect
+      </h3>
     </div>
-    <!-- IP -->
-    @if (serverService.ip()) {
+    <div class="connection-list">
       <div class="connection-row">
+        <div class="connection-info">
+          <div class="connection-icon-box">
+            <app-icon [icon]="LucideGlobe" [size]="16"></app-icon>
+          </div>
+          <div>
+            <p class="connection-label">Server Address</p>
+            <code class="connection-value connection-value--accent">{{ serverService.hostname() || 'exvegan.duckdns.org' }}</code>
+          </div>
+        </div>
+        <app-copy-button [value]="serverService.hostname() || 'exvegan.duckdns.org'"></app-copy-button>
+      </div>
+      <div class="connection-row connection-row--compact">
         <div class="connection-info">
           <div class="connection-icon-box">
             <app-icon [icon]="LucideServer" [size]="16"></app-icon>
           </div>
           <div>
-            <p class="connection-label">IP Address</p>
-            <code class="connection-value">{{ serverService.ip() }}</code>
+            <p class="connection-label">Edition</p>
+            <code class="connection-value">Java - Port {{ serverService.port() ?? 25565 }}</code>
           </div>
-        </div>
-        <app-copy-button [value]="serverService.ip() || ''"></app-copy-button>
-      </div>
-    }
-    <!-- Port -->
-    <div class="connection-row connection-row--compact">
-      <div class="connection-info">
-        <div class="connection-icon-box">
-          <app-icon [icon]="LucideHash" [size]="16"></app-icon>
-        </div>
-        <div>
-          <p class="connection-label">Port</p>
-          <code class="connection-value">{{ serverService.port() ?? 25565 }}</code>
         </div>
       </div>
     </div>
   </div>
-</div>
+} @else {
+  <div class="connection-card">
+    <div class="server-card-header">
+      <h3 class="server-card-title">
+        <app-icon [icon]="LucideWifi" [size]="12" [strokeWidth]="2.5"></app-icon>
+        Connection Details
+      </h3>
+    </div>
+    <div class="connection-list">
+      <!-- Hostname -->
+      <div class="connection-row">
+        <div class="connection-info">
+          <div class="connection-icon-box">
+            <app-icon [icon]="LucideGlobe" [size]="16"></app-icon>
+          </div>
+          <div>
+            <p class="connection-label">Hostname</p>
+            <code class="connection-value connection-value--accent">{{ serverService.hostname() || 'exvegan.duckdns.org' }}</code>
+          </div>
+        </div>
+        <app-copy-button [value]="serverService.hostname() || 'exvegan.duckdns.org'"></app-copy-button>
+      </div>
+      <!-- IP -->
+      @if (serverService.ip()) {
+        <div class="connection-row">
+          <div class="connection-info">
+            <div class="connection-icon-box">
+              <app-icon [icon]="LucideServer" [size]="16"></app-icon>
+            </div>
+            <div>
+              <p class="connection-label">IP Address</p>
+              <code class="connection-value">{{ serverService.ip() }}</code>
+            </div>
+          </div>
+          <app-copy-button [value]="serverService.ip() || ''"></app-copy-button>
+        </div>
+      }
+      <!-- Port -->
+      <div class="connection-row connection-row--compact">
+        <div class="connection-info">
+          <div class="connection-icon-box">
+            <app-icon [icon]="LucideHash" [size]="16"></app-icon>
+          </div>
+          <div>
+            <p class="connection-label">Port</p>
+            <code class="connection-value">{{ serverService.port() ?? 25565 }}</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

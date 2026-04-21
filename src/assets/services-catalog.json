@@ -1,0 +1,74 @@
+{
+  "updatedAt": "2026-04-21",
+  "sections": [
+    {
+      "title": "Public Game Servers",
+      "description": "Directly reachable game servers on the Oracle host.",
+      "services": [
+        {
+          "name": "Minecraft Java",
+          "host": "exvegan.duckdns.org",
+          "port": 25565,
+          "protocol": "TCP",
+          "access": "public",
+          "runtime": "arm64",
+          "location": "Oracle Cloud"
+        },
+        {
+          "name": "Minecraft Bedrock",
+          "host": "exvegan.duckdns.org",
+          "port": 19132,
+          "protocol": "UDP",
+          "access": "public",
+          "runtime": "arm64",
+          "location": "Oracle Cloud"
+        },
+        {
+          "name": "Terraria",
+          "host": "exvegan.duckdns.org",
+          "port": 7777,
+          "protocol": "TCP",
+          "access": "public",
+          "runtime": "arm64",
+          "location": "Oracle Cloud"
+        },
+        {
+          "name": "Bomberman",
+          "host": "exvegan.duckdns.org",
+          "port": 64640,
+          "protocol": "TCP/UDP",
+          "access": "public",
+          "runtime": "arm64",
+          "location": "Oracle Cloud"
+        }
+      ]
+    },
+    {
+      "title": "Private Access Services",
+      "description": "Invitation or owner-managed access only.",
+      "services": [
+        {
+          "name": "WireGuard VPN",
+          "access": "request",
+          "protocol": "WireGuard",
+          "runtime": "arm64",
+          "location": "Oracle Cloud",
+          "notes": "Contact the owner to be added and receive a client config file."
+        }
+      ]
+    },
+    {
+      "title": "VPN-linked Hosts",
+      "description": "Services running outside Oracle but reachable through the VPN network.",
+      "services": [
+        {
+          "name": "Stardew Valley",
+          "access": "private",
+          "runtime": "x86_64",
+          "location": "Local server (via Oracle WireGuard)",
+          "notes": "Hosted on local hardware and connected to Oracle through the private VPN path."
+        }
+      ]
+    }
+  ]
+}

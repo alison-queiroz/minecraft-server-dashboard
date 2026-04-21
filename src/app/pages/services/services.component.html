@@ -1,0 +1,101 @@
+<app-page-container class="services-page">
+  <div class="services-header">
+    <h2 class="services-title">
+      <app-icon [icon]="LucideServer" [size]="18" [strokeWidth]="2"></app-icon>
+      Service Directory
+    </h2>
+    <p class="services-subtitle">All public and private services connected to your infrastructure.</p>
+    @if (catalog(); as cfg) {
+      <p class="services-updated">Updated: {{ cfg.updatedAt }}</p>
+    }
+    @if (canEdit()) {
+      <div class="services-admin-actions">
+        @if (!editMode()) {
+          <button class="services-edit-button" type="button" (click)="startEditing()">Edit catalog</button>
+        } @else {
+          <button class="services-cancel-button" type="button" (click)="cancelEditing()">Cancel</button>
+        }
+      </div>
+    }
+    <p class="services-edit-hint">Catalog path: SERVICES_CATALOG_PATH (server env var).</p>
+  </div>
+
+  @if (loadError()) {
+    <div class="services-error">{{ loadError() }}</div>
+  }
+
+  @if (editMode()) {
+    <section class="services-editor">
+      <h3 class="editor-title">Catalog JSON Editor</h3>
+      <p class="editor-copy">Update entries and save to the server-managed catalog file.</p>
+      <textarea
+        #editor
+        class="editor-textarea"
+        [value]="draftJson()"
+        (input)="updateDraft(editor.value)"></textarea>
+      @if (saveError()) {
+        <p class="editor-error">{{ saveError() }}</p>
+      }
+      <div class="editor-actions">
+        <button class="services-save-button" type="button" [disabled]="saving()" (click)="saveCatalog()">
+          {{ saving() ? 'Saving...' : 'Save catalog' }}
+        </button>
+      </div>
+    </section>
+  }
+
+  @if (catalog(); as cfg) {
+    <div class="services-sections">
+      @for (section of cfg.sections; track section.title) {
+        <section class="service-section">
+          <header class="section-header">
+            <h3 class="section-title">{{ section.title }}</h3>
+            <p class="section-description">{{ section.description }}</p>
+          </header>
+
+          <div class="service-grid">
+            @for (entry of section.services; track entry.name) {
+              <article class="service-card">
+                <div class="service-head-row">
+                  <h4 class="service-name">{{ entry.name }}</h4>
+                  <span class="service-access">{{ entry.access }}</span>
+                </div>
+
+                <dl class="service-details">
+                  <div class="service-detail-row">
+                    <dt>Endpoint</dt>
+                    <dd>{{ endpoint(entry) }}</dd>
+                  </div>
+                  @if (entry.protocol) {
+                    <div class="service-detail-row">
+                      <dt>Protocol</dt>
+                      <dd>{{ entry.protocol }}</dd>
+                    </div>
+                  }
+                  @if (entry.runtime) {
+                    <div class="service-detail-row">
+                      <dt>Runtime</dt>
+                      <dd>{{ entry.runtime }}</dd>
+                    </div>
+                  }
+                  @if (entry.location) {
+                    <div class="service-detail-row">
+                      <dt>Location</dt>
+                      <dd>{{ entry.location }}</dd>
+                    </div>
+                  }
+                  @if (entry.notes) {
+                    <div class="service-detail-row service-detail-row--notes">
+                      <dt>Notes</dt>
+                      <dd>{{ entry.notes }}</dd>
+                    </div>
+                  }
+                </dl>
+              </article>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  }
+</app-page-container>

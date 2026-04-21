@@ -76,6 +76,14 @@ bootstrapApplication(AppComponent, {
           ),
         canActivate: [authGuard],
       },
+      {
+        path: 'services',
+        loadComponent: () =>
+          import('./app/pages/services/services.component').then(
+            (m) => m.ServicesComponent,
+          ),
+        canActivate: [authGuard],
+      },
       { path: '**', redirectTo: '' },
     ]),
     provideServiceWorker('ngsw-worker.js', {

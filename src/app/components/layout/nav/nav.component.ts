@@ -33,6 +33,7 @@ export class NavComponent {
   protected readonly LucideMenu     = LucideMenu;
   protected readonly LucideDatabase = LucideDatabase;
   protected readonly LucideChartLine = LucideChartLine;
+  protected readonly LucideServiceHub = LucideServer;
 
   protected readonly serverService = inject(ServerService);
   protected readonly auth = inject(AuthService);

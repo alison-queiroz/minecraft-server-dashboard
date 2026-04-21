@@ -2,6 +2,10 @@
   @apply overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
 }
 
+.connection-card--compact {
+  @apply p-0;
+}
+
 .connection-list {
   @apply divide-y divide-stone-200 dark:divide-zinc-800;
 }
