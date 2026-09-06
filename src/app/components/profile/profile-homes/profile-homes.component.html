@@ -92,22 +92,12 @@
   <div class="homes-list">
     @for (group of groupedHomes(); track group.playerName) {
       @if (group.playerName) {
-        <button
-          type="button"
-          class="homes-group-header"
-          (click)="toggleGroup(group.playerName)"
-          [attr.aria-expanded]="!isGroupCollapsed(group.playerName)">
-          <span class="homes-group-label">
-            {{ group.playerName }}
-            <span class="homes-group-count">{{ group.homes.length }}</span>
-          </span>
-          <app-icon
-            [icon]="LucideChevronDown"
-            [size]="12"
-            [class.rotate-180]="!isGroupCollapsed(group.playerName)"
-            class="homes-group-chevron">
-          </app-icon>
-        </button>
+        <app-collapsible-section
+          [label]="group.playerName"
+          [count]="group.homes.length"
+          [chevronSize]="12"
+          [expanded]="!isGroupCollapsed(group.playerName)"
+          (expandedChange)="toggleGroup(group.playerName)" />
       }
       @if (!group.playerName || !isGroupCollapsed(group.playerName)) {
         @for (home of group.homes; track home.id) {

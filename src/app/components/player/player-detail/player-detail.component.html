@@ -88,18 +88,10 @@
       <!-- Public Saved Locations -->
       @if (publicLocations().length > 0) {
         <div class="detail-locations-section">
-          <button class="detail-section-header" (click)="locationsCollapsed.set(!locationsCollapsed())"
-            [attr.aria-expanded]="!locationsCollapsed()">
-            <span class="detail-section-header-left">
-              <app-icon [icon]="LucideMap" [size]="13"></app-icon>
-              Saved Locations
-              <span class="detail-section-count">{{ publicLocations().length }}</span>
-            </span>
-            <app-icon [icon]="LucideChevronDown" [size]="14"
-              [class.rotate-180]="!locationsCollapsed()"
-              class="detail-section-chevron">
-            </app-icon>
-          </button>
+          <app-collapsible-section label="Saved Locations" [icon]="LucideMap"
+            [count]="publicLocations().length"
+            [expanded]="!locationsCollapsed()" (expandedChange)="locationsCollapsed.set(!$event)"
+            testId="detail-locations-header" />
           @if (!locationsCollapsed()) {
             <div class="detail-locations-list">
               @for (loc of publicLocations(); track loc.id) {
@@ -123,18 +115,10 @@
       <!-- Public Homes -->
       @if (publicHomes().length > 0) {
         <div class="detail-locations-section">
-          <button class="detail-section-header" (click)="homesCollapsed.set(!homesCollapsed())"
-            [attr.aria-expanded]="!homesCollapsed()">
-            <span class="detail-section-header-left">
-              <app-icon [icon]="LucideHouse" [size]="13"></app-icon>
-              Homes
-              <span class="detail-section-count">{{ publicHomes().length }}</span>
-            </span>
-            <app-icon [icon]="LucideChevronDown" [size]="14"
-              [class.rotate-180]="!homesCollapsed()"
-              class="detail-section-chevron">
-            </app-icon>
-          </button>
+          <app-collapsible-section label="Homes" [icon]="LucideHouse"
+            [count]="publicHomes().length"
+            [expanded]="!homesCollapsed()" (expandedChange)="homesCollapsed.set(!$event)"
+            testId="detail-homes-header" />
           @if (!homesCollapsed()) {
             <div class="detail-locations-list">
               @for (home of publicHomes(); track home.id) {

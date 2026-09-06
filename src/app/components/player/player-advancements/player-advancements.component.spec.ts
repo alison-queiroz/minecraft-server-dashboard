@@ -88,10 +88,10 @@ describe('PlayerAdvancementsComponent', () => {
     fixture.componentRef.setInput('startOpen', false);
     fixture.detectChanges();
 
-    const cmp = fixture.componentInstance as unknown as { toggle(): void; collapsed: () => boolean };
+    const cmp = fixture.componentInstance as unknown as { onToggle(expanded: boolean): void; collapsed: () => boolean };
     expect(cmp.collapsed()).toBe(true);
 
-    cmp.toggle();
+    cmp.onToggle(true);
     fixture.detectChanges();
 
     expect(cmp.collapsed()).toBe(false);
@@ -104,12 +104,12 @@ describe('PlayerAdvancementsComponent', () => {
     fixture.detectChanges();
 
     const getSpy = jest.spyOn(advancementsService, 'getAdvancements');
-    const cmp = fixture.componentInstance as unknown as { toggle(): void };
+    const cmp = fixture.componentInstance as unknown as { onToggle(expanded: boolean): void };
 
     // Open then close then open — second open should NOT fetch again
-    cmp.toggle(); // close
+    cmp.onToggle(false); // close
     fixture.detectChanges();
-    cmp.toggle(); // open again
+    cmp.onToggle(true); // open again
     fixture.detectChanges();
 
     expect(getSpy).not.toHaveBeenCalled();
@@ -123,8 +123,8 @@ describe('PlayerAdvancementsComponent', () => {
     fixture.detectChanges();
 
     const getSpy = jest.spyOn(advancementsService, 'getAdvancements');
-    const cmp = fixture.componentInstance as unknown as { toggle(): void };
-    cmp.toggle();
+    const cmp = fixture.componentInstance as unknown as { onToggle(expanded: boolean): void };
+    cmp.onToggle(true);
     fixture.detectChanges();
 
     expect(getSpy).not.toHaveBeenCalled();

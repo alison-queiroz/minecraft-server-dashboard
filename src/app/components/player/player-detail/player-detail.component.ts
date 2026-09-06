@@ -14,9 +14,10 @@ import { UserProfileService } from '../../../services/user-profile/user-profile.
 import { SkinViewerComponent } from '../../shared/skin-viewer/skin-viewer.component';
 import { PlayerAdvancementsComponent } from '../player-advancements/player-advancements.component';
 import {
-  LucideClock, LucideMapPin, LucideMap, LucideExternalLink, LucideHouse, LucideUser, LucideTimer, LucideShare2, LucideChevronDown,
+  LucideClock, LucideMapPin, LucideMap, LucideExternalLink, LucideHouse, LucideUser, LucideTimer, LucideShare2,
 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { CollapsibleSectionComponent } from '../../shared/collapsible-section/collapsible-section.component';
 import type { Player } from '../../../services/player/player.model';
 import { environment } from '../../../../environments/environment';
 
@@ -37,7 +38,7 @@ const HOME_WORLD_LABELS: Record<string, string> = {
   selector: 'app-player-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, DecimalPipe, SkinViewerComponent, RouterLink, IconComponent, PlayerAdvancementsComponent],
+  imports: [CommonModule, DecimalPipe, SkinViewerComponent, RouterLink, IconComponent, CollapsibleSectionComponent, PlayerAdvancementsComponent],
   templateUrl: './player-detail.component.html',
   styleUrls: ['./player-detail.component.scss'],
 })
@@ -50,7 +51,6 @@ export class PlayerDetailComponent {
   protected readonly LucideUser         = LucideUser;
   protected readonly LucideTimer        = LucideTimer;
   protected readonly LucideShare2       = LucideShare2;
-  protected readonly LucideChevronDown  = LucideChevronDown;
 
   /** Whether the Saved Locations section is collapsed. Starts collapsed. */
   protected readonly locationsCollapsed = signal(true);

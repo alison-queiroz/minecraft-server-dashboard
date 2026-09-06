@@ -13,10 +13,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { of } from 'rxjs';
 import { catchError, finalize, tap } from 'rxjs/operators';
-import { LucideTrophy, LucideChevronDown } from '@lucide/angular';
+import { LucideTrophy } from '@lucide/angular';
 import type { AdvancementsResult, Advancement } from '../../../services/advancements/advancements.service';
 import { AdvancementsService } from '../../../services/advancements/advancements.service';
-import { IconComponent } from '../../shared/icon/icon.component';
+import { CollapsibleSectionComponent } from '../../shared/collapsible-section/collapsible-section.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { LoadingService } from '../../../services/loading/loading.service';
 import { TooltipDirective } from '../../../directives/tooltip.directive';
@@ -25,7 +25,7 @@ import { TooltipDirective } from '../../../directives/tooltip.directive';
   selector: 'app-player-advancements',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, IconComponent, TooltipDirective, EmptyStateComponent],
+  imports: [CommonModule, CollapsibleSectionComponent, TooltipDirective, EmptyStateComponent],
   templateUrl: './player-advancements.component.html',
   styleUrls: ['./player-advancements.component.scss'],
 })
@@ -55,7 +55,6 @@ export class PlayerAdvancementsComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly LucideTrophy     = LucideTrophy;
-  protected readonly LucideChevronDown = LucideChevronDown;
 
   private readonly uuidInput = signal('');
   private readonly isBedrockInput = signal(false);
@@ -104,10 +103,10 @@ export class PlayerAdvancementsComponent {
     });
   }
 
-  protected toggle(): void {
-    const opening = this.collapsed();
-    this.collapsed.set(!opening);
-    if (opening && !this.loaded && !this.isBedrockInput() && this.uuidInput()) {
+  protected onToggle(expanded: boolean): void {
+    this.collapsed.set(!expanded);
+    // Lazy-load the advancements the first time the section is opened.
+    if (expanded && !this.loaded && !this.isBedrockInput() && this.uuidInput()) {
       this.fetch();
     }
   }

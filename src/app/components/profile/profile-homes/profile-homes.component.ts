@@ -13,11 +13,12 @@ import { DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import type { EssentialsHome } from '../../../services/player/player.model';
-import { LucideHouse, LucidePencil, LucideTrash2, LucideCheck, LucideRefreshCw, LucideMap, LucideExternalLink, LucideChevronDown } from '@lucide/angular';
+import { LucideHouse, LucidePencil, LucideTrash2, LucideCheck, LucideRefreshCw, LucideMap, LucideExternalLink } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { IconButtonComponent } from '../../shared/icon-button/icon-button.component';
 import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
+import { CollapsibleSectionComponent } from '../../shared/collapsible-section/collapsible-section.component';
 import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card.component';
 import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
@@ -48,7 +49,7 @@ export interface LocalHome extends EssentialsHome {
   selector: 'app-profile-homes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, IconButtonComponent, InlineErrorComponent, EmptyStateComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, IconHomeComponent, UiInputComponent],
+  imports: [IconComponent, IconButtonComponent, InlineErrorComponent, EmptyStateComponent, CollapsibleSectionComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, IconHomeComponent, UiInputComponent],
   templateUrl: './profile-homes.component.html',
   styleUrls: ['./profile-homes.component.scss'],
 })
@@ -60,7 +61,6 @@ export class ProfileHomesComponent {
   protected readonly LucideRefreshCw  = LucideRefreshCw;
   protected readonly LucideMap        = LucideMap;
   protected readonly LucideExternalLink = LucideExternalLink;
-  protected readonly LucideChevronDown = LucideChevronDown;
 
   private readonly http = inject(HttpClient);
   private readonly userProfileService = inject(UserProfileService);

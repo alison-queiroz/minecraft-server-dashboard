@@ -1,20 +1,9 @@
 @if (!isBedrock) {
   <div class="adv-section">
-    <button class="adv-header" (click)="toggle()" [attr.aria-expanded]="!collapsed()">
-      <span class="adv-header-left">
-        <app-icon [icon]="LucideTrophy" [size]="13"></app-icon>
-        Advancements
-        @if (displayCount() > 0) {
-          <span class="adv-count">{{ displayCount() }}</span>
-        }
-      </span>
-      <app-icon
-        [icon]="LucideChevronDown"
-        [size]="14"
-        [class.rotate-180]="!collapsed()"
-        class="adv-chevron"
-      ></app-icon>
-    </button>
+    <app-collapsible-section label="Advancements" [icon]="LucideTrophy" accent="amber"
+      [count]="displayCount() > 0 ? displayCount() : null"
+      [expanded]="!collapsed()" (expandedChange)="onToggle($event)"
+      testId="advancements-header" />
 
     @if (!collapsed()) {
       <div class="adv-body">
