@@ -1,17 +1,25 @@
 ﻿import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable } from 'rxjs';
 import { getApps, initializeApp } from 'firebase/app';
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  onSnapshot,
-} from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth/auth.service';
+
+// Firestore is dynamically imported (kept out of the initial bundle). This
+// typeof-import types its function surface without importing the values.
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+type FirestoreModule = typeof import('firebase/firestore');
+
+/** The Firestore SDK surface this service uses, plus the db instance. */
+interface FirestoreApi {
+  db: Firestore;
+  doc: FirestoreModule['doc'];
+  getDoc: FirestoreModule['getDoc'];
+  setDoc: FirestoreModule['setDoc'];
+  updateDoc: FirestoreModule['updateDoc'];
+  deleteDoc: FirestoreModule['deleteDoc'];
+  onSnapshot: FirestoreModule['onSnapshot'];
+}
 
 export interface SavedLocation {
   id: string;
@@ -56,10 +64,27 @@ const DEFAULT_PROFILE: UserProfile = { minecraftAccounts: DEFAULT_ACCOUNTS, save
 export class UserProfileService {
   private readonly auth = inject(AuthService);
 
-  private readonly db = (() => {
-    const app = getApps().at(0) ?? initializeApp(environment.firebaseConfig);
-    return getFirestore(app);
-  })();
+  /**
+   * Lazily loads the Firestore SDK on first use (dynamic import) so it stays out
+   * of the initial bundle — the login page and app shell don't need it. Cached
+   * after the first call.
+   */
+  private _fs: Promise<FirestoreApi> | null = null;
+  private fs(): Promise<FirestoreApi> {
+    return (this._fs ??= (async () => {
+      const m = await import('firebase/firestore');
+      const app = getApps().at(0) ?? initializeApp(environment.firebaseConfig);
+      return {
+        db: m.getFirestore(app),
+        doc: m.doc,
+        getDoc: m.getDoc,
+        setDoc: m.setDoc,
+        updateDoc: m.updateDoc,
+        deleteDoc: m.deleteDoc,
+        onSnapshot: m.onSnapshot,
+      };
+    })());
+  }
 
   readonly profile = signal<UserProfile>(DEFAULT_PROFILE);
   readonly isLoading = signal(false);
@@ -108,7 +133,8 @@ export class UserProfileService {
         return;
       }
 
-      const snap = await getDoc(doc(this.db, 'users', uid));
+      const { db, doc, getDoc } = await this.fs();
+      const snap = await getDoc(doc(db, 'users', uid));
       if (snap.exists()) {
         const raw = snap.data() as Partial<UserProfile> & { minecraftUsername?: string };
         // Migrate legacy single-username field
@@ -130,7 +156,8 @@ export class UserProfileService {
     const uid = this.auth.currentUser()?.uid;
     if (!uid) return;
 
-    const ref = doc(this.db, 'users', uid);
+    const { db, doc, getDoc, setDoc, updateDoc } = await this.fs();
+    const ref = doc(db, 'users', uid);
     const snap = await getDoc(ref);
     const current = snap.exists()
       ? (snap.data() as UserProfile).minecraftAccounts ?? DEFAULT_ACCOUNTS
@@ -148,7 +175,7 @@ export class UserProfileService {
 
     // Write reverse-lookup so player cards can find this user's public locations
     if (username) {
-      await setDoc(doc(this.db, 'usernames', username), { uid, type }, { merge: true });
+      await setDoc(doc(db, 'usernames', username), { uid, type }, { merge: true });
     }
 
     this.profile.update(p => ({ ...p, minecraftAccounts: updated }));
@@ -158,7 +185,8 @@ export class UserProfileService {
     const uid = this.auth.currentUser()?.uid;
     if (!uid) return;
 
-    const ref = doc(this.db, 'users', uid);
+    const { db, doc, getDoc, setDoc, updateDoc, deleteDoc } = await this.fs();
+    const ref = doc(db, 'users', uid);
     const snap = await getDoc(ref);
     const current = snap.exists()
       ? (snap.data() as UserProfile).minecraftAccounts ?? DEFAULT_ACCOUNTS
@@ -167,9 +195,9 @@ export class UserProfileService {
     const previousUsername = current[type];
     if (previousUsername) {
       try {
-        const prevSnap = await getDoc(doc(this.db, 'usernames', previousUsername));
+        const prevSnap = await getDoc(doc(db, 'usernames', previousUsername));
         if (!prevSnap.exists() || this.belongsToUser(prevSnap.data(), uid)) {
-          await deleteDoc(doc(this.db, 'usernames', previousUsername));
+          await deleteDoc(doc(db, 'usernames', previousUsername));
         }
       } catch { /* ignore — stale data */ }
     }
@@ -267,28 +295,32 @@ export class UserProfileService {
   ): Observable<T[]> {
     return new Observable<T[]>(observer => {
       let unsubscribeSnapshot: (() => void) | null = null;
+      let cancelled = false;
 
-      getDoc(doc(this.db, 'usernames', minecraftName))
-        .then(usernameSnap => {
-          if (!usernameSnap.exists()) {
-            observer.next([]);
-            return;
-          }
-          const { uid } = usernameSnap.data() as { uid: string };
-          unsubscribeSnapshot = onSnapshot(
-            doc(this.db, 'users', uid),
-            userSnap => {
-              if (!userSnap.exists()) { observer.next([]); return; }
-              const profile = userSnap.data() as UserProfile;
-              observer.next(select(profile).filter(x => x.isPublic));
-            },
-            () => observer.next([])
-          );
-        })
+      this.fs()
+        .then(({ db, doc, getDoc, onSnapshot }) =>
+          getDoc(doc(db, 'usernames', minecraftName)).then(usernameSnap => {
+            if (cancelled) return;
+            if (!usernameSnap.exists()) {
+              observer.next([]);
+              return;
+            }
+            const { uid } = usernameSnap.data() as { uid: string };
+            unsubscribeSnapshot = onSnapshot(
+              doc(db, 'users', uid),
+              userSnap => {
+                if (!userSnap.exists()) { observer.next([]); return; }
+                const profile = userSnap.data() as UserProfile;
+                observer.next(select(profile).filter(x => x.isPublic));
+              },
+              () => observer.next([])
+            );
+          })
+        )
         .catch(() => observer.next([]));
 
       // Teardown: cancel Firestore listener when the subscriber unsubscribes.
-      return () => unsubscribeSnapshot?.();
+      return () => { cancelled = true; unsubscribeSnapshot?.(); };
     });
   }
 
@@ -307,11 +339,13 @@ export class UserProfileService {
   private async _persistLocations(uid: string, locations: SavedLocation[]): Promise<void> {
     // setDoc + merge is a single create-or-update round-trip — no read-before-write
     // (which also removed a read-modify-write race between concurrent saves).
-    await setDoc(doc(this.db, 'users', uid), { savedLocations: locations }, { merge: true });
+    const { db, doc, setDoc } = await this.fs();
+    await setDoc(doc(db, 'users', uid), { savedLocations: locations }, { merge: true });
   }
 
   private async _persistHomes(uid: string, homes: SavedHome[]): Promise<void> {
-    await setDoc(doc(this.db, 'users', uid), { savedHomes: homes }, { merge: true });
+    const { db, doc, setDoc } = await this.fs();
+    await setDoc(doc(db, 'users', uid), { savedHomes: homes }, { merge: true });
   }
 
   private async removePreviousUsernameMapping(
@@ -326,7 +360,8 @@ export class UserProfileService {
     }
 
     try {
-      const previousRef = doc(this.db, 'usernames', previousUsername);
+      const { db, doc, getDoc, deleteDoc } = await this.fs();
+      const previousRef = doc(db, 'usernames', previousUsername);
       const previousSnap = await getDoc(previousRef);
       if (!previousSnap.exists() || this.belongsToUser(previousSnap.data(), uid)) {
         await deleteDoc(previousRef);
