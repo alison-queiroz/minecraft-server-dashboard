@@ -112,10 +112,13 @@ export async function mockFirebaseAuth(page: Page): Promise<void> {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([
-        { ts: Date.now() / 1000 - 3600, count: 1, online: ['Steve'] },
-        { ts: Date.now() / 1000 - 1800, count: 2, online: ['Steve', 'Alex'] },
-      ]),
+      body: JSON.stringify({
+        points: [
+          { t: Math.floor(Date.now() / 1000) - 3600, avg: 1, peak: 1 },
+          { t: Math.floor(Date.now() / 1000) - 1800, avg: 2, peak: 2 },
+        ],
+        summary: { peak: 2, avg: 2 },
+      }),
     }),
   );
 

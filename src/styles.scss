@@ -35,6 +35,16 @@
     @apply p-6;
   }
 
+  /* Elevated surface tier (server/home cards): larger radius + shadow. */
+  .ui-panel--elevated {
+    @apply rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none;
+  }
+
+  /* Recessed/inset tier: nested panel-inside-a-panel. */
+  .ui-panel--inset {
+    @apply rounded-xl border border-stone-200 bg-stone-50 dark:border-zinc-800 dark:bg-zinc-950;
+  }
+
   .ui-input {
     @apply w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-emerald-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500;
   }
