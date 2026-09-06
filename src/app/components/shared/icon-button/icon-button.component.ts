@@ -25,6 +25,7 @@ export type IconButtonVariant = 'accent' | 'bright' | 'danger' | 'plain';
       [disabled]="disabled()"
       [attr.title]="title()"
       [attr.aria-label]="ariaLabel() ?? title()"
+      [attr.data-testid]="testId()"
       (click)="pressed.emit($event)"
     >
       <app-icon [icon]="icon()" [size]="size()" [strokeWidth]="strokeWidth()" />
@@ -39,6 +40,8 @@ export class IconButtonComponent {
   readonly disabled = input(false);
   readonly title = input<string | null>(null);
   readonly ariaLabel = input<string | null>(null);
+  /** Optional stable hook for e2e/unit tests, rendered as data-testid. */
+  readonly testId = input<string | null>(null);
 
   readonly pressed = output<MouseEvent>();
 }

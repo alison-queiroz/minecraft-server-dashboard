@@ -44,13 +44,13 @@
           <span class="loading-dot"></span>
         </div>
       } @else if (hasError() && !hasData()) {
-        <div class="chart-empty">
+        <app-empty-state variant="overlay" testId="analytics-error">
           Couldn&rsquo;t load analytics &mdash; please try again shortly.
-        </div>
+        </app-empty-state>
       } @else if (!hasData()) {
-        <div class="chart-empty">
+        <app-empty-state variant="overlay" testId="analytics-empty">
           No data yet &mdash; snapshots are recorded every minute while the server is running.
-        </div>
+        </app-empty-state>
       }
       <canvas #chartCanvas [style.opacity]="hasData() ? 1 : 0"></canvas>
     </div>

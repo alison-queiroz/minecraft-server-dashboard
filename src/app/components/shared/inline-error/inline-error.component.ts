@@ -14,12 +14,13 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       @if (variant() === 'banner') {
         <p
           role="alert"
+          [attr.data-testid]="testId()"
           class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400"
         >
           {{ message() }}
         </p>
       } @else {
-        <p role="alert" class="text-xs text-red-400">{{ message() }}</p>
+        <p role="alert" [attr.data-testid]="testId()" class="text-xs text-red-400">{{ message() }}</p>
       }
     }
   `,
@@ -27,4 +28,6 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 export class InlineErrorComponent {
   readonly message = input<string | null>(null);
   readonly variant = input<'text' | 'banner'>('text');
+  /** Optional stable hook for e2e/unit tests, rendered as data-testid. */
+  readonly testId = input<string | null>(null);
 }

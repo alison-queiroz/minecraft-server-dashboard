@@ -70,18 +70,6 @@
 }
 
 /* Empty state */
-.chart-empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 1rem;
-  font-size: 0.8125rem;
-  @apply text-zinc-500 dark:text-zinc-400;
-  pointer-events: none;
-}
 .loading-dot {
   width: 8px;
   height: 8px;

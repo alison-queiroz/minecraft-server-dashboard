@@ -40,7 +40,7 @@
   }
 
   @if (profileService.savedLocations().length === 0 && !showAddForm()) {
-    <p class="locations-empty">No saved locations yet.</p>
+    <app-empty-state message="No saved locations yet." testId="locations-empty" />
   }
 
   <div class="locations-list">

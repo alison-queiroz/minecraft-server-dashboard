@@ -56,7 +56,7 @@
       }
     </div>
   } @else if (displayedPlayers().length === 0) {
-    <div class="player-list-empty">No players found.</div>
+    <app-empty-state message="No players found." testId="players-empty" />
   } @else {
     <!-- Virtual Scroll Viewport -->
     <cdk-virtual-scroll-viewport itemSize="65" class="player-list-viewport custom-scrollbar">

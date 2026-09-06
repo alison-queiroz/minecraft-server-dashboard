@@ -17,6 +17,7 @@ import { LucideTrophy, LucideChevronDown } from '@lucide/angular';
 import type { AdvancementsResult, Advancement } from '../../../services/advancements/advancements.service';
 import { AdvancementsService } from '../../../services/advancements/advancements.service';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { LoadingService } from '../../../services/loading/loading.service';
 import { TooltipDirective } from '../../../directives/tooltip.directive';
 
@@ -24,7 +25,7 @@ import { TooltipDirective } from '../../../directives/tooltip.directive';
   selector: 'app-player-advancements',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, IconComponent, TooltipDirective],
+  imports: [CommonModule, IconComponent, TooltipDirective, EmptyStateComponent],
   templateUrl: './player-advancements.component.html',
   styleUrls: ['./player-advancements.component.scss'],
 })

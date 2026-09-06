@@ -17,6 +17,7 @@ import { LucideHouse, LucidePencil, LucideTrash2, LucideCheck, LucideRefreshCw, 
 import { IconComponent } from '../../shared/icon/icon.component';
 import { IconButtonComponent } from '../../shared/icon-button/icon-button.component';
 import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
+import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card.component';
 import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
@@ -47,7 +48,7 @@ export interface LocalHome extends EssentialsHome {
   selector: 'app-profile-homes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, IconButtonComponent, InlineErrorComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, IconHomeComponent, UiInputComponent],
+  imports: [IconComponent, IconButtonComponent, InlineErrorComponent, EmptyStateComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, IconHomeComponent, UiInputComponent],
   templateUrl: './profile-homes.component.html',
   styleUrls: ['./profile-homes.component.scss'],
 })

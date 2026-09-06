@@ -9,6 +9,7 @@ import { PlayerService } from '../../../services/player/player.service';
 import { PlayerSearchComponent } from '../player-search/player-search.component';
 import { PlayerCardRowComponent } from '../player-card-row/player-card-row.component';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 
 type SortField = 'name' | 'level' | 'play_hours' | 'dimension' | 'last_seen' | 'advancement_count';
 type SortDir = 'asc' | 'desc';
@@ -17,7 +18,7 @@ type SortDir = 'asc' | 'desc';
   selector: 'app-player-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ScrollingModule, PlayerSearchComponent, PlayerCardRowComponent, IconComponent],
+  imports: [CommonModule, FormsModule, ScrollingModule, PlayerSearchComponent, PlayerCardRowComponent, IconComponent, EmptyStateComponent],
   templateUrl: './player-list.component.html',
   styleUrls: ['./player-list.component.scss'],
 })

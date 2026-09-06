@@ -32,9 +32,9 @@
   </div>
 
   @if (!players().length) {
-    <p class="homes-empty">
+    <app-empty-state testId="homes-empty-unlinked">
       Link your Java account in the <strong>Account</strong> tab to automatically import your in-game homes.
-    </p>
+    </app-empty-state>
   } @else if (syncing()) {
     <p class="homes-syncing">Importing homes from server...</p>
   }
@@ -80,13 +80,13 @@
   }
 
   @if (homes().length === 0 && !showAddForm() && !syncing()) {
-    <p class="homes-empty">
+    <app-empty-state testId="homes-empty">
       @if (players().length) {
         No homes found. Use <code class="homes-cmd">/sethome &lt;name&gt;</code> in-game, then come back here.
       } @else {
         No homes saved yet.
       }
-    </p>
+    </app-empty-state>
   }
 
   <div class="homes-list">

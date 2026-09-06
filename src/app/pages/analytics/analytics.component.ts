@@ -25,6 +25,7 @@ import {
 import type { AnalyticsSeries, Period } from '../../services/analytics/analytics.service';
 import { AnalyticsService } from '../../services/analytics/analytics.service';
 import { IconComponent } from '../../components/shared/icon/icon.component';
+import { EmptyStateComponent } from '../../components/shared/empty-state/empty-state.component';
 import { LoadingService } from '../../services/loading/loading.service';
 import { ThemeService } from '../../services/theme/theme.service';
 import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
@@ -34,7 +35,7 @@ Chart.register(CategoryScale, LinearScale, LineController, LineElement, PointEle
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [IconComponent, PageContainerComponent],
+  imports: [IconComponent, EmptyStateComponent, PageContainerComponent],
   templateUrl: './analytics.component.html',
   styleUrls: ['./analytics.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

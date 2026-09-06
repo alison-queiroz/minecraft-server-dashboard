@@ -19,7 +19,7 @@
     @if (!collapsed()) {
       <div class="adv-body">
         @if (result().total === 0) {
-          <p class="adv-empty">No advancements found.</p>
+          <app-empty-state message="No advancements found." size="sm" testId="advancements-empty" />
         } @else {
           <div class="adv-categories">
             @for (entry of byCategory(); track entry.key) {

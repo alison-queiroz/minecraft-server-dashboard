@@ -98,7 +98,7 @@ describe('ProfileHomesComponent', () => {
     await setup();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('.homes-empty')).toBeTruthy();
+    expect(el.querySelector('[data-testid^="homes-empty"]')).toBeTruthy();
   });
 
   it('renders a home card for each home', async () => {
