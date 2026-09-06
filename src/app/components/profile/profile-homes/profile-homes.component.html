@@ -74,7 +74,7 @@
         label="Show on player card"
         note="(visible to all users)">
       </app-ui-toggle>
-      @if (addError()) { <p class="homes-error">{{ addError() }}</p> }
+      <app-inline-error [message]="addError()" />
       <app-save-button [saving]="saving()" label="Save home" (save)="addHome()" class="home-form-submit"></app-save-button>
     </div>
   }

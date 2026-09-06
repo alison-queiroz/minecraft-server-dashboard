@@ -325,7 +325,7 @@ describe('ProfileHomesComponent', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      const error = (fixture.nativeElement as HTMLElement).querySelector('.homes-error');
+      const error = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
       expect(error?.textContent).toContain('required');
     });
 
@@ -350,7 +350,7 @@ describe('ProfileHomesComponent', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      const error = (fixture.nativeElement as HTMLElement).querySelector('.homes-error');
+      const error = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
       expect(error?.textContent).toContain('numbers');
     });
   });

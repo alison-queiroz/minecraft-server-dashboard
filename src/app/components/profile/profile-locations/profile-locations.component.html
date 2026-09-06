@@ -34,7 +34,7 @@
         label="Show on player card"
         note="(visible to all users)">
       </app-ui-toggle>
-      @if (addError()) { <p class="locations-error">{{ addError() }}</p> }
+      <app-inline-error [message]="addError()" />
       <app-save-button [saving]="saving()" label="Save location" (save)="addLocation()" class="location-form-submit"></app-save-button>
     </div>
   }

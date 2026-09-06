@@ -126,7 +126,7 @@ describe('LoginComponent', () => {
     button.click();
     await fixture.whenStable();
     fixture.detectChanges();
-    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('.login-error');
+    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
     expect(errorEl?.textContent).toContain('popup_closed_by_user');
   });
 
@@ -139,13 +139,13 @@ describe('LoginComponent', () => {
     button.click();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.login-error')).toBeTruthy();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')).toBeTruthy();
 
     authStub.signInWithGoogle.mockResolvedValue(undefined);
     button.click();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.login-error')).toBeFalsy();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')).toBeFalsy();
   });
   it('shows fallback message when rejection is not an Error instance', async () => {
     authStub.signInWithGoogle.mockRejectedValue('not_an_error_object');
@@ -155,7 +155,7 @@ describe('LoginComponent', () => {
     button.click();
     await fixture.whenStable();
     fixture.detectChanges();
-    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('.login-error');
+    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
     expect(errorEl?.textContent).toContain('Sign-in failed. Please try again.');
   });
 
@@ -181,7 +181,7 @@ describe('LoginComponent', () => {
     fixture.detectChanges();
     await comp.submitMinecraft();
     fixture.detectChanges();
-    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('.login-error');
+    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
     expect(errorEl?.textContent).toContain('Please enter your in-game name and password.');
   });
 
@@ -204,7 +204,7 @@ describe('LoginComponent', () => {
     await comp.submitMinecraft();
     fixture.detectChanges();
 
-    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('.login-error');
+    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
     expect(errorEl?.textContent).toContain('Incorrect in-game credentials');
   });
 

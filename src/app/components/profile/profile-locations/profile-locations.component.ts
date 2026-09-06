@@ -14,6 +14,7 @@ import { normaliseMapHash } from '../../../utils/map-hash.util';
 import { LucideMap, LucideExternalLink, LucidePencil, LucideTrash2 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { IconButtonComponent } from '../../shared/icon-button/icon-button.component';
+import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
 import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card.component';
 import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
@@ -27,7 +28,7 @@ import { environment } from '../../../../environments/environment';
   selector: 'app-profile-locations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, IconButtonComponent, MapViewerComponent, ProfileItemCardComponent, DimensionTagComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, UiInputComponent],
+  imports: [IconComponent, IconButtonComponent, InlineErrorComponent, MapViewerComponent, ProfileItemCardComponent, DimensionTagComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, UiInputComponent],
   templateUrl: './profile-locations.component.html',
   styleUrls: ['./profile-locations.component.scss'],
 })

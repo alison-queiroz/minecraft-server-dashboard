@@ -4,9 +4,7 @@
   @if (profileService.isLoading()) {
     <p class="accounts-message">Loading...</p>
   } @else {
-    @if (accountError()) {
-      <p class="accounts-error">{{ accountError() }}</p>
-    }
+    <app-inline-error [message]="accountError()" />
 
     <!-- Java -->
     <div class="account-section">

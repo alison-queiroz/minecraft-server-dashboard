@@ -16,11 +16,7 @@
     </div>
 
     <!-- Error -->
-    @if (error()) {
-      <p class="login-error">
-        {{ error() }}
-      </p>
-    }
+    <app-inline-error variant="banner" [message]="error()" />
 
     <!-- ── Step 1: Google sign-in ──────────────────────────────────────── -->
     @if (step() === 'google') {

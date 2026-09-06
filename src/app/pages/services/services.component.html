@@ -20,9 +20,7 @@
     <p class="services-edit-hint">Catalog path: SERVICES_CATALOG_PATH (server env var).</p>
   </div>
 
-  @if (loadError()) {
-    <div class="services-error">{{ loadError() }}</div>
-  }
+  <app-inline-error variant="banner" [message]="loadError()" />
 
   @if (editMode()) {
     <section class="services-editor">

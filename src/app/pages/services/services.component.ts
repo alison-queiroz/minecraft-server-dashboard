@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { LucideServer } from '@lucide/angular';
 import { IconComponent } from '../../components/shared/icon/icon.component';
+import { InlineErrorComponent } from '../../components/shared/inline-error/inline-error.component';
 import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
 
 interface ServiceEntry {
@@ -35,7 +36,7 @@ interface ServicesCatalogResponse {
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [IconComponent, PageContainerComponent],
+  imports: [IconComponent, InlineErrorComponent, PageContainerComponent],
   templateUrl: './services.component.html',
   styleUrls: ['./services.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
