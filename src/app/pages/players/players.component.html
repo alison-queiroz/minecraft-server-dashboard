@@ -6,8 +6,8 @@
         Back
       </button>
     } @else {
-      <h1 class="players-title">Players</h1>
-      <p class="players-subtitle">{{ playerService.players().length }} registered players</p>
+      <app-page-header title="Players"
+        [subtitle]="playerService.players().length + ' registered players'" />
     }
   </div>
 

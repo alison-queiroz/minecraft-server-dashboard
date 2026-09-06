@@ -11,6 +11,7 @@ import { PlayersCta } from '../../components/server/players-cta/players-cta.comp
 import { LucideChevronLeft } from '@lucide/angular';
 import { IconComponent } from '../../components/shared/icon/icon.component';
 import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
+import { PageHeaderComponent } from '../../components/shared/page-header/page-header.component';
 
 @Component({
   selector: 'app-server-status',
@@ -27,6 +28,7 @@ import { PageContainerComponent } from '../../components/shared/page-container/p
     PlayersCta,
     IconComponent,
     PageContainerComponent,
+    PageHeaderComponent,
   ],
   templateUrl: './server-status.component.html',
   styleUrls: ['./server-status.component.scss'],

@@ -5,13 +5,14 @@ import { PlayerService } from '../../services/player/player.service';
 import { PlayerListComponent } from '../../components/player/player-list/player-list.component';
 import { PlayerDetailComponent } from '../../components/player/player-detail/player-detail.component';
 import { IconComponent } from '../../components/shared/icon/icon.component';
+import { PageHeaderComponent } from '../../components/shared/page-header/page-header.component';
 import { LucideArrowLeft } from '@lucide/angular';
 
 @Component({
   selector: 'app-players',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PlayerListComponent, PlayerDetailComponent, IconComponent],
+  imports: [PlayerListComponent, PlayerDetailComponent, IconComponent, PageHeaderComponent],
   templateUrl: './players.component.html',
   styleUrls: ['./players.component.scss'],
 })

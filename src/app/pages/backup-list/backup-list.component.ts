@@ -23,6 +23,7 @@ import { catchError, tap } from 'rxjs/operators';
 import { IconComponent } from 'src/app/components/shared/icon/icon.component';
 import { LoadingService } from '../../services/loading/loading.service';
 import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
+import { PageHeaderComponent } from '../../components/shared/page-header/page-header.component';
 
 export interface NavigationPath {
   readonly id: string | null;
@@ -32,7 +33,7 @@ export interface NavigationPath {
 @Component({
   selector: 'app-backup-list',
   standalone: true,
-  imports: [CommonModule, ScrollingModule, IconComponent, PageContainerComponent],
+  imports: [CommonModule, ScrollingModule, IconComponent, PageContainerComponent, PageHeaderComponent],
   templateUrl: './backup-list.component.html',
   styleUrls: ['./backup-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

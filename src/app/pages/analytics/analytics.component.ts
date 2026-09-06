@@ -24,8 +24,8 @@ import {
 } from 'chart.js';
 import type { AnalyticsSeries, Period } from '../../services/analytics/analytics.service';
 import { AnalyticsService } from '../../services/analytics/analytics.service';
-import { IconComponent } from '../../components/shared/icon/icon.component';
 import { EmptyStateComponent } from '../../components/shared/empty-state/empty-state.component';
+import { PageHeaderComponent } from '../../components/shared/page-header/page-header.component';
 import { LoadingService } from '../../services/loading/loading.service';
 import { ThemeService } from '../../services/theme/theme.service';
 import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
@@ -35,7 +35,7 @@ Chart.register(CategoryScale, LinearScale, LineController, LineElement, PointEle
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [IconComponent, EmptyStateComponent, PageContainerComponent],
+  imports: [EmptyStateComponent, PageHeaderComponent, PageContainerComponent],
   templateUrl: './analytics.component.html',
   styleUrls: ['./analytics.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

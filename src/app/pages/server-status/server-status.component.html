@@ -1,16 +1,12 @@
 <app-page-container class="space-y-6">
 
   <!-- Page header -->
-  <div class="status-header">
-    <div>
-      <h1 class="status-title">Server Status</h1>
-      <p class="status-subtitle">Live server information</p>
-    </div>
-    <a routerLink="/" class="status-back-link">
+  <app-page-header title="Server Status" subtitle="Live server information">
+    <a routerLink="/" actions class="status-back-link">
       <app-icon [icon]="LucideChevronLeft" [size]="14"></app-icon>
       Back
     </a>
-  </div>
+  </app-page-header>
 
   <div class="status-grid">
 

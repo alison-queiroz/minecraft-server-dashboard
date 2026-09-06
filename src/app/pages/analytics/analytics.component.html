@@ -1,13 +1,8 @@
 <app-page-container class="p-4 md:p-6 flex flex-col gap-6">
 
   <!-- Header -->
-  <div class="page-header">
-    <h2 class="page-title">
-      <app-icon [icon]="LucideChartLine" [size]="18" [strokeWidth]="2"></app-icon>
-      Server Analytics
-    </h2>
-    <p class="page-subtitle">Player activity over time</p>
-  </div>
+  <app-page-header variant="default" [icon]="LucideChartLine"
+    title="Server Analytics" subtitle="Player activity over time" />
 
   <!-- Summary cards -->
   <div class="stat-cards">

@@ -4,17 +4,6 @@
   overflow-y: auto;
 }
 
-/* Header */
-.page-header {
-  @apply flex flex-col gap-1;
-}
-.page-title {
-  @apply flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100;
-}
-.page-subtitle {
-  @apply text-sm text-zinc-600 dark:text-zinc-400;
-}
-
 /* Stat cards */
 .stat-cards {
   @apply grid grid-cols-2 gap-4;
