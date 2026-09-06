@@ -73,18 +73,12 @@
           <p appItemMeta class="location-description">{{ loc.description }}</p>
         }
         <ng-container appItemActions>
-          <button (click)="previewOnMap(loc.mapHash)" class="location-action location-action--accent" title="Preview on map">
-            <app-icon [icon]="LucideMap" [size]="14"></app-icon>
-          </button>
-          <a [href]="mapUrl(loc.mapHash)" target="_blank" rel="noopener" class="location-action location-action--bright" title="Open in new tab">
+          <app-icon-button [icon]="LucideMap" variant="accent" title="Preview on map" (pressed)="previewOnMap(loc.mapHash)" />
+          <a [href]="mapUrl(loc.mapHash)" target="_blank" rel="noopener" class="ui-icon-button ui-icon-button--bright" title="Open in new tab">
             <app-icon [icon]="LucideExternalLink" [size]="14"></app-icon>
           </a>
-          <button (click)="startEdit(loc)" class="location-action location-action--bright" title="Edit">
-            <app-icon [icon]="LucidePencil" [size]="14"></app-icon>
-          </button>
-          <button (click)="deleteLocation(loc.id)" class="location-action location-action--danger" title="Delete">
-            <app-icon [icon]="LucideTrash2" [size]="14"></app-icon>
-          </button>
+          <app-icon-button [icon]="LucidePencil" variant="bright" title="Edit" (pressed)="startEdit(loc)" />
+          <app-icon-button [icon]="LucideTrash2" variant="danger" title="Delete" (pressed)="deleteLocation(loc.id)" />
         </ng-container>
         <p appItemFooter class="location-hash">
           <app-dimension-tag [world]="hashWorld(loc.mapHash)"></app-dimension-tag>

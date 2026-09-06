@@ -136,22 +136,3 @@
 	@apply mt-1 flex items-center gap-2 text-xs text-zinc-500 font-mono dark:text-zinc-400;
 }
 
-.home-actions {
-	@apply flex shrink-0 gap-1;
-}
-
-.home-action {
-	@apply inline-flex items-center justify-center rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-stone-100 dark:text-zinc-400 dark:hover:bg-zinc-800;
-}
-
-.home-action--accent {
-	@apply hover:text-emerald-400;
-}
-
-.home-action--bright {
-	@apply hover:text-zinc-900 dark:hover:text-zinc-100;
-}
-
-.home-action--danger {
-	@apply hover:bg-red-500/10 hover:text-red-400;
-}

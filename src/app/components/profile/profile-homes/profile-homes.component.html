@@ -137,18 +137,12 @@
               {{ home.x | number:'1.0-1' }},&nbsp;{{ home.y | number:'1.0-1' }},&nbsp;{{ home.z | number:'1.0-1' }}
             </p>
             <ng-container appItemActions>
-              <button (click)="previewHomeOnMap(home)" class="home-action home-action--accent" title="Preview on map">
-                <app-icon [icon]="LucideMap" [size]="14"></app-icon>
-              </button>
-              <a [href]="homeMapUrl(home)" target="_blank" rel="noopener" class="home-action home-action--bright" title="Open in map">
+              <app-icon-button [icon]="LucideMap" variant="accent" title="Preview on map" (pressed)="previewHomeOnMap(home)" />
+              <a [href]="homeMapUrl(home)" target="_blank" rel="noopener" class="ui-icon-button ui-icon-button--bright" title="Open in map">
                 <app-icon [icon]="LucideExternalLink" [size]="14"></app-icon>
               </a>
-              <button (click)="startEdit(home)" class="home-action home-action--bright" title="Edit">
-                <app-icon [icon]="LucidePencil" [size]="14"></app-icon>
-              </button>
-              <button (click)="deleteHome(home)" class="home-action home-action--danger" title="Remove from dashboard and server">
-                <app-icon [icon]="LucideTrash2" [size]="14"></app-icon>
-              </button>
+              <app-icon-button [icon]="LucidePencil" variant="bright" title="Edit" (pressed)="startEdit(home)" />
+              <app-icon-button [icon]="LucideTrash2" variant="danger" title="Remove from dashboard and server" (pressed)="deleteHome(home)" />
             </ng-container>
           </app-profile-item-card>
         }

@@ -15,6 +15,7 @@ import { firstValueFrom } from 'rxjs';
 import type { EssentialsHome } from '../../../services/player/player.model';
 import { LucideHouse, LucidePencil, LucideTrash2, LucideCheck, LucideRefreshCw, LucideMap, LucideExternalLink, LucideChevronDown } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { IconButtonComponent } from '../../shared/icon-button/icon-button.component';
 import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card.component';
 import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
@@ -45,7 +46,7 @@ export interface LocalHome extends EssentialsHome {
   selector: 'app-profile-homes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, IconHomeComponent, UiInputComponent],
+  imports: [IconComponent, IconButtonComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, IconHomeComponent, UiInputComponent],
   templateUrl: './profile-homes.component.html',
   styleUrls: ['./profile-homes.component.scss'],
 })
