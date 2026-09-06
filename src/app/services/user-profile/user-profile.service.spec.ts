@@ -38,17 +38,17 @@ let mockDeleteDoc: ReturnType<typeof vi.fn>;
 let mockOnSnapshot: ReturnType<typeof vi.fn>;
 
 beforeAll(() => {
-  mockGetDoc = firestoreModule.getDoc as unknown as ReturnType<typeof vi.fn>;
-  mockSetDoc = firestoreModule.setDoc as unknown as ReturnType<typeof vi.fn>;
-  mockUpdateDoc = firestoreModule.updateDoc as unknown as ReturnType<typeof vi.fn>;
-  mockDeleteDoc = firestoreModule.deleteDoc as unknown as ReturnType<typeof vi.fn>;
-  mockOnSnapshot = firestoreModule.onSnapshot as unknown as ReturnType<typeof vi.fn>;
+  mockGetDoc = firestoreModule.getDoc;
+  mockSetDoc = firestoreModule.setDoc;
+  mockUpdateDoc = firestoreModule.updateDoc;
+  mockDeleteDoc = firestoreModule.deleteDoc;
+  mockOnSnapshot = firestoreModule.onSnapshot;
 });
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 const makeAuthStub = (uid: string | null = 'user-123') => ({
-  currentUser: signal(uid ? { uid } as { uid: string } : null),
+  currentUser: signal(uid ? { uid } : null),
 });
 
 // ---------------------------------------------------------------------------

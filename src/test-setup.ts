@@ -63,7 +63,7 @@ if (typeof globalThis.Response === 'undefined') {
 }
 
 if (typeof globalThis.fetch === 'undefined') {
-  globalThis.fetch = (() => Promise.resolve(new globalThis.Response())) as typeof fetch;
+  globalThis.fetch = (() => Promise.resolve(new globalThis.Response()));
 }
 
 if (typeof globalThis.ResizeObserver === 'undefined') {
@@ -81,7 +81,7 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     }
   }
 
-  globalThis.ResizeObserver = MockResizeObserver as typeof ResizeObserver;
+  globalThis.ResizeObserver = MockResizeObserver;
 }
 
 if (typeof globalThis.Touch === 'undefined') {
@@ -122,11 +122,11 @@ if (!('clipboard' in navigator)) {
 
 if (!URL.createObjectURL) {
   let blobCounter = 0;
-  URL.createObjectURL = ((_blob: Blob | MediaSource) => `blob:mock-${blobCounter++}`) as typeof URL.createObjectURL;
+  URL.createObjectURL = ((_blob: Blob | MediaSource) => `blob:mock-${blobCounter++}`);
 }
 
 if (!URL.revokeObjectURL) {
-  URL.revokeObjectURL = (() => undefined) as typeof URL.revokeObjectURL;
+  URL.revokeObjectURL = (() => undefined);
 }
 
 afterEach(() => {

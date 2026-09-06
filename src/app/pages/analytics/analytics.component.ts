@@ -113,7 +113,7 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
           pointRadius: 2,
           pointHoverRadius: 5,
           borderWidth: 2,
-        } as ChartDataset<'line'>],
+        }],
       },
       options: {
         responsive: true,

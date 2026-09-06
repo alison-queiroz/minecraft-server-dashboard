@@ -110,7 +110,7 @@ describe('PlayerFaceComponent', () => {
 
   it('falls back to avatarUrl() when skin_url is empty', () => {
     const player = makePlayer({ skin_url: '' });
-    player.avatarUrl = (() => 'https://fallback/avatar.png') as typeof player.avatarUrl;
+    player.avatarUrl = (() => 'https://fallback/avatar.png');
     fixture.componentRef.setInput('player', player);
     fixture.detectChanges();
     const rawSkinUrl = (component as unknown as { rawSkinUrl: () => string }).rawSkinUrl();

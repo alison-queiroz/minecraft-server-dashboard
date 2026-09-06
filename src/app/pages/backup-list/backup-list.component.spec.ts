@@ -255,7 +255,7 @@ describe('BackupListComponent', () => {
 
     // Fire the ResizeObserver callback manually
     if (capturedCallback) {
-      capturedCallback([] as unknown as ResizeObserverEntry[], {} as ResizeObserver);
+      capturedCallback([] as unknown, {});
     }
     // The callback fires viewport?.checkViewportSize — no error is the key assertion
     expect(mockObserve).toHaveBeenCalled();

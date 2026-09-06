@@ -41,7 +41,7 @@ class MockResizeObserver {
   unobserve = jest.fn();
 }
 
-(globalThis as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = MockResizeObserver as typeof ResizeObserver;
+(globalThis as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = MockResizeObserver;
 
 // ---------------------------------------------------------------------------
 // SkinService mock
