@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
 import threading
 from datetime import datetime, timezone
 from typing import Any
@@ -130,40 +129,31 @@ def read_local_snapshots(since: int) -> list[dict[str, Any]]:
     return sorted(results, key=lambda s: s.get("ts", 0))
 
 
-_LOG_FILE = os.environ.get(
-    "MC_LOG_FILE",
-    os.path.join(os.environ.get("MINECRAFT_DIR", "."), "logs", "latest.log"),
-)
+_MC_HOST = os.environ.get("MC_HOST", "localhost")
+_MC_PORT = int(os.environ.get("MC_PORT", "25565"))
 
 
 def _get_online_from_server() -> tuple[list[str], int]:
-    """Parse the server's latest.log to determine which players are currently online.
-    Tracks join/leave events from the beginning of the log file.
-    Falls back to ([], 0) if the log file is unreadable."""
-    if not os.path.exists(_LOG_FILE):
-        logger.debug("Log file not found: %s", _LOG_FILE)
-        return [], 0
-    online: set[str] = set()
-    # Anchor the name directly to the "…/INFO]: " log prefix so an embedded
-    # colon in a chat message (e.g. "note: Steve joined the game") can't be
-    # mistaken for a real join/leave event.
-    join_re  = re.compile(r'\[.*?/INFO\]: (\S+) joined the game')
-    leave_re = re.compile(r'\[.*?/INFO\]: (\S+) left the game')
+    """Return the current online roster from the live Java server via mcstatus.
+
+    This is the same authoritative source used by /api/status — replacing the
+    old latest.log scraping, which re-read the whole (potentially huge) file
+    every minute, missed players across log rotations / crash-without-leave, and
+    could be fooled by chat lines. `count` comes from players.online (accurate
+    even when the player sample is truncated); names come from the sample when
+    available. Returns ([], 0) if the server is unreachable.
+    """
     try:
-        with open(_LOG_FILE, "r", errors="replace") as f:
-            for line in f:
-                m = join_re.search(line)
-                if m:
-                    online.add(m.group(1))
-                    continue
-                m = leave_re.search(line)
-                if m:
-                    online.discard(m.group(1))
+        from mcstatus import JavaServer
+        status = JavaServer(_MC_HOST, _MC_PORT, timeout=3).status()
+        players = getattr(status, "players", None)
+        count = int(getattr(players, "online", 0) or 0) if players is not None else 0
+        sample = getattr(players, "sample", None) if players is not None else None
+        names = sorted(p.name for p in sample) if sample else []
+        return names, count
     except Exception as exc:
-        logger.debug("Could not parse log file: %s", exc)
+        logger.debug("mcstatus query for online players failed: %s", exc)
         return [], 0
-    names = sorted(online)
-    return names, len(names)
 
 
 def sync_players(players: list[dict[str, Any]]) -> None:

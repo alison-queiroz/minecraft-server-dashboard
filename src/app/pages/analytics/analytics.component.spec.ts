@@ -83,6 +83,10 @@ describe('AnalyticsComponent', () => {
     expect(cmp.avgOnline()).toBe(2);
     expect(cmp.hasData()).toBe(true);
     expect(cmp.hasError()).toBe(false);
+
+    // The chart line plots the per-bucket PEAK (a mostly-empty server's avg is ~0).
+    const chart = (fixture.componentInstance as unknown as { chart: { data: { datasets: { data: number[] }[] } } }).chart;
+    expect(chart.data.datasets[0].data).toEqual([5, 4]);
     fixture.destroy();
   });
 

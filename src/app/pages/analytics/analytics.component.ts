@@ -104,7 +104,7 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
       data: {
         labels: [],
         datasets: [{
-          label: 'Players online',
+          label: 'Peak online',
           data: [],
           borderColor: 'rgb(34,197,94)',
           backgroundColor: gradient,
@@ -136,7 +136,7 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
             titleColor: palette.tooltipText,
             bodyColor: palette.tooltipText,
             callbacks: {
-              label: ctx => ` ${ctx.parsed.y} online`,
+              label: ctx => ` ${ctx.parsed.y} peak online`,
             },
           },
           legend: { display: false },
@@ -170,7 +170,10 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
     const period = this.period();
     this.chart.data.labels = series.points.map(p => this.formatTs(p.t, period));
-    (this.chart.data.datasets[0] as ChartDataset<'line'>).data = series.points.map(p => p.avg);
+    // Plot the per-bucket PEAK: on a small, mostly-empty server the true average
+    // rounds to 0 in almost every bucket, so an avg line reads as a flat zero.
+    // The Avg-online summary card still shows the true mean.
+    (this.chart.data.datasets[0] as ChartDataset<'line'>).data = series.points.map(p => p.peak);
     this.chart.update();
 
     this.peakOnline.set(series.summary.peak);

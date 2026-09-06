@@ -168,52 +168,39 @@ def test_read_local_snapshots_filters_by_since(tmp_path, mocker):
 
 # ── _get_online_from_server ───────────────────────────────────────────────────
 
-def test_get_online_from_server_no_log_file(mocker):
-    """Returns empty lists when the log file does not exist."""
-    mocker.patch("os.path.exists", return_value=False)
+def _mock_java_server(mocker, *, online, sample):
+    """Patch mcstatus.JavaServer to return a status with the given players."""
+    players = type("Players", (), {"online": online, "sample": sample})()
+    status = type("Status", (), {"players": players})()
+    server = mocker.MagicMock()
+    server.status.return_value = status
+    mocker.patch("mcstatus.JavaServer", return_value=server)
+
+
+def test_get_online_from_server_returns_roster_from_mcstatus(mocker):
+    """Names + count come from the live mcstatus query (single source of truth)."""
+    sample = [type("P", (), {"name": "Steve"})(), type("P", (), {"name": "Alex"})()]
+    _mock_java_server(mocker, online=2, sample=sample)
     names, count = fs_module._get_online_from_server()
+    assert count == 2
+    assert names == ["Alex", "Steve"]
+
+
+def test_get_online_from_server_count_without_sample(mocker):
+    """Count is taken from players.online even when the sample is truncated/absent."""
+    _mock_java_server(mocker, online=7, sample=None)
+    names, count = fs_module._get_online_from_server()
+    assert count == 7
     assert names == []
-    assert count == 0
 
 
-def test_get_online_from_server_parses_join_leave(tmp_path, mocker):
-    """Tracks join and leave events correctly."""
-    log = tmp_path / "latest.log"
-    log.write_text(
-        "[12:00:00] [Server thread/INFO]: Steve joined the game\n"
-        "[12:01:00] [Server thread/INFO]: Alex joined the game\n"
-        "[12:02:00] [Server thread/INFO]: Steve left the game\n"
-    )
-    mocker.patch.object(fs_module, "_LOG_FILE", str(log))
-
+def test_get_online_from_server_unreachable_returns_empty(mocker):
+    """Returns ([], 0) when the server can't be reached."""
+    server = mocker.MagicMock()
+    server.status.side_effect = Exception("connection refused")
+    mocker.patch("mcstatus.JavaServer", return_value=server)
     names, count = fs_module._get_online_from_server()
-    assert names == ["Alex"]
-    assert count == 1
-
-
-def test_get_online_from_server_read_error(mocker):
-    """Returns empty lists when the log file cannot be read."""
-    mocker.patch("os.path.exists", return_value=True)
-    mocker.patch("builtins.open", side_effect=OSError("permission denied"))
-    names, count = fs_module._get_online_from_server()
-    assert names == []
-    assert count == 0
-
-
-def test_get_online_from_server_ignores_chat_false_positives(tmp_path, mocker):
-    """A chat message containing an embedded ': X joined the game' must not be
-    mistaken for a real join event (regex anchored to the /INFO]: prefix)."""
-    log = tmp_path / "latest.log"
-    log.write_text(
-        "[12:00:00] [Server thread/INFO]: Steve joined the game\n"
-        "[12:00:30] [Server thread/INFO]: <Steve> hey look: Mallory joined the game\n"
-        "[12:01:00] [Server thread/INFO]: <Steve> and now: Mallory left the game\n"
-    )
-    mocker.patch.object(fs_module, "_LOG_FILE", str(log))
-
-    names, count = fs_module._get_online_from_server()
-    assert names == ["Steve"]  # Mallory was only ever mentioned in chat
-    assert count == 1
+    assert (names, count) == ([], 0)
 
 
 # ── sync_players ──────────────────────────────────────────────────────────────

@@ -365,76 +365,6 @@ describe('UserProfileService', () => {
     });
   });
 
-  describe('addHome()', () => {
-    it('does nothing when not authenticated', async () => {
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [
-          UserProfileService,
-          { provide: AuthService, useValue: makeAuthStub(null) },
-        ],
-      });
-      service = TestBed.inject(UserProfileService);
-      await service.addHome({ name: 'h', x: 0, y: 64, z: 0, world: 'world', isPublic: false });
-      expect(service.savedHomes()).toHaveLength(0);
-    });
-
-    it('adds the home to the signal', async () => {
-      await service.addHome({ name: 'h', x: 0, y: 64, z: 0, world: 'world', isPublic: false });
-      expect(service.savedHomes()).toHaveLength(1);
-    });
-  });
-
-  describe('updateHome()', () => {
-    it('does nothing when not authenticated', async () => {
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [
-          UserProfileService,
-          { provide: AuthService, useValue: makeAuthStub(null) },
-        ],
-      });
-      service = TestBed.inject(UserProfileService);
-      await service.updateHome('home-1', { isPublic: true });
-      expect(mockUpdateDoc).not.toHaveBeenCalled();
-    });
-
-    it('updates the home in the signal', async () => {
-      service.profile.set({
-        minecraftAccounts: { java: null, bedrock: null, admin: null },
-        savedLocations: [],
-        savedHomes: [makeHome({ id: 'home-1' })],
-      });
-      await service.updateHome('home-1', { isPublic: true });
-      expect(service.savedHomes()[0].isPublic).toBe(true);
-    });
-  });
-
-  describe('deleteHome()', () => {
-    it('does nothing when not authenticated', async () => {
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [
-          UserProfileService,
-          { provide: AuthService, useValue: makeAuthStub(null) },
-        ],
-      });
-      service = TestBed.inject(UserProfileService);
-      await service.deleteHome('home-1');
-      expect(mockUpdateDoc).not.toHaveBeenCalled();
-    });
-
-    it('removes the home from the signal', async () => {
-      service.profile.set({
-        minecraftAccounts: { java: null, bedrock: null, admin: null },
-        savedLocations: [],
-        savedHomes: [makeHome({ id: 'home-1' })],
-      });
-      await service.deleteHome('home-1');
-      expect(service.savedHomes()).toHaveLength(0);
-    });
-  });
-
   describe('deleteHomeByName()', () => {
     it('does nothing when not authenticated', async () => {
       TestBed.resetTestingModule();
@@ -457,83 +387,6 @@ describe('UserProfileService', () => {
       });
       await service.deleteHomeByName('home');
       expect(service.savedHomes()).toHaveLength(0);
-    });
-  });
-
-  describe('updateAllHomesVisibility()', () => {
-    it('does nothing when not authenticated', async () => {
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [
-          UserProfileService,
-          { provide: AuthService, useValue: makeAuthStub(null) },
-        ],
-      });
-      service = TestBed.inject(UserProfileService);
-      await service.updateAllHomesVisibility(true);
-      expect(mockUpdateDoc).not.toHaveBeenCalled();
-    });
-
-    it('marks all homes public', async () => {
-      service.profile.set({
-        minecraftAccounts: { java: null, bedrock: null, admin: null },
-        savedLocations: [],
-        savedHomes: [makeHome({ id: 'h1', name: 'h1' }), makeHome({ id: 'h2', name: 'h2' })],
-      });
-      await service.updateAllHomesVisibility(true);
-      expect(service.savedHomes().every(h => h.isPublic)).toBe(true);
-    });
-  });
-
-  describe('syncHomesFromServer()', () => {
-    it('does nothing when not authenticated', async () => {
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [
-          UserProfileService,
-          { provide: AuthService, useValue: makeAuthStub(null) },
-        ],
-      });
-      service = TestBed.inject(UserProfileService);
-      await service.syncHomesFromServer([{ name: 'h', x: 0, y: 0, z: 0, world: 'world' }]);
-      expect(mockUpdateDoc).not.toHaveBeenCalled();
-    });
-
-    it('does nothing when serverHomes is empty', async () => {
-      await service.syncHomesFromServer([]);
-      expect(mockUpdateDoc).not.toHaveBeenCalled();
-    });
-
-    it('adds new homes not yet in Firestore', async () => {
-      service.profile.set({
-        minecraftAccounts: { java: null, bedrock: null, admin: null },
-        savedLocations: [],
-        savedHomes: [],
-      });
-      await service.syncHomesFromServer([{ name: 'newHome', x: 1, y: 64, z: 2, world: 'world' }]);
-      expect(service.savedHomes()).toHaveLength(1);
-      expect(service.savedHomes()[0].name).toBe('newHome');
-    });
-
-    it('updates coordinates of existing homes', async () => {
-      service.profile.set({
-        minecraftAccounts: { java: null, bedrock: null, admin: null },
-        savedLocations: [],
-        savedHomes: [makeHome({ id: 'home', name: 'home', x: 0, y: 0, z: 0 })],
-      });
-      await service.syncHomesFromServer([{ name: 'home', x: 99, y: 70, z: -30, world: 'world' }]);
-      expect(service.savedHomes()[0].x).toBe(99);
-    });
-
-    it('does not persist when no homes have changed', async () => {
-      service.profile.set({
-        minecraftAccounts: { java: null, bedrock: null, admin: null },
-        savedLocations: [],
-        savedHomes: [makeHome({ id: 'home', name: 'home', x: 10, y: 64, z: -5, world: 'world' })],
-      });
-      mockUpdateDoc.mockClear();
-      await service.syncHomesFromServer([{ name: 'home', x: 10, y: 64, z: -5, world: 'world' }]);
-      expect(mockUpdateDoc).not.toHaveBeenCalled();
     });
   });
 
@@ -579,15 +432,15 @@ describe('UserProfileService', () => {
     });
   });
 
-  describe('_persistHomes via updateHome', () => {
+  describe('_persistHomes via upsertHomesFromLocal', () => {
     it('persists with a single setDoc merge (no read-before-write)', async () => {
       mockGetDoc.mockResolvedValue(existsSnap({}));
       service.profile.set({
         minecraftAccounts: { java: null, bedrock: null, admin: null },
         savedLocations: [],
-        savedHomes: [makeHome({ id: 'home-1' })],
+        savedHomes: [],
       });
-      await service.updateHome('home-1', { isPublic: true });
+      await service.upsertHomesFromLocal([{ name: 'home', x: 1, y: 2, z: 3, world: 'world', isPublic: true }]);
       expect(mockSetDoc).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ savedHomes: expect.any(Array) }),
