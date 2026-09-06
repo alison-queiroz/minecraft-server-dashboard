@@ -43,7 +43,7 @@ for %%A in (%*) do (
 :: -------------------------------------------------------------------
 set SERVER_IP=163.176.228.223
 set SERVER_USER=opc
-set KEY_PATH="C:\Users\alison.soares\Desktop\Alison\cloud\ssh-key-2025-12-18.key"
+set KEY_PATH="C:\Users\alison.soares\.ssh\oracle_ed25519_2026-05-20"
 
 :: Using %cd% to get the current directory where the .bat is running
 set PROJECT_DIR=%cd%
