@@ -20,6 +20,9 @@ interface ApiPlayerLiveData {
   homes?: EssentialsHome[];
 }
 
+/** Default player ordering (highest level first), shared by both ingest paths. */
+const byLevelDesc = (a: Player, b: Player): number => b.level - a.level;
+
 @Injectable({ providedIn: 'root' })
 export class PlayerService {
   private readonly http = inject(HttpClient);
@@ -27,6 +30,8 @@ export class PlayerService {
   protected readonly rawPlayers = signal<Player[]>([]);
   private readonly houseLinks = signal<Record<string, string>>({});
   private readonly _avatarCache = signal<ReadonlyMap<string, string>>(new Map());
+  /** Ensures the one-time HTTP enrich (for pre-advancement_count docs) fires once. */
+  private _enriched = false;
 
   readonly players = computed(() => {
     const links = this.houseLinks();
@@ -46,7 +51,8 @@ export class PlayerService {
   );
 
   readonly filteredPlayers = computed(() => {
-    const term = this.searchTerm().toLowerCase().trim();
+    // matchesSearch() normalizes case itself, so only trim here.
+    const term = this.searchTerm().trim();
     const all = this.players();
 
     if (!term) return all;
@@ -78,19 +84,14 @@ export class PlayerService {
           }
           const players = snapshot.docs
             .map(d => new Player(d.data() as Partial<Player>))
-            .sort((a, b) => b.level - a.level);
-          const current = this.rawPlayers();
-          const changed = players.length !== current.length ||
-            players.some((p, i) =>
-              p.uuid !== current[i]?.uuid ||
-              p.level !== current[i]?.level ||
-              p.dimension !== current[i]?.dimension ||
-              p.last_seen !== current[i]?.last_seen
-            );
-          if (!changed) return;
+            .sort(byLevelDesc);
+          // onSnapshot only fires on real document changes, so publish the list
+          // directly. The previous hand-rolled index-based diff omitted volatile
+          // fields (health, pos) and could leave the UI showing stale values.
           this.rawPlayers.set(players);
-          // If Firestore docs predate advancement_count, enrich from HTTP API
-          if (players.some(p => p.advancement_count === undefined)) {
+          // If Firestore docs predate advancement_count, enrich once from the API.
+          if (!this._enriched && players.some(p => p.advancement_count === undefined)) {
+            this._enriched = true;
             this.enrichFromApi();
           }
         },
@@ -110,7 +111,7 @@ export class PlayerService {
       catchError(() => of([] as Partial<Player>[])),
       tap(data => {
         if (data.length) {
-          this.rawPlayers.set(data.map(p => new Player(p)).sort((a, b) => b.level - a.level));
+          this.rawPlayers.set(data.map(p => new Player(p)).sort(byLevelDesc));
         }
       }),
     ).subscribe();

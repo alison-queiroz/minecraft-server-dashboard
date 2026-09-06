@@ -5,8 +5,11 @@ import json
 import logging
 import os
 import re
+import threading
 from datetime import datetime, timezone
 from typing import Any
+
+from .firebase_init import ensure_initialized
 
 logger = logging.getLogger(__name__)
 
@@ -18,35 +21,21 @@ _LOCAL_SNAPSHOTS_PATH = os.environ.get(
 )
 _LOCAL_SNAPSHOTS_MAX_DAYS = 365
 
+# Retained for backward-compat / tests; the real init state lives in firebase_init.
 _firebase_initialized = False
-_firebase_init_warned = False
+
+# Serializes appends so concurrent sync threads can't interleave and corrupt
+# the JSONL file (the old full read-rewrite had no lock).
+_snapshot_write_lock = threading.Lock()
+_writes_since_prune = 0
+_PRUNE_EVERY = 1440  # prune stale lines once per ~day of minute snapshots
 
 
 def _ensure_firebase() -> bool:
     """Initialize Firebase Admin SDK if not already done. Returns True on success."""
-    global _firebase_initialized, _firebase_init_warned
-    if _firebase_initialized:
-        return True
-    try:
-        import firebase_admin
-        from firebase_admin import credentials
-        # Avoid re-initializing if another code path already did it
-        if not firebase_admin._apps:
-            sa_path = os.environ.get(
-                "FIREBASE_SA_KEY",
-                "/home/opc/minecraft/firebase-service-account.json",
-            )
-            cred = credentials.Certificate(sa_path)
-            firebase_admin.initialize_app(cred)
-        _firebase_initialized = True
-        return True
-    except Exception as exc:
-        if not _firebase_init_warned:
-            logger.warning("Firebase init failed in sync thread: %s", exc)
-            _firebase_init_warned = True
-        else:
-            logger.debug("Firebase init failed in sync thread: %s", exc)
-        return False
+    global _firebase_initialized
+    _firebase_initialized = ensure_initialized()
+    return _firebase_initialized
 
 
 def _to_native(value: Any) -> Any:
@@ -67,29 +56,53 @@ def _to_native(value: Any) -> Any:
     return str(value)
 
 
-def _write_local_snapshot(ts: int, online: list[str], count: int) -> None:
-    """Append a snapshot to the local JSONL file, pruning entries older than 1 year."""
+def _prune_local_snapshots(now_ts: int) -> None:
+    """Drop snapshot lines older than the retention window (single rewrite).
+
+    Called from _write_local_snapshot on a schedule (not every write) while the
+    snapshot write lock is held.
+    """
+    path = os.path.abspath(_LOCAL_SNAPSHOTS_PATH)
+    if not os.path.exists(path):
+        return
+    cutoff = now_ts - _LOCAL_SNAPSHOTS_MAX_DAYS * 86_400
+    kept: list[str] = []
+    with open(path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                if json.loads(line).get("ts", 0) >= cutoff:
+                    kept.append(line)
+            except json.JSONDecodeError:
+                pass
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        f.write("\n".join(kept) + ("\n" if kept else ""))
+    os.replace(tmp, path)
+
+
+def _write_local_snapshot(ts: int, count: int) -> None:
+    """Append one analytics snapshot line to the local JSONL file.
+
+    O(1) append under a lock (concurrent writers previously could interleave a
+    full read-rewrite and truncate/duplicate the file). Stale entries are pruned
+    on a schedule via _prune_local_snapshots rather than on every write. Only
+    {ts, count} is stored: the online-name roster is never read back and was
+    pure storage/wire waste.
+    """
+    global _writes_since_prune
     try:
         path = os.path.abspath(_LOCAL_SNAPSHOTS_PATH)
-        cutoff = ts - _LOCAL_SNAPSHOTS_MAX_DAYS * 86_400
-        entry = json.dumps({"ts": ts, "online": online, "count": count})
-
-        # Read existing lines, filter stale ones, append new entry
-        existing: list[str] = []
-        if os.path.exists(path):
-            with open(path, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        if json.loads(line).get("ts", 0) >= cutoff:
-                            existing.append(line)
-                    except json.JSONDecodeError:
-                        pass
-        existing.append(entry)
-        with open(path, "w") as f:
-            f.write("\n".join(existing) + "\n")
+        entry = json.dumps({"ts": ts, "count": count})
+        with _snapshot_write_lock:
+            with open(path, "a") as f:
+                f.write(entry + "\n")
+            _writes_since_prune += 1
+            if _writes_since_prune >= _PRUNE_EVERY:
+                _writes_since_prune = 0
+                _prune_local_snapshots(ts)
     except Exception as exc:
         logger.debug("Could not write local snapshot: %s", exc)
 
@@ -114,10 +127,13 @@ def read_local_snapshots(since: int) -> list[dict[str, Any]]:
                     pass
     except Exception as exc:
         logger.debug("Could not read local snapshots: %s", exc)
-    return sorted(results, key=lambda s: s["ts"])
+    return sorted(results, key=lambda s: s.get("ts", 0))
 
 
-_LOG_FILE = os.environ.get("MC_LOG_FILE", "logs/latest.log")
+_LOG_FILE = os.environ.get(
+    "MC_LOG_FILE",
+    os.path.join(os.environ.get("MINECRAFT_DIR", "."), "logs", "latest.log"),
+)
 
 
 def _get_online_from_server() -> tuple[list[str], int]:
@@ -128,8 +144,11 @@ def _get_online_from_server() -> tuple[list[str], int]:
         logger.debug("Log file not found: %s", _LOG_FILE)
         return [], 0
     online: set[str] = set()
-    join_re  = re.compile(r'\[.*?/INFO\].*?: (\S+) joined the game')
-    leave_re = re.compile(r'\[.*?/INFO\].*?: (\S+) left the game')
+    # Anchor the name directly to the "…/INFO]: " log prefix so an embedded
+    # colon in a chat message (e.g. "note: Steve joined the game") can't be
+    # mistaken for a real join/leave event.
+    join_re  = re.compile(r'\[.*?/INFO\]: (\S+) joined the game')
+    leave_re = re.compile(r'\[.*?/INFO\]: (\S+) left the game')
     try:
         with open(_LOG_FILE, "r", errors="replace") as f:
             for line in f:
@@ -152,10 +171,10 @@ def sync_players(players: list[dict[str, Any]]) -> None:
     Also writes the snapshot locally as a fallback for when Firestore is unavailable."""
     now = datetime.now(timezone.utc)
     ts = int(now.timestamp())
-    online_names, online_count = _get_online_from_server()
+    _, online_count = _get_online_from_server()
 
     # Always write to local file regardless of Firestore availability
-    _write_local_snapshot(ts, online_names, online_count)
+    _write_local_snapshot(ts, online_count)
 
     if not _ensure_firebase():
         return
@@ -168,12 +187,12 @@ def sync_players(players: list[dict[str, Any]]) -> None:
             ref = db.collection("players").document(player["uuid"])
             batch.set(ref, _to_native(player))
 
-        # Write analytics snapshot (minute-level granularity)
+        # Write analytics snapshot (minute-level granularity). Only {ts, count}
+        # is stored — the online-name roster is never read back by any consumer.
         snapshot_id = now.strftime("%Y-%m-%dT%H:%M")
         snapshot_ref = db.collection("snapshots").document(snapshot_id)
         batch.set(snapshot_ref, {
             "ts": ts,
-            "online": online_names,
             "count": online_count,
         }, merge=True)
 

@@ -1,5 +1,10 @@
 import pytest
 from api.server_api import app
+import api.server_api as srv
+import api.firebase_init as fb_init
+
+VALID_UUID = "069a79f4-44e9-4726-a5be-fca90e38aaf5"
+
 
 @pytest.fixture
 def client():
@@ -7,6 +12,22 @@ def client():
     app.config["TESTING"] = True
     with app.test_client() as client:
         yield client
+
+
+@pytest.fixture(autouse=True)
+def _reset_shared_state():
+    """Reset process-wide globals around every test so results are order-
+    independent: Firebase init state (now shared via firebase_init), the status
+    cache, and the rate-limiter buckets."""
+    def _reset():
+        fb_init._reset_for_tests()
+        srv._FIREBASE_INITIALIZED = False
+        srv._STATUS_CACHE.clear()
+        with srv._rl_lock:
+            srv._rl_attempts.clear()
+    _reset()
+    yield
+    _reset()
 
 def test_players_endpoint_unauthorized(client, mocker):
     """Ensure the endpoint returns 401 when no token is provided."""
@@ -404,42 +425,48 @@ def test_force_resync_endpoint(client, mocker):
 
 # ── /api/analytics ────────────────────────────────────────────────────────────
 
-def test_analytics_returns_sorted_local_snapshots(client, mocker):
-    """Returns snapshots from the local store, sorted by ts ascending."""
+def test_analytics_aggregates_local_snapshots(client, mocker):
+    """Buckets local snapshots server-side into points + a peak/avg summary."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
 
+    # Two raw rows in the same 6h (week) bucket: counts 1 and 2.
     snapshots = [
-        {"ts": 1700000020, "count": 2, "online": ["Alex"]},
-        {"ts": 1700000010, "count": 1, "online": ["Steve"]},
+        {"ts": 1700000020, "count": 2},
+        {"ts": 1700000010, "count": 1},
     ]
     mocker.patch("api.server_api.read_local_snapshots", return_value=list(snapshots))
-    # Firestore unavailable — the except branch is taken and only local data is returned
+    # Firestore unavailable — the except branch is taken and only local data is used
     mocker.patch("firebase_admin.firestore.client", side_effect=Exception("no firestore"))
 
     headers = {"Authorization": "Bearer fake_token"}
     response = client.get("/api/analytics?period=week", headers=headers)
 
     assert response.status_code == 200
-    result = response.json
-    assert len(result) == 2
-    # Must be sorted ascending by ts
-    assert result[0]["ts"] < result[1]["ts"]
+    body = response.json
+    assert set(body) == {"points", "summary"}
+    # Peak across the raw counts is 2; mean of {1,2} rounds to 2.
+    assert body["summary"] == {"peak": 2, "avg": 2}
+    # Points are sorted ascending by bucket start and each carries avg + peak.
+    ts_values = [p["t"] for p in body["points"]]
+    assert ts_values == sorted(ts_values)
+    assert all("avg" in p and "peak" in p for p in body["points"])
+    assert max(p["peak"] for p in body["points"]) == 2
 
 
-def test_analytics_returns_empty_list_when_no_snapshots(client, mocker):
-    """Returns an empty list when no local snapshots exist."""
+def test_analytics_returns_empty_series_when_no_snapshots(client, mocker):
+    """Returns empty points + a zeroed summary when no snapshots exist."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
     mocker.patch("api.server_api.read_local_snapshots", return_value=[])
-    # Firestore unavailable — the except branch is taken and only local data is returned
+    # Firestore unavailable — the except branch is taken and only local data is used
     mocker.patch("firebase_admin.firestore.client", side_effect=Exception("no firestore"))
 
     headers = {"Authorization": "Bearer fake_token"}
     response = client.get("/api/analytics?period=day", headers=headers)
 
     assert response.status_code == 200
-    assert response.json == []
+    assert response.json == {"points": [], "summary": {"peak": 0, "avg": 0}}
 
 
 # ── /api/advancements/<uuid> ──────────────────────────────────────────────────
@@ -520,16 +547,15 @@ def test_analytics_merges_firestore_snapshots(client, mocker):
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
 
-    local_data = [{"ts": 1000, "count": 1, "online": ["Steve"]}]
+    # Local count 1; Firestore contributes a higher count (3) in a later bucket.
+    local_data = [{"ts": 1000, "count": 1}]
     mocker.patch("api.server_api.read_local_snapshots", return_value=list(local_data))
     mocker.patch("api.server_api._init_firebase")
-
-    import api.server_api as srv
     srv._FIREBASE_INITIALIZED = True
 
     # Build a mock Firestore snap document — .get(key) takes one positional arg
     mock_snap = mocker.MagicMock()
-    firestore_row = {"ts": 2000, "count": 3, "online": ["Alex"]}
+    firestore_row = {"ts": 1000 + 8 * 3600, "count": 3}  # different 6h bucket
     mock_snap.get = firestore_row.get  # dict.get already accepts (key, default)
 
     mock_db = mocker.MagicMock()
@@ -540,20 +566,19 @@ def test_analytics_merges_firestore_snapshots(client, mocker):
     response = client.get("/api/analytics?period=week", headers=headers)
 
     assert response.status_code == 200
-    result = response.json
-    ts_values = [r["ts"] for r in result]
-    assert 1000 in ts_values
-    assert 2000 in ts_values
+    body = response.json
+    # Two distinct buckets (local + Firestore) and the Firestore count (3)
+    # is reflected in the overall peak — proving the merge happened.
+    assert len(body["points"]) == 2
+    assert body["summary"]["peak"] == 3
 
 
 def test_analytics_handles_firestore_exception(client, mocker):
     """Falls back to local-only results when the Firestore query raises."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
-    mocker.patch("api.server_api.read_local_snapshots", return_value=[{"ts": 999, "count": 1, "online": []}])
+    mocker.patch("api.server_api.read_local_snapshots", return_value=[{"ts": 999, "count": 1}])
     mocker.patch("api.server_api._init_firebase")
-
-    import api.server_api as srv
     srv._FIREBASE_INITIALIZED = True
     mocker.patch("firebase_admin.firestore.client", side_effect=Exception("Firestore down"))
 
@@ -561,7 +586,8 @@ def test_analytics_handles_firestore_exception(client, mocker):
     response = client.get("/api/analytics?period=week", headers=headers)
 
     assert response.status_code == 200
-    assert len(response.json) == 1
+    assert len(response.json["points"]) == 1
+    assert response.json["summary"]["peak"] == 1
 
 
 # ── Java / Bedrock status inner fetch logic ───────────────────────────────────
@@ -725,13 +751,14 @@ def test_player_homes_endpoint_returns_homes(client, mocker):
     """Returns homes for a player UUID through the dedicated homes endpoint."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
     mocker.patch(
         "api.server_api.read_essentials_homes",
         return_value=[{"name": "home", "world": "world", "x": 1.0, "y": 64.0, "z": 2.0}],
     )
 
     headers = {"Authorization": "Bearer token"}
-    response = client.get("/api/players/aaaa-bbbb/homes", headers=headers)
+    response = client.get(f"/api/players/{VALID_UUID}/homes", headers=headers)
     assert response.status_code == 200
     assert response.json[0]["name"] == "home"
 
@@ -740,9 +767,10 @@ def test_create_player_home_endpoint_validates_body(client, mocker):
     """Returns 400 when create home payload is missing required fields."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
 
     headers = {"Authorization": "Bearer token"}
-    response = client.post("/api/players/uuid/homes", headers=headers, json={"name": "home"})
+    response = client.post(f"/api/players/{VALID_UUID}/homes", headers=headers, json={"name": "home"})
     assert response.status_code == 400
 
 
@@ -750,11 +778,12 @@ def test_create_player_home_endpoint_conflict(client, mocker):
     """Returns 409 when create_essentials_home reports existing home."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
     mocker.patch("api.server_api.create_essentials_home", return_value=False)
 
     headers = {"Authorization": "Bearer token"}
     response = client.post(
-        "/api/players/uuid/homes",
+        f"/api/players/{VALID_UUID}/homes",
         headers=headers,
         json={"name": "home", "x": 1, "y": 64, "z": 2, "world": "world"},
     )
@@ -765,11 +794,12 @@ def test_create_player_home_endpoint_success(client, mocker):
     """Creates a home and returns 201 with ok=true."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
     mocker.patch("api.server_api.create_essentials_home", return_value=True)
 
     headers = {"Authorization": "Bearer token"}
     response = client.post(
-        "/api/players/uuid/homes",
+        f"/api/players/{VALID_UUID}/homes",
         headers=headers,
         json={"name": "home", "x": 1, "y": 64, "z": 2, "world": "world"},
     )
@@ -781,9 +811,10 @@ def test_update_player_home_endpoint_validates_body(client, mocker):
     """Returns 400 when update payload is missing required coordinates/world."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
 
     headers = {"Authorization": "Bearer token"}
-    response = client.put("/api/players/uuid/homes/home", headers=headers, json={"x": 1})
+    response = client.put(f"/api/players/{VALID_UUID}/homes/home", headers=headers, json={"x": 1})
     assert response.status_code == 400
 
 
@@ -791,11 +822,12 @@ def test_update_player_home_endpoint_not_found(client, mocker):
     """Returns 404 when update_essentials_home fails to find the target."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
     mocker.patch("api.server_api.update_essentials_home", return_value=False)
 
     headers = {"Authorization": "Bearer token"}
     response = client.put(
-        "/api/players/uuid/homes/home",
+        f"/api/players/{VALID_UUID}/homes/home",
         headers=headers,
         json={"x": 1, "y": 64, "z": 2, "world": "world", "new_name": "new-home"},
     )
@@ -806,11 +838,12 @@ def test_update_player_home_endpoint_success(client, mocker):
     """Updates an existing home and returns ok=true."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
     mocker.patch("api.server_api.update_essentials_home", return_value=True)
 
     headers = {"Authorization": "Bearer token"}
     response = client.put(
-        "/api/players/uuid/homes/home",
+        f"/api/players/{VALID_UUID}/homes/home",
         headers=headers,
         json={"x": 1, "y": 64, "z": 2, "world": "world"},
     )
@@ -822,10 +855,11 @@ def test_delete_player_home_endpoint_not_found(client, mocker):
     """Returns 404 when deleting a missing home."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
     mocker.patch("api.server_api.delete_essentials_home", return_value=False)
 
     headers = {"Authorization": "Bearer token"}
-    response = client.delete("/api/players/uuid/homes/home", headers=headers)
+    response = client.delete(f"/api/players/{VALID_UUID}/homes/home", headers=headers)
     assert response.status_code == 404
 
 
@@ -833,10 +867,11 @@ def test_delete_player_home_endpoint_success(client, mocker):
     """Deletes a home and returns ok=true."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
     mocker.patch("api.server_api.delete_essentials_home", return_value=True)
 
     headers = {"Authorization": "Bearer token"}
-    response = client.delete("/api/players/uuid/homes/home", headers=headers)
+    response = client.delete(f"/api/players/{VALID_UUID}/homes/home", headers=headers)
     assert response.status_code == 200
     assert response.json == {"ok": True}
 
@@ -853,22 +888,48 @@ def test_ops_endpoint_returns_names(client, mocker):
     assert response.json == ["Steve", "Alex"]
 
 
-def test_internal_force_resync_rejects_non_loopback(client):
-    """Returns 403 for non-loopback callers."""
-    response = client.post("/api/internal/force-resync", environ_overrides={"REMOTE_ADDR": "10.0.0.2"})
+def test_internal_force_resync_rejects_missing_secret(client, mocker):
+    """Returns 403 when no shared secret is provided (even from loopback)."""
+    mocker.patch.dict("os.environ", {"INTERNAL_API_SECRET": "s3cret"})
+    response = client.post("/api/internal/force-resync", environ_overrides={"REMOTE_ADDR": "127.0.0.1"})
     assert response.status_code == 403
 
 
-def test_internal_force_resync_allows_loopback(client, mocker):
-    """Allows localhost caller and returns player count."""
+def test_internal_force_resync_rejects_wrong_secret(client, mocker):
+    """Returns 403 when the provided secret does not match."""
+    mocker.patch.dict("os.environ", {"INTERNAL_API_SECRET": "s3cret"})
+    response = client.post(
+        "/api/internal/force-resync",
+        headers={"X-Internal-Secret": "wrong"},
+        environ_overrides={"REMOTE_ADDR": "127.0.0.1"},
+    )
+    assert response.status_code == 403
+
+
+def test_internal_force_resync_fails_closed_when_unconfigured(client, mocker):
+    """Returns 403 when INTERNAL_API_SECRET is empty/unconfigured."""
+    mocker.patch.dict("os.environ", {"INTERNAL_API_SECRET": ""})
+    response = client.post(
+        "/api/internal/force-resync",
+        headers={"X-Internal-Secret": "anything"},
+    )
+    assert response.status_code == 403
+
+
+def test_internal_force_resync_allows_valid_secret(client, mocker):
+    """Allows a caller presenting the correct shared secret and returns count."""
     from unittest.mock import MagicMock
 
+    mocker.patch.dict("os.environ", {"INTERNAL_API_SECRET": "s3cret"})
     mocker.patch("api.server_api.get_players", return_value=[{"name": "Steve"}, {"name": "Alex"}])
     mocker.patch("api.player_data._cache", MagicMock(last_updated=123.0))
     mocker.patch("api.skin_resolver._url_resolution_cache", {})
     mocker.patch("api.skin_resolver._url_resolved_at", {})
 
-    response = client.post("/api/internal/force-resync", environ_overrides={"REMOTE_ADDR": "127.0.0.1"})
+    response = client.post(
+        "/api/internal/force-resync",
+        headers={"X-Internal-Secret": "s3cret"},
+    )
     assert response.status_code == 200
     assert response.json == {"ok": True, "players": 2}
 
@@ -1067,3 +1128,270 @@ def test_verify_minecraft_password_unexpected_error_returns_500(client, mocker):
     )
     assert response.status_code == 500
     assert response.json["valid"] is False
+
+
+# ── services-catalog validator ───────────────────────────────────────────────
+
+def test_validate_services_catalog_accepts_valid_payload():
+    ok, err = srv._validate_services_catalog({
+        "updatedAt": "2026-01-01",
+        "sections": [{
+            "title": "Servers", "description": "",
+            "services": [{"name": "svc", "access": "public", "host": "h", "port": 25565}],
+        }],
+    })
+    assert ok is True
+    assert err == ""
+
+
+@pytest.mark.parametrize("payload,fragment", [
+    ({"sections": []}, "updatedAt"),
+    ({"updatedAt": "   ", "sections": []}, "updatedAt"),
+    ({"updatedAt": "x", "sections": "nope"}, "sections must be an array"),
+    ({"updatedAt": "x", "sections": ["bad"]}, "each section must be an object"),
+    ({"updatedAt": "x", "sections": [{"title": "", "description": "", "services": []}]}, "section.title"),
+    ({"updatedAt": "x", "sections": [{"title": "T", "description": 1, "services": []}]}, "section.description"),
+    ({"updatedAt": "x", "sections": [{"title": "T", "description": "", "services": "no"}]}, "section.services"),
+    ({"updatedAt": "x", "sections": [{"title": "T", "description": "", "services": ["bad"]}]}, "each service"),
+    ({"updatedAt": "x", "sections": [{"title": "T", "description": "", "services": [{"name": "", "access": "a"}]}]}, "service.name"),
+    ({"updatedAt": "x", "sections": [{"title": "T", "description": "", "services": [{"name": "n", "access": ""}]}]}, "service.access"),
+    ({"updatedAt": "x", "sections": [{"title": "T", "description": "", "services": [{"name": "n", "access": "a", "host": 1}]}]}, "service.host"),
+    ({"updatedAt": "x", "sections": [{"title": "T", "description": "", "services": [{"name": "n", "access": "a", "port": 0}]}]}, "service.port"),
+])
+def test_validate_services_catalog_rejects_invalid_payload(payload, fragment):
+    ok, err = srv._validate_services_catalog(payload)
+    assert ok is False
+    assert fragment in err
+
+
+def test_services_catalog_put_rejects_non_dict_body(client, mocker):
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "admin"})
+    mocker.patch("api.server_api._is_services_admin", return_value=True)
+    r = client.put("/api/services-catalog", headers={"Authorization": "Bearer t"},
+                   json=["not", "a", "dict"])
+    assert r.status_code == 400
+
+
+def test_services_catalog_put_rejects_invalid_catalog(client, mocker):
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "admin"})
+    mocker.patch("api.server_api._is_services_admin", return_value=True)
+    r = client.put("/api/services-catalog", headers={"Authorization": "Bearer t"},
+                   json={"updatedAt": "", "sections": []})
+    assert r.status_code == 400
+
+
+def test_services_admin_uids_parsing(mocker):
+    mocker.patch.dict("os.environ", {"SERVICES_CATALOG_ADMIN_UIDS": " a , b ,, c "})
+    assert srv._services_admin_uids() == {"a", "b", "c"}
+
+
+# ── rate limiter ─────────────────────────────────────────────────────────────
+
+def test_check_rate_limit_blocks_after_max():
+    srv._rl_attempts.clear()
+    key = "user-rl"
+    for _ in range(srv._RL_MAX):
+        assert srv._check_rate_limit(key) is True
+    assert srv._check_rate_limit(key) is False
+
+
+def test_check_rate_limit_resets_after_window(mocker):
+    srv._rl_attempts.clear()
+    now = [1000.0]
+    mocker.patch("api.server_api.time.time", side_effect=lambda: now[0])
+    key = "user-rl2"
+    for _ in range(srv._RL_MAX):
+        assert srv._check_rate_limit(key) is True
+    assert srv._check_rate_limit(key) is False
+    now[0] += srv._RL_WINDOW + 1
+    assert srv._check_rate_limit(key) is True
+
+
+def test_check_rate_limit_evicts_stale_keys(mocker):
+    srv._rl_attempts.clear()
+    now = [1000.0]
+    mocker.patch("api.server_api.time.time", side_effect=lambda: now[0])
+    srv._check_rate_limit("stale-key")
+    now[0] += srv._RL_WINDOW + 1
+    srv._check_rate_limit("fresh-key")
+    assert "stale-key" not in srv._rl_attempts
+
+
+def test_verify_password_rate_limited_returns_429(client, mocker):
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "u"})
+    mocker.patch("api.server_api._check_rate_limit", return_value=False)
+    r = client.post("/api/verify-minecraft-password", headers={"Authorization": "Bearer t"},
+                    json={"username": "a", "password": "b"})
+    assert r.status_code == 429
+
+
+# ── homes ownership / validation (IDOR fix) ──────────────────────────────────
+
+def test_homes_get_rejects_invalid_uuid(client, mocker):
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "u"})
+    r = client.get("/api/players/not-a-uuid/homes", headers={"Authorization": "Bearer t"})
+    assert r.status_code == 400
+
+
+def test_homes_get_forbidden_when_not_owner(client, mocker):
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "u"})
+    mocker.patch("api.server_api._user_owns_player", return_value=False)
+    r = client.get(f"/api/players/{VALID_UUID}/homes", headers={"Authorization": "Bearer t"})
+    assert r.status_code == 403
+
+
+def test_homes_create_forbidden_when_not_owner(client, mocker):
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "u"})
+    mocker.patch("api.server_api._user_owns_player", return_value=False)
+    r = client.post(f"/api/players/{VALID_UUID}/homes", headers={"Authorization": "Bearer t"},
+                    json={"name": "h", "x": 1, "y": 1, "z": 1, "world": "w"})
+    assert r.status_code == 403
+
+
+def test_homes_create_non_numeric_coord_returns_400(client, mocker):
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "u"})
+    mocker.patch("api.server_api._user_owns_player", return_value=True)
+    r = client.post(f"/api/players/{VALID_UUID}/homes", headers={"Authorization": "Bearer t"},
+                    json={"name": "h", "x": "abc", "y": 1, "z": 1, "world": "w"})
+    assert r.status_code == 400
+
+
+def test_user_owns_player_matches_linked_name(mocker):
+    mocker.patch("api.server_api.get_uuid_to_name", return_value={VALID_UUID: "Steve"})
+    mock_doc = mocker.MagicMock()
+    mock_doc.exists = True
+    mock_doc.to_dict.return_value = {"minecraftAccounts": {"java": "Steve", "bedrock": None, "admin": None}}
+    mock_db = mocker.MagicMock()
+    mock_db.collection.return_value.document.return_value.get.return_value = mock_doc
+    mocker.patch("firebase_admin.firestore.client", return_value=mock_db)
+    with app.test_request_context():
+        from flask import g
+        g.auth_uid = "uid-1"
+        assert srv._user_owns_player(VALID_UUID) is True
+
+
+def test_user_owns_player_rejects_foreign_uuid(mocker):
+    mocker.patch("api.server_api.get_uuid_to_name", return_value={VALID_UUID: "Mallory"})
+    mock_doc = mocker.MagicMock()
+    mock_doc.exists = True
+    mock_doc.to_dict.return_value = {"minecraftAccounts": {"java": "Steve", "bedrock": None, "admin": None}}
+    mock_db = mocker.MagicMock()
+    mock_db.collection.return_value.document.return_value.get.return_value = mock_doc
+    mocker.patch("firebase_admin.firestore.client", return_value=mock_db)
+    with app.test_request_context():
+        from flask import g
+        g.auth_uid = "uid-1"
+        assert srv._user_owns_player(VALID_UUID) is False
+
+
+# ── analytics aggregation ────────────────────────────────────────────────────
+
+def test_aggregate_snapshots_buckets_and_summary():
+    rows = [{"ts": 0, "count": 1}, {"ts": 100, "count": 3}]  # same 15-min (day) bucket
+    out = srv._aggregate_snapshots(rows, "day")
+    assert out["points"] == [{"t": 0, "avg": 2, "peak": 3}]
+    assert out["summary"] == {"peak": 3, "avg": 2}
+
+
+def test_aggregate_snapshots_skips_none_ts():
+    rows = [{"ts": None, "count": 99}, {"ts": 10, "count": 2}]
+    out = srv._aggregate_snapshots(rows, "day")
+    assert out["summary"]["peak"] == 2  # the ts=None row is ignored
+    assert len(out["points"]) == 1
+
+
+def test_analytics_dedups_local_over_firestore_on_matching_ts(client, mocker):
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "u"})
+    mocker.patch("api.server_api.read_local_snapshots", return_value=[{"ts": 1000, "count": 1}])
+    mocker.patch("api.server_api._init_firebase")
+    srv._FIREBASE_INITIALIZED = True
+    mock_snap = mocker.MagicMock()
+    row = {"ts": 1000, "count": 9}  # SAME ts as local — must be skipped
+    mock_snap.get = row.get
+    mock_db = mocker.MagicMock()
+    mock_db.collection.return_value.where.return_value.order_by.return_value.stream.return_value = [mock_snap]
+    mocker.patch("firebase_admin.firestore.client", return_value=mock_db)
+    r = client.get("/api/analytics?period=week", headers={"Authorization": "Bearer t"})
+    # Firestore row deduped → local count (1) wins, so peak stays 1 (not 9).
+    assert r.json["summary"]["peak"] == 1
+
+
+# ── AuthMe SHA/bcrypt reject paths ───────────────────────────────────────────
+
+def _verify_password(client, mocker, stored, password, checkpw_result=False):
+    from unittest.mock import MagicMock
+    import types
+    import sys
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "u"})
+    mocker.patch("api.server_api._check_rate_limit", return_value=True)
+    fake_conn = MagicMock()
+    fake_conn.execute.return_value.fetchone.return_value = (stored,)
+    mocker.patch("sqlite3.connect", return_value=fake_conn)
+    mocker.patch.dict(sys.modules, {"bcrypt": types.SimpleNamespace(checkpw=lambda *_: checkpw_result)})
+    return client.post("/api/verify-minecraft-password",
+                       json={"username": "Steve", "password": password},
+                       headers={"Authorization": "Bearer t"})
+
+
+def test_verify_password_sha_wrong_password_returns_false(client, mocker):
+    import hashlib
+    salt = "pepper"
+    inner = hashlib.sha256("correct".encode()).hexdigest()
+    stored = f"$SHA${salt}${hashlib.sha256((inner + salt).encode()).hexdigest()}"
+    r = _verify_password(client, mocker, stored, "WRONG")
+    assert r.status_code == 200
+    assert r.json == {"valid": False}
+
+
+def test_verify_password_sha_malformed_returns_false(client, mocker):
+    # Only 3 '$'-segments instead of 4 → falls through to valid:False
+    r = _verify_password(client, mocker, "$SHA$onlysalt", "whatever")
+    assert r.status_code == 200
+    assert r.json == {"valid": False}
+
+
+def test_verify_password_bcrypt_reject_returns_false(client, mocker):
+    stored = "$2b$10$abcdefghijklmnopqrstuvwxyzABCDE1234567890abcd"
+    r = _verify_password(client, mocker, stored, "nope", checkpw_result=False)
+    assert r.status_code == 200
+    assert r.json == {"valid": False}
+
+
+# ── status endpoint identity leak ────────────────────────────────────────────
+
+def test_java_status_strips_sample_for_anonymous(client, mocker):
+    srv._STATUS_CACHE.clear()
+    def fake_fetch():
+        return {"online": True, "version": "1.21",
+                "players": {"online": 1, "max": 20, "sample": [{"name": "Steve", "id": "abc"}]},
+                "motd": {"clean": [""]}}
+    mocker.patch("api.server_api._cached_status", side_effect=lambda key, fn: fake_fetch())
+    # No Authorization header → anonymous → sample stripped
+    r = client.get("/api/status")
+    assert r.status_code == 200
+    assert r.json["players"]["sample"] is None
+    # Counts remain public
+    assert r.json["players"]["online"] == 1
+
+
+def test_java_status_keeps_sample_for_authenticated(client, mocker):
+    srv._STATUS_CACHE.clear()
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "u"})
+    def fake_fetch():
+        return {"online": True, "version": "1.21",
+                "players": {"online": 1, "max": 20, "sample": [{"name": "Steve", "id": "abc"}]},
+                "motd": {"clean": [""]}}
+    mocker.patch("api.server_api._cached_status", side_effect=lambda key, fn: fake_fetch())
+    r = client.get("/api/status", headers={"Authorization": "Bearer t"})
+    assert r.status_code == 200
+    assert r.json["players"]["sample"] == [{"name": "Steve", "id": "abc"}]

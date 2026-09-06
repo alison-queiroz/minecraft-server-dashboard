@@ -399,25 +399,13 @@ export class UserProfileService {
   // ---- Private helpers -----------------------------------------------------
 
   private async _persistLocations(uid: string, locations: SavedLocation[]): Promise<void> {
-    const ref = doc(this.db, 'users', uid);
-    const snap = await getDoc(ref);
-
-    if (snap.exists()) {
-      await updateDoc(ref, { savedLocations: locations });
-    } else {
-      await setDoc(ref, { ...DEFAULT_PROFILE, savedLocations: locations });
-    }
+    // setDoc + merge is a single create-or-update round-trip — no read-before-write
+    // (which also removed a read-modify-write race between concurrent saves).
+    await setDoc(doc(this.db, 'users', uid), { savedLocations: locations }, { merge: true });
   }
 
   private async _persistHomes(uid: string, homes: SavedHome[]): Promise<void> {
-    const ref = doc(this.db, 'users', uid);
-    const snap = await getDoc(ref);
-
-    if (snap.exists()) {
-      await updateDoc(ref, { savedHomes: homes });
-    } else {
-      await setDoc(ref, { ...DEFAULT_PROFILE, savedHomes: homes });
-    }
+    await setDoc(doc(this.db, 'users', uid), { savedHomes: homes }, { merge: true });
   }
 
   private async removePreviousUsernameMapping(

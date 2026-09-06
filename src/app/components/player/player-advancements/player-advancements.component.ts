@@ -1,6 +1,7 @@
 ﻿import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   effect,
   Input,
   computed,
@@ -8,7 +9,8 @@
   signal,
   untracked,
 } from '@angular/core';
-import { CommonModule, KeyValuePipe } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
 import { of } from 'rxjs';
 import { catchError, finalize, tap } from 'rxjs/operators';
 import { LucideTrophy, LucideChevronDown } from '@lucide/angular';
@@ -22,7 +24,7 @@ import { TooltipDirective } from '../../../directives/tooltip.directive';
   selector: 'app-player-advancements',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, KeyValuePipe, IconComponent, TooltipDirective],
+  imports: [CommonModule, IconComponent, TooltipDirective],
   templateUrl: './player-advancements.component.html',
   styleUrls: ['./player-advancements.component.scss'],
 })
@@ -49,6 +51,7 @@ export class PlayerAdvancementsComponent {
 
   private readonly advancementsService = inject(AdvancementsService);
   protected readonly loadingService = inject(LoadingService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly LucideTrophy     = LucideTrophy;
   protected readonly LucideChevronDown = LucideChevronDown;
@@ -63,14 +66,19 @@ export class PlayerAdvancementsComponent {
   protected readonly displayCount = computed(() =>
     this.result().total > 0 ? this.result().total : this.initialCountInput());
 
-  /** Advancements grouped by category, preserving order from API */
-  protected readonly byCategory = computed(() => {
+  /**
+   * Advancements grouped by category, preserving the order the API returned.
+   * Returns an ordered array (not a Map) so the template can iterate it
+   * directly — the KeyValuePipe would re-sort the categories alphabetically and
+   * silently discard the intended insertion order.
+   */
+  protected readonly byCategory = computed<{ key: string; value: Advancement[] }[]>(() => {
     const groups = new Map<string, Advancement[]>();
     for (const adv of this.result().completed) {
       if (!groups.has(adv.category)) groups.set(adv.category, []);
       groups.get(adv.category)!.push(adv);
     }
-    return groups;
+    return [...groups.entries()].map(([key, value]) => ({ key, value }));
   });
 
   private readonly loadingDescriptionIds = new Set<string>();
@@ -113,6 +121,7 @@ export class PlayerAdvancementsComponent {
 
     this.loadingDescriptionIds.add(adv.id);
     this.advancementsService.getDescription(adv.id).pipe(
+      takeUntilDestroyed(this.destroyRef),
       tap(desc => {
         if (!desc) {
           return;
@@ -131,8 +140,12 @@ export class PlayerAdvancementsComponent {
   }
 
   private fetch(): void {
-    this.advancementsService.getAdvancements(this.uuidInput()).pipe(
+    const requestedUuid = this.uuidInput();
+    this.advancementsService.getAdvancements(requestedUuid).pipe(
+      takeUntilDestroyed(this.destroyRef),
       tap(r => {
+        // Ignore a response that arrived after the input switched players.
+        if (this.uuidInput() !== requestedUuid) return;
         this.result.set(r);
         this.loaded = true;
       }),

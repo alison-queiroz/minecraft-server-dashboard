@@ -22,7 +22,7 @@ import {
   Filler,
   type ChartDataset,
 } from 'chart.js';
-import type { Period, Snapshot } from '../../services/analytics/analytics.service';
+import type { AnalyticsSeries, Period } from '../../services/analytics/analytics.service';
 import { AnalyticsService } from '../../services/analytics/analytics.service';
 import { IconComponent } from '../../components/shared/icon/icon.component';
 import { LoadingService } from '../../services/loading/loading.service';
@@ -50,6 +50,7 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
   protected readonly period = signal<Period>('week');
   protected readonly hasData = signal(false);
+  protected readonly hasError = signal(false);
   protected readonly peakOnline = signal(0);
   protected readonly avgOnline = signal(0);
 
@@ -148,73 +149,43 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
   private async loadData(): Promise<void> {
     try {
-      const snaps = await this.analyticsService.getSnapshots(this.period());
-      this.updateChart(snaps);
+      const series = await this.analyticsService.getSeries(this.period());
+      this.hasError.set(false);
+      this.updateChart(series);
     } catch {
-      // error is already handled silently; loading state is managed by the interceptor
+      // Surface a distinct error state instead of masking failures as "no data".
+      this.hasError.set(true);
     }
   }
 
-  private updateChart(snaps: Snapshot[]): void {
+  /**
+   * Thin renderer: the backend already returns pre-bucketed points and a
+   * peak/avg summary, so the component only maps them onto the chart and
+   * formats each bucket's timestamp as a label (presentation only).
+   */
+  private updateChart(series: AnalyticsSeries): void {
     if (!this.chart) return;
 
-    this.hasData.set(snaps.length > 0);
+    this.hasData.set(series.points.length > 0);
 
-    const buckets = this.bucket(snaps, this.period());
-    const labels = buckets.map(b => b.label);
-    const data   = buckets.map(b => b.avg);
-
-    this.chart.data.labels = labels;
-    (this.chart.data.datasets[0] as ChartDataset<'line'>).data = data;
+    const period = this.period();
+    this.chart.data.labels = series.points.map(p => this.formatTs(p.t, period));
+    (this.chart.data.datasets[0] as ChartDataset<'line'>).data = series.points.map(p => p.avg);
     this.chart.update();
 
-    const counts = snaps.map(s => s.count);
-    this.peakOnline.set(counts.length ? Math.max(...counts) : 0);
-    const sum = counts.reduce((a, b) => a + b, 0);
-    this.avgOnline.set(counts.length ? Math.round(sum / counts.length) : 0);
+    this.peakOnline.set(series.summary.peak);
+    this.avgOnline.set(series.summary.avg);
   }
 
-  /** Bucket raw minute-level snapshots into chart-friendly intervals */
-  private bucket(snaps: Snapshot[], period: Period): { label: string; avg: number }[] {
-    if (!snaps.length) return [];
-
-    // Compute actual time span of the data, not just the period window.
-    // If all data is recent (< 3 hours), use 15-minute buckets regardless of period.
-    const first = snaps[0];
-    const last = snaps.at(-1);
-    if (!first || !last) return [];
-    const spanSec = last.ts - first.ts;
-    let size: number;
-    if      (spanSec <= 3 * 3600)       size = 15 * 60;       // ≤3 h  → 15-min buckets
-    else if (spanSec <= 24 * 3600)      size = 60 * 60;       // ≤1 d  → 1-hour buckets
-    else if (spanSec <= 7 * 24 * 3600)  size = 6 * 60 * 60;   // ≤1 w  → 6-hour buckets
-    else if (spanSec <= 30 * 24 * 3600) size = 24 * 60 * 60;  // ≤1 mo → daily buckets
-    else                                size = 7 * 24 * 3600; // > 1 mo → weekly buckets
-
-    // Override for day period: always show at least 15-min granularity
-    if (period === 'day' && size > 15 * 60) size = 15 * 60;
-
-    const map = new Map<number, number[]>();
-    for (const s of snaps) {
-      const key = Math.floor(s.ts / size) * size;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(s.count);
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([ts, vals]) => ({
-        label: this.formatTs(ts, period, size),
-        avg: Math.max(...vals),
-      }));
-  }
-
-  private formatTs(ts: number, _period: Period, bucketSize: number): string {
+  /** Formats a bucket-start timestamp into a chart label based on the period. */
+  private formatTs(ts: number, period: Period): string {
     const d = new Date(ts * 1000);
-    if (bucketSize <= 15 * 60)         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    if (bucketSize <= 60 * 60)         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    if (bucketSize <= 6 * 60 * 60)     return d.toLocaleDateString([], { weekday: 'short', hour: '2-digit' });
-    if (bucketSize <= 24 * 60 * 60)    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    switch (period) {
+      case 'day':   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      case 'week':  return d.toLocaleDateString([], { weekday: 'short', hour: '2-digit' });
+      case 'month': return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      case 'year':  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
   }
 
   private getThemePalette(): {

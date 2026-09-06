@@ -1,4 +1,9 @@
-const BEDROCK_UUID_PREFIX = '00000000-0000-0000-0009';
+export const BEDROCK_UUID_PREFIX = '00000000-0000-0000-0009';
+
+/** True for a Floodgate/Bedrock player UUID (single source of this rule). */
+export function isBedrockUuid(uuid: string): boolean {
+  return uuid.startsWith(BEDROCK_UUID_PREFIX);
+}
 
 export interface EssentialsHome {
   name: string;
@@ -42,7 +47,7 @@ export class Player {
   }
 
   isBedrock(): boolean {
-    return this.uuid.startsWith(BEDROCK_UUID_PREFIX);
+    return isBedrockUuid(this.uuid);
   }
 
   isOp(): boolean {

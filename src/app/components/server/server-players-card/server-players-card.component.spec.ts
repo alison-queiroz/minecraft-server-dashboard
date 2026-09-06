@@ -40,12 +40,12 @@ describe('ServerPlayersCardComponent', () => {
   it('computes playersPercent when maxPlayers is greater than 0', () => {
     serverState.maxPlayers.set(20);
     serverState.onlinePlayers.set(5);
-    expect(component.playersPercent).toBe(25);
+    expect(component.playersPercent()).toBe(25);
   });
 
   it('returns 0 when maxPlayers is 0', () => {
     serverState.maxPlayers.set(0);
     serverState.onlinePlayers.set(5);
-    expect(component.playersPercent).toBe(0);
+    expect(component.playersPercent()).toBe(0);
   });
 });

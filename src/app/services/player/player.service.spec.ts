@@ -57,10 +57,6 @@ class PlayerServiceHarness extends PlayerService {
     this.rawPlayers.set(sorted);
   }
 
-  pushError(err: unknown = new Error('Firestore unavailable')): void {
-    console.warn('Firestore player listener error:', err);
-  }
-
   callFetchPlayersFromApi(): void {
     (this as unknown as { fetchPlayersFromApi(): void }).fetchPlayersFromApi();
   }
@@ -137,14 +133,9 @@ describe('PlayerService', () => {
       expect(alex?.houseUrl).toBeUndefined();
     });
 
-    it('should log a warning on Firestore listener error', () => {
-      jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-      service.pushError();
-      expect(console.warn).toHaveBeenCalledWith(
-        'Firestore player listener error:',
-        expect.any(Error)
-      );
-    });
+    // The Firestore listener error branch is covered against the real onSnapshot
+    // callback in player.service.firestore.spec.ts. The previous test here only
+    // asserted the harness's own console.warn (it tested the mock, not the code).
   });
 
   describe('filteredPlayers', () => {

@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { SKIP_LOADING } from '../../interceptors/loading.interceptor';
+import { isBedrockUuid } from '../player/player.model';
 
 const SILENT = { context: new HttpContext().set(SKIP_LOADING, true) };
 
@@ -111,7 +112,7 @@ export class ServerService {
     this.onlinePlayers.set(res.players?.online ?? 0);
     this.maxPlayers.set(res.players?.max ?? 0);
     const sample = res.players?.sample ?? [];
-    const bedrockCount = sample.filter(p => p.id.startsWith('00000000-0000-0000-0009')).length;
+    const bedrockCount = sample.filter(p => isBedrockUuid(p.id)).length;
     this.bedrockOnlinePlayers.set(bedrockCount);
   }
 

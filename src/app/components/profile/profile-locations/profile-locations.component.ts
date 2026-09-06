@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { SavedLocation } from '../../../services/user-profile/user-profile.service';
 import { UserProfileService } from '../../../services/user-profile/user-profile.service';
+import { normaliseMapHash } from '../../../utils/map-hash.util';
 import { LucideMap, LucideExternalLink, LucidePencil, LucideTrash2 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
@@ -164,11 +165,6 @@ export class ProfileLocationsComponent {
   }
 
   private normaliseHash(input: string): string {
-    try {
-      const url = new URL(input);
-      return url.hash || input;
-    } catch {
-      return input.startsWith('#') ? input : '#' + input;
-    }
+    return normaliseMapHash(input);
   }
 }

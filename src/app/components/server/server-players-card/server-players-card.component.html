@@ -14,7 +14,7 @@
   </div>
   <div class="players-card-track">
     <div class="players-card-fill"
-      [style.width.%]="playersPercent"
+      [style.width.%]="playersPercent()"
       [class.bg-emerald-500]="serverService.onlinePlayers() > 0"
       [class.bg-zinc-700]="serverService.onlinePlayers() === 0">
     </div>

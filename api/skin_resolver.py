@@ -6,15 +6,17 @@ import json
 import logging
 import os
 import re
+import threading
 import time
 import urllib.parse
 import urllib.request
 
 logger = logging.getLogger(__name__)
 
+_MC_DIR = os.environ.get("MINECRAFT_DIR", ".")
 _BEDROCK_UUID_PREFIX = "00000000-0000-0000-0009"
-_SR_PLAYERS_DIR = os.path.join("plugins", "SkinsRestorer", "players")
-_SR_SKINS_DIR = os.path.join("plugins", "SkinsRestorer", "skins")
+_SR_PLAYERS_DIR = os.path.join(_MC_DIR, "plugins", "SkinsRestorer", "players")
+_SR_SKINS_DIR = os.path.join(_MC_DIR, "plugins", "SkinsRestorer", "skins")
 _SR_RECOMMENDATION_PATTERN = re.compile(r"^sr-recommendation-(.+)$")
 
 _WSRV_PROXY = "https://wsrv.nl/?url={}"
@@ -29,6 +31,7 @@ _MINESKIN_API_V1 = "https://api.mineskin.org/get/uuid/{}"
 # Only successful resolutions are stored; failures are retried next cycle.
 _url_resolution_cache: dict[str, str] = {}
 _url_resolved_at: dict[str, float] = {}
+_url_cache_lock = threading.Lock()
 _URL_CACHE_TTL = 300  # 5 minutes
 
 
@@ -94,18 +97,30 @@ def _find_texture_from_sr_skins(identifier: str) -> str | None:
                 if not os.path.exists(path):
                     continue
                 try:
+                    # Read the file once and try both known layouts.
+                    with open(path, "r", encoding="utf-8") as fh:
+                        raw = fh.read().strip()
+
                     # Strategy 1: JSON envelope — file contains {"value": "<b64>", ...}
                     # This is the common format for .customskin / .playerskin files.
-                    value = _read_skin_value_from_file(path)
-                    if value:
-                        tex_url = _extract_texture_url(value)
-                        if tex_url:
-                            return tex_url
+                    try:
+                        envelope = json.loads(raw)
+                    except (json.JSONDecodeError, ValueError):
+                        envelope = None
+                    if isinstance(envelope, dict):
+                        value = (
+                            envelope.get("value")
+                            or (envelope.get("texture") or {}).get("value")
+                            or (envelope.get("skinData") or {}).get("value")
+                            or (envelope.get("skinProps") or {}).get("value")
+                        )
+                        if value:
+                            tex_url = _extract_texture_url(value)
+                            if tex_url:
+                                return tex_url
 
                     # Strategy 2: file content IS the raw base64 texture property.
                     # Some URL skin caches store the b64 JSON blob directly.
-                    with open(path, "r", encoding="utf-8") as fh:
-                        raw = fh.read().strip()
                     decoded = base64.b64decode(raw + "===").decode("utf-8")
                     data = json.loads(decoded)
                     url = data.get("textures", {}).get("SKIN", {}).get("url", "")
@@ -189,13 +204,12 @@ def _resolve_url_skin(identifier: str) -> str:
     Falls back to the raw identifier if nothing works.
     """
     now = time.time()
-    if identifier in _url_resolution_cache:
-        if now - _url_resolved_at.get(identifier, 0) < _URL_CACHE_TTL:
-            return _url_resolution_cache[identifier]
+    with _url_cache_lock:
+        cached = _url_resolution_cache.get(identifier)
+        if cached is not None and now - _url_resolved_at.get(identifier, 0) < _URL_CACHE_TTL:
+            return cached
 
-    resolved: str | None = None
-
-    resolved = _find_texture_from_sr_skins(identifier)
+    resolved: str | None = _find_texture_from_sr_skins(identifier)
 
     if not resolved and (
         "minesk.in" in identifier or "mineskin.org" in identifier
@@ -205,8 +219,9 @@ def _resolve_url_skin(identifier: str) -> str:
 
     final = resolved if resolved else identifier
     if resolved:  # only cache successes so failures are retried
-        _url_resolution_cache[identifier] = final
-        _url_resolved_at[identifier] = now
+        with _url_cache_lock:
+            _url_resolution_cache[identifier] = final
+            _url_resolved_at[identifier] = now
     return final
 
 

@@ -33,17 +33,28 @@ from .firestore_sync import sync_players
 
 logger = logging.getLogger(__name__)
 
-_PLAYERDATA_DIR = os.path.join("world", "playerdata")
-_STATS_DIR = os.path.join("world", "stats")
-_USERCACHE_FILE = "usercache.json"
-_OPS_FILE = "ops.json"
-_SR_PLAYERS_DIR = os.path.join("plugins", "SkinsRestorer", "players")  # watched for skin changes
+# All Minecraft server-data paths derive from a single base dir so the app can
+# run outside the one production VM. Default "." keeps the previous
+# CWD-relative behaviour; set MINECRAFT_DIR to relocate the data root.
+_MC_DIR = os.environ.get("MINECRAFT_DIR", ".")
+_PLAYERDATA_DIR = os.path.join(_MC_DIR, "world", "playerdata")
+_STATS_DIR = os.path.join(_MC_DIR, "world", "stats")
+_USERCACHE_FILE = os.path.join(_MC_DIR, "usercache.json")
+_OPS_FILE = os.path.join(_MC_DIR, "ops.json")
+_SR_PLAYERS_DIR = os.path.join(_MC_DIR, "plugins", "SkinsRestorer", "players")  # watched for skin changes
 # EssentialsX stores per-player YAML as plugins/Essentials/userdata/<uuid>.yml
-_ESSENTIALS_USERDATA_DIR = os.path.join("plugins", "Essentials", "userdata")
+_ESSENTIALS_USERDATA_DIR = os.path.join(_MC_DIR, "plugins", "Essentials", "userdata")
 _CACHE_TTL = 60  # seconds — also controls Firestore sync frequency
 
-_SYNC_LOCK_PATH = "/tmp/minecraft-api-bg-sync.lock"
+import tempfile as _tempfile
+_SYNC_LOCK_PATH = os.environ.get(
+    "SYNC_LOCK_PATH",
+    os.path.join(_tempfile.gettempdir(), "minecraft-api-bg-sync.lock"),
+)
 _sync_lock_fd = None
+# Serializes the cache rebuild so a burst of concurrent requests on a cold cache
+# does N-way full rescans + N sync threads (thundering herd).
+_refresh_lock = threading.Lock()
 
 
 def _acquire_sync_lock() -> bool:
@@ -53,7 +64,10 @@ def _acquire_sync_lock() -> bool:
     if not _FCNTL_AVAILABLE:
         return True  # single-process dev env, always run
     try:
-        _sync_lock_fd = open(_SYNC_LOCK_PATH, "w")
+        # 0600 so another local user cannot pre-create/hold the lock to
+        # suppress the sync leader.
+        fd = os.open(_SYNC_LOCK_PATH, os.O_WRONLY | os.O_CREAT, 0o600)
+        _sync_lock_fd = os.fdopen(fd, "w")
         fcntl.flock(_sync_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return True  # lock held for lifetime of this process
     except OSError:
@@ -117,6 +131,15 @@ def _map_uuids() -> dict[str, str]:
         return {}
 
 
+def get_uuid_to_name() -> dict[str, str]:
+    """Public accessor: UUID → last-known Minecraft username (from usercache.json).
+
+    Used by the API layer to resolve a target player UUID to a name for
+    ownership checks without triggering a full player rescan.
+    """
+    return _map_uuids()
+
+
 def _dimension_name(dim_id: Any) -> str:
     return _DIMENSIONS.get(str(dim_id), "Unknown")
 
@@ -134,7 +157,7 @@ def _read_stats(uuid: str) -> dict[str, Any]:
         return {}
 
 
-_ADVANCEMENTS_DIR = os.path.join("world", "advancements")
+_ADVANCEMENTS_DIR = os.path.join(_MC_DIR, "world", "advancements")
 
 
 def _count_advancements(uuid: str) -> int:
@@ -251,7 +274,17 @@ def create_essentials_home(
             homes = {}
         if home_name in homes:
             return False  # already exists — caller should use PUT
-        homes[home_name] = {"world": world, "x": x, "y": y, "z": z}
+        # Write the canonical EssentialsX schema: `world-name` (the key
+        # read_essentials_homes and the plugin prefer) plus yaw/pitch, which
+        # EssentialsX expects and would otherwise treat as 0/absent.
+        homes[home_name] = {
+            "world-name": world,
+            "x": x,
+            "y": y,
+            "z": z,
+            "yaw": 0.0,
+            "pitch": 0.0,
+        }
         data["homes"] = homes
         dir_name = os.path.dirname(yml_path)
         if dir_name:
@@ -259,8 +292,11 @@ def create_essentials_home(
         _write_essentials_yaml_atomic(yml_path, data)
         logger.info("Created EssentialsX home '%s' for %s", home_name, uuid)
         return True
-    except Exception:
-        logger.warning("Failed to create EssentialsX home '%s' for %s", home_name, uuid)
+    except (OSError, _yaml.YAMLError):
+        # Genuine I/O or serialization failure — log loudly and report failure.
+        # Programming errors (e.g. bad types) are left to surface as a 500 so
+        # they are not silently masked as "already exists".
+        logger.error("Failed to create EssentialsX home '%s' for %s", home_name, uuid, exc_info=True)
         return False
 
 
@@ -307,8 +343,8 @@ def update_essentials_home(
         _write_essentials_yaml_atomic(yml_path, data)
         logger.info("Updated EssentialsX home '%s' for %s", home_name, uuid)
         return True
-    except Exception:
-        logger.warning("Failed to update EssentialsX home '%s' for %s", home_name, uuid)
+    except (OSError, _yaml.YAMLError):
+        logger.error("Failed to update EssentialsX home '%s' for %s", home_name, uuid, exc_info=True)
         return False
 
 
@@ -335,8 +371,8 @@ def delete_essentials_home(uuid: str, home_name: str) -> bool:
         _write_essentials_yaml_atomic(yml_path, data)
         logger.info("Deleted EssentialsX home '%s' for %s", home_name, uuid)
         return True
-    except Exception:
-        logger.warning("Failed to delete EssentialsX home '%s' for %s", home_name, uuid)
+    except (OSError, _yaml.YAMLError):
+        logger.error("Failed to delete EssentialsX home '%s' for %s", home_name, uuid, exc_info=True)
         return False
 
 
@@ -387,9 +423,13 @@ def _fetch_live() -> list[dict[str, Any]]:
 
 def get_players() -> list[dict[str, Any]]:
     if _cache.is_stale():
-        fresh = _fetch_live()
-        _cache.refresh(fresh)
-        threading.Thread(target=sync_players, args=(fresh,), daemon=True).start()
+        with _refresh_lock:
+            # Double-checked: another thread may have refreshed while we waited
+            # on the lock, so only one full rescan + sync runs per TTL window.
+            if _cache.is_stale():
+                fresh = _fetch_live()
+                _cache.refresh(fresh)
+                threading.Thread(target=sync_players, args=(fresh,), daemon=True).start()
     return _cache.data
 
 
@@ -469,11 +509,30 @@ def _background_sync_loop() -> None:
 
 
 _bg_sync_thread: threading.Thread | None = None
-if _acquire_sync_lock():
-    _bg_sync_thread = threading.Thread(
-        target=_background_sync_loop, daemon=True, name="player-bg-sync"
-    )
-    _bg_sync_thread.start()
-    logger.info("Background sync thread started (this worker is the sync leader).")
-else:
-    logger.info("Background sync lock not acquired — another worker is the sync leader.")
+
+
+def start_background_sync() -> None:
+    """Start the single background sync thread if this process wins the file lock.
+
+    Idempotent (safe to call once per worker). Under gunicorn, call this from a
+    ``post_fork`` hook with ``preload_app = False`` (see gunicorn.conf.py) so the
+    file-lock leader election runs per worker rather than in the pre-fork master,
+    where the thread would not survive the fork.
+    """
+    global _bg_sync_thread
+    if _bg_sync_thread is not None:
+        return
+    if _acquire_sync_lock():
+        _bg_sync_thread = threading.Thread(
+            target=_background_sync_loop, daemon=True, name="player-bg-sync"
+        )
+        _bg_sync_thread.start()
+        logger.info("Background sync thread started (this worker is the sync leader).")
+    else:
+        logger.info("Background sync lock not acquired — another worker is the sync leader.")
+
+
+# Auto-start on import preserves the dev (run.py) and non-preload gunicorn
+# behaviour. Set AUTO_START_BG_SYNC=0 when a gunicorn post_fork hook starts it.
+if os.environ.get("AUTO_START_BG_SYNC", "1") != "0":
+    start_background_sync()

@@ -2,7 +2,19 @@ import pytest
 import json
 import time
 import api.firestore_sync as fs_module
+import api.firebase_init as fb_init
 from api.firestore_sync import _to_native, sync_players
+
+
+@pytest.fixture(autouse=True)
+def _reset_firebase_init():
+    """Firebase init state is now a shared module-global; reset it around every
+    test so init-path assertions are deterministic regardless of order."""
+    fb_init._reset_for_tests()
+    fs_module._firebase_initialized = False
+    yield
+    fb_init._reset_for_tests()
+    fs_module._firebase_initialized = False
 
 
 # ── _to_native ────────────────────────────────────────────────────────────────
@@ -49,30 +61,26 @@ def test_to_native_bool_not_converted_to_int():
 
 def test_ensure_firebase_already_initialized(mocker):
     """Returns True immediately without re-initializing when already done."""
-    fs_module._firebase_initialized = True
+    fb_init._initialized = True
     mock_init = mocker.patch("firebase_admin.initialize_app")
     result = fs_module._ensure_firebase()
     assert result is True
     mock_init.assert_not_called()
-    # reset
-    fs_module._firebase_initialized = False
 
 
 def test_ensure_firebase_success(mocker):
     """Initializes Firebase and sets the flag on success."""
-    fs_module._firebase_initialized = False
     mocker.patch("firebase_admin._apps", [])
     mocker.patch("firebase_admin.credentials.Certificate")
     mocker.patch("firebase_admin.initialize_app")
     result = fs_module._ensure_firebase()
     assert result is True
     assert fs_module._firebase_initialized is True
-    fs_module._firebase_initialized = False
 
 
 def test_ensure_firebase_failure(mocker):
     """Returns False and leaves the flag unset when initialization fails."""
-    fs_module._firebase_initialized = False
+    mocker.patch("firebase_admin._apps", [])
     mocker.patch("firebase_admin.credentials.Certificate", side_effect=Exception("file not found"))
     result = fs_module._ensure_firebase()
     assert result is False
@@ -81,13 +89,11 @@ def test_ensure_firebase_failure(mocker):
 
 def test_ensure_firebase_skip_init_when_apps_already_exist(mocker):
     """Does not call initialize_app when firebase_admin._apps is non-empty."""
-    fs_module._firebase_initialized = False
     mocker.patch("firebase_admin._apps", ["existing_app"])
     mocker.patch("firebase_admin.credentials.Certificate")
     mock_init = mocker.patch("firebase_admin.initialize_app")
     fs_module._ensure_firebase()
     mock_init.assert_not_called()
-    fs_module._firebase_initialized = False
 
 
 # ── _write_local_snapshot / read_local_snapshots ─────────────────────────────
@@ -98,28 +104,32 @@ def test_write_and_read_local_snapshots(tmp_path, mocker):
     mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
 
     ts = int(time.time())
-    fs_module._write_local_snapshot(ts, ["Steve", "Alex"], 2)
+    fs_module._write_local_snapshot(ts, 2)
 
     results = fs_module.read_local_snapshots(ts - 1)
     assert len(results) == 1
     assert results[0]["ts"] == ts
     assert results[0]["count"] == 2
-    assert "Steve" in results[0]["online"]
+    # 'online' is no longer persisted (it was never read back).
+    assert "online" not in results[0]
 
 
 def test_write_local_snapshot_prunes_old_entries(tmp_path, mocker):
-    """Entries older than the cutoff are pruned when a new snapshot is written."""
+    """Entries older than the cutoff are pruned on the scheduled prune pass."""
     snap_file = tmp_path / "snapshots.jsonl"
     mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
+    # Force a prune on the very next write instead of once per ~day.
+    mocker.patch.object(fs_module, "_PRUNE_EVERY", 1)
+    mocker.patch.object(fs_module, "_writes_since_prune", 0)
 
     old_ts = int(time.time()) - (fs_module._LOCAL_SNAPSHOTS_MAX_DAYS + 1) * 86_400
     recent_ts = int(time.time())
 
     # Prime the file with an old entry
-    snap_file.write_text(json.dumps({"ts": old_ts, "online": [], "count": 0}) + "\n")
+    snap_file.write_text(json.dumps({"ts": old_ts, "count": 0}) + "\n")
 
-    # Write a new entry — this should prune the old one
-    fs_module._write_local_snapshot(recent_ts, ["Steve"], 1)
+    # Write a new entry — the scheduled prune should drop the old one
+    fs_module._write_local_snapshot(recent_ts, 1)
 
     results = fs_module.read_local_snapshots(0)
     assert all(r["ts"] >= (recent_ts - 1) for r in results)
@@ -190,6 +200,22 @@ def test_get_online_from_server_read_error(mocker):
     assert count == 0
 
 
+def test_get_online_from_server_ignores_chat_false_positives(tmp_path, mocker):
+    """A chat message containing an embedded ': X joined the game' must not be
+    mistaken for a real join event (regex anchored to the /INFO]: prefix)."""
+    log = tmp_path / "latest.log"
+    log.write_text(
+        "[12:00:00] [Server thread/INFO]: Steve joined the game\n"
+        "[12:00:30] [Server thread/INFO]: <Steve> hey look: Mallory joined the game\n"
+        "[12:01:00] [Server thread/INFO]: <Steve> and now: Mallory left the game\n"
+    )
+    mocker.patch.object(fs_module, "_LOG_FILE", str(log))
+
+    names, count = fs_module._get_online_from_server()
+    assert names == ["Steve"]  # Mallory was only ever mentioned in chat
+    assert count == 1
+
+
 # ── sync_players ──────────────────────────────────────────────────────────────
 
 def test_sync_players_success(mocker):
@@ -241,10 +267,10 @@ def test_write_snapshot_skips_empty_lines_in_existing_file(tmp_path, mocker):
     snap_file = tmp_path / "snapshots.jsonl"
     ts = 5000
     # Write an entry followed by a blank line
-    snap_file.write_text(json.dumps({"ts": ts - 10, "online": [], "count": 0}) + "\n\n")
+    snap_file.write_text(json.dumps({"ts": ts - 10, "count": 0}) + "\n\n")
     mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
 
-    fs_module._write_local_snapshot(ts, ["Steve"], 1)
+    fs_module._write_local_snapshot(ts, 1)
 
     results = fs_module.read_local_snapshots(0)
     ts_values = [r["ts"] for r in results]
@@ -259,7 +285,7 @@ def test_write_snapshot_handles_corrupt_json_in_existing_file(tmp_path, mocker):
     snap_file.write_text("this is not valid json\n")
     mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
 
-    fs_module._write_local_snapshot(ts, [], 0)
+    fs_module._write_local_snapshot(ts, 0)
 
     results = fs_module.read_local_snapshots(0)
     assert len(results) == 1
@@ -271,7 +297,7 @@ def test_write_snapshot_exception_is_caught(tmp_path, mocker):
     bad_path = tmp_path / "nonexistent_subdir" / "snap.jsonl"
     mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(bad_path))
     # Should not raise — the outer except catches any OSError
-    fs_module._write_local_snapshot(9999, [], 0)
+    fs_module._write_local_snapshot(9999, 0)
 
 
 # ── read_local_snapshots edge cases ──────────────────────────────────────────

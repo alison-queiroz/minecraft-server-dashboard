@@ -18,6 +18,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { LucideMapPin } from '@lucide/angular';
 import { IconComponent } from '../icon/icon.component';
 import { environment } from '../../../../environments/environment';
+import { normaliseMapHash } from '../../../utils/map-hash.util';
 
 interface MapMessagePayload {
   type?: string;
@@ -143,12 +144,7 @@ export class MapViewerComponent implements OnInit, OnDestroy {
   }
 
   private normaliseHash(input: string): string {
-    try {
-      const url = new URL(input);
-      return url.hash || input;
-    } catch {
-      return input.startsWith('#') ? input : '#' + input;
-    }
+    return normaliseMapHash(input);
   }
 
   /**
@@ -177,6 +173,9 @@ export class MapViewerComponent implements OnInit, OnDestroy {
     this.stopUrlPoller();
     // Also try direct same-origin read (works if a /map/ proxy is configured)
     this.urlPollInterval = setInterval(() => {
+      // Skip the DOM/cross-origin read while the tab is hidden — nothing is
+      // visible to update and it avoids needless work in the background.
+      if (typeof document !== 'undefined' && document.hidden) return;
       try {
         const href = this.mapIframe?.nativeElement?.contentWindow?.location?.href;
         if (href && href !== 'about:blank') this.lastKnownHref = href;

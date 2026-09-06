@@ -8,7 +8,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_ADVANCEMENTS_DIR = os.path.join("world", "advancements")
+_ADVANCEMENTS_DIR = os.path.join(os.environ.get("MINECRAFT_DIR", "."), "world", "advancements")
 
 _LABELS_FILE = os.path.join(os.path.dirname(__file__), "advancement_labels.json")
 try:

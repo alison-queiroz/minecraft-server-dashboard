@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ServerService } from '../../../services/server/server.service';
 import { PlayerService } from '../../../services/player/player.service';
 import { LucideUsers } from '@lucide/angular';
@@ -19,8 +19,9 @@ export class ServerPlayersCardComponent {
   protected readonly serverService = inject(ServerService);
   protected readonly playerService = inject(PlayerService);
 
-  get playersPercent(): number {
+  // computed (not a getter) so it isn't recomputed on every change-detection pass.
+  readonly playersPercent = computed(() => {
     const max = this.serverService.maxPlayers();
     return max > 0 ? (this.serverService.onlinePlayers() / max) * 100 : 0;
-  }
+  });
 }

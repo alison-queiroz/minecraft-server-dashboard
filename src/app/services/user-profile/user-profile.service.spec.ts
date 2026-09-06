@@ -303,10 +303,15 @@ describe('UserProfileService', () => {
       expect(mockSetDoc).toHaveBeenCalled();
     });
 
-    it('persists via updateDoc when user doc exists', async () => {
+    it('persists via a single setDoc merge (no read-before-write) when the doc exists', async () => {
       mockGetDoc.mockResolvedValue(existsSnap({}));
       await service.addLocation({ name: 'X', mapHash: '#w', description: '', isPublic: false });
-      expect(mockUpdateDoc).toHaveBeenCalled();
+      expect(mockSetDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ savedLocations: expect.any(Array) }),
+        { merge: true },
+      );
+      expect(mockUpdateDoc).not.toHaveBeenCalled();
     });
   });
 
@@ -574,8 +579,8 @@ describe('UserProfileService', () => {
     });
   });
 
-  describe('_persistHomes via updateHome when doc exists', () => {
-    it('calls updateDoc (not setDoc) when the user doc already exists', async () => {
+  describe('_persistHomes via updateHome', () => {
+    it('persists with a single setDoc merge (no read-before-write)', async () => {
       mockGetDoc.mockResolvedValue(existsSnap({}));
       service.profile.set({
         minecraftAccounts: { java: null, bedrock: null, admin: null },
@@ -583,8 +588,12 @@ describe('UserProfileService', () => {
         savedHomes: [makeHome({ id: 'home-1' })],
       });
       await service.updateHome('home-1', { isPublic: true });
-      expect(mockUpdateDoc).toHaveBeenCalled();
-      expect(mockSetDoc).not.toHaveBeenCalled();
+      expect(mockSetDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ savedHomes: expect.any(Array) }),
+        { merge: true },
+      );
+      expect(mockUpdateDoc).not.toHaveBeenCalled();
     });
   });
 

@@ -119,16 +119,30 @@ export class ProfileHomesComponent {
   protected readonly editingId    = signal<string | null>(null);
   protected readonly editPublic   = signal(false);
 
+  /** Stable identity of the linked Java players — reloads key off this, not the
+   * array reference (which changes on every live player tick). */
+  private readonly linkedJavaKey = computed(() =>
+    this.players().filter(p => !p.isBedrock()).map(p => p.uuid).sort().join(','));
+  private _lastLoadedKey = '';
+  private _loadInFlight = false;
+
   constructor() {
     effect(() => {
-      if (this.players().length) {
-        void this._loadFromServer();
-      }
+      const key = this.linkedJavaKey();
+      // Only (re)load when the set of linked Java players actually changes.
+      // Depending on players() directly would re-run on every onSnapshot tick
+      // (new array reference), re-fetching all homes and rewriting Firestore
+      // continuously while the tab is open.
+      if (!key || key === this._lastLoadedKey) return;
+      this._lastLoadedKey = key;
+      void this._loadFromServer();
     });
   }
 
   /** Loads all homes from the Python API and populates the local signal. No Firestore writes. */
   private async _loadFromServer(): Promise<void> {
+    if (this._loadInFlight) return;  // guard against overlapping loads racing on this.homes()
+    this._loadInFlight = true;
     this.syncing.set(true);
     try {
       const raw = await this._fetchAllPlayerHomes();
@@ -149,6 +163,7 @@ export class ProfileHomesComponent {
       await this.userProfileService.upsertHomesFromLocal(this.homes());
     } finally {
       this.syncing.set(false);
+      this._loadInFlight = false;
     }
   }
 

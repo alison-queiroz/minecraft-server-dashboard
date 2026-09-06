@@ -54,13 +54,14 @@ describe('SkinService', () => {
     expect(result).toBe('https://example.com/error.png');
   });
 
-  it('ngOnDestroy revokes all cached blob URLs', async () => {
-    const promise = service.getBlobUrl('https://example.com/skin.png');
+  it('caches the blob URL so a repeated request makes no second HTTP call', async () => {
+    const first = service.getBlobUrl('https://example.com/skin.png');
     httpMock.expectOne('https://example.com/skin.png').flush(new Blob(['data']));
-    await promise;
+    expect(await first).toBe('blob:mock-url');
 
-    service.ngOnDestroy();
-
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+    // Second call is served from the (app-lifetime) cache — no HTTP request.
+    const second = await service.getBlobUrl('https://example.com/skin.png');
+    httpMock.expectNone('https://example.com/skin.png');
+    expect(second).toBe('blob:mock-url');
   });
 });

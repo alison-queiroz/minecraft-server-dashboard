@@ -25,7 +25,10 @@ export const authGuard: CanActivateFn = () => {
       // This lets us check whether a Minecraft account has been linked.
       return from(profileService.loadProfile()).pipe(
         map(() => {
-          if (!profileService.minecraftAccounts().java) {
+          // Any linked Minecraft account (java, bedrock, or admin) grants access
+          // — not only Java — so a bedrock/admin-only user isn't bounced to login.
+          const hasLinkedAccount = Object.values(profileService.minecraftAccounts()).some(Boolean);
+          if (!hasLinkedAccount) {
             void router.navigate(['/login']);
             return false;
           }

@@ -529,10 +529,10 @@ def test_create_essentials_home_success_creates_dirs_and_writes(mocker: "pytest_
 
 
 def test_create_essentials_home_exception_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
-    """Returns False when file operations raise unexpectedly."""
+    """Returns False when file I/O raises (e.g. disk/permission error)."""
     import api.player_data as pd
     mocker.patch("os.path.exists", return_value=True)
-    mocker.patch("builtins.open", side_effect=Exception("boom"))
+    mocker.patch("builtins.open", side_effect=OSError("boom"))
     assert pd.create_essentials_home("u", "home", 1, 2, 3, "world") is False
 
 
@@ -592,10 +592,10 @@ def test_update_essentials_home_success_rename_and_world_name(mocker: "pytest_mo
 
 
 def test_update_essentials_home_exception_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
-    """Returns False when update path raises unexpectedly."""
+    """Returns False when update path hits file I/O error."""
     import api.player_data as pd
     mocker.patch("os.path.exists", return_value=True)
-    mocker.patch("builtins.open", side_effect=Exception("boom"))
+    mocker.patch("builtins.open", side_effect=OSError("boom"))
     assert pd.update_essentials_home("u", "home", 1, 2, 3, "world") is False
 
 
@@ -647,10 +647,10 @@ def test_delete_essentials_home_success(mocker: "pytest_mock.MockerFixture") -> 
 
 
 def test_delete_essentials_home_exception_returns_false(mocker: "pytest_mock.MockerFixture") -> None:
-    """Returns False when delete path raises unexpectedly."""
+    """Returns False when delete path hits file I/O error."""
     import api.player_data as pd
     mocker.patch("os.path.exists", return_value=True)
-    mocker.patch("builtins.open", side_effect=Exception("boom"))
+    mocker.patch("builtins.open", side_effect=OSError("boom"))
     assert pd.delete_essentials_home("u", "home") is False
 
 

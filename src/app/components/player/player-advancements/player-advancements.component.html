@@ -22,7 +22,7 @@
           <p class="adv-empty">No advancements found.</p>
         } @else {
           <div class="adv-categories">
-            @for (entry of byCategory() | keyvalue; track entry.key) {
+            @for (entry of byCategory(); track entry.key) {
               <div class="adv-category">
                 <p class="adv-cat-label">{{ entry.key }}</p>
                 <div class="adv-chips">

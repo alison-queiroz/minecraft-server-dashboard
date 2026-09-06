@@ -12,8 +12,9 @@ from typing import Optional, Tuple
 
 from flask import Flask, jsonify, request, abort, g
 
-from .player_data import get_players, get_op_names, read_essentials_homes, create_essentials_home, update_essentials_home, delete_essentials_home
+from .player_data import get_players, get_op_names, read_essentials_homes, create_essentials_home, update_essentials_home, delete_essentials_home, get_uuid_to_name
 from .firestore_sync import read_local_snapshots
+from .firebase_init import ensure_initialized
 
 # Google Drive API imports
 from google.oauth2 import service_account
@@ -27,22 +28,12 @@ app = Flask(__name__)
 _FIREBASE_INITIALIZED = False
 
 def _init_firebase():
+    """Delegates to the shared initializer; mirrors its result into the module
+    flag that require_auth checks (kept for backward-compat and test patching)."""
     global _FIREBASE_INITIALIZED
     if _FIREBASE_INITIALIZED:
         return
-    try:
-        import firebase_admin
-        from firebase_admin import credentials
-        # Guard against re-initialization if the background sync thread already
-        # called firebase_admin.initialize_app() in this worker process.
-        if not firebase_admin._apps:
-            sa_path = os.environ.get("FIREBASE_SA_KEY", "/home/opc/minecraft/firebase-service-account.json")
-            cred = credentials.Certificate(sa_path)
-            firebase_admin.initialize_app(cred)
-        _FIREBASE_INITIALIZED = True
-        logger.info("Firebase Admin SDK initialized.")
-    except Exception as exc:
-        logger.warning("Firebase Admin SDK not available (%s). Refusing all API requests.", exc)
+    _FIREBASE_INITIALIZED = ensure_initialized()
 
 
 # ── In-memory rate limiter (per Firebase UID, falls back to IP) ───────────────
@@ -58,6 +49,13 @@ def _check_rate_limit(key: str) -> bool:
     with _rl_lock:
         window = [t for t in _rl_attempts[key] if now - t < _RL_WINDOW]
         _rl_attempts[key] = window
+        # Evict other fully-stale keys so the dict can't grow unbounded under
+        # many distinct callers.
+        for stale_key in [
+            k for k, v in _rl_attempts.items()
+            if k != key and (not v or now - v[-1] >= _RL_WINDOW)
+        ]:
+            del _rl_attempts[stale_key]
         if len(window) >= _RL_MAX:
             return False
         _rl_attempts[key].append(now)
@@ -85,6 +83,69 @@ def require_auth(f):
         g.auth_uid = decoded.get("uid")
         return f(*args, **kwargs)
     return decorated
+
+
+import re as _re
+
+_UUID_RE = _re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", _re.IGNORECASE
+)
+
+
+def _is_valid_uuid(uuid: str) -> bool:
+    """Strict hyphenated-UUID check, shared by the homes and advancements routes
+    to block path-traversal / arbitrary-file inputs before any filesystem use."""
+    return bool(_UUID_RE.match(uuid or ""))
+
+
+def _optional_uid() -> Optional[str]:
+    """Return the caller's Firebase uid if a valid Bearer token is present,
+    else None. Never aborts — for endpoints that stay public but reveal more
+    (e.g. the online player roster) only to authenticated callers."""
+    if not _FIREBASE_INITIALIZED:
+        return None
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    try:
+        from firebase_admin import auth as firebase_auth
+        decoded = firebase_auth.verify_id_token(auth_header[len("Bearer "):])
+        return decoded.get("uid")
+    except Exception:
+        return None
+
+
+def _linked_minecraft_names(uid: Optional[str]) -> set:
+    """Lowercase Minecraft usernames linked to this Firebase uid (from Firestore)."""
+    if not uid:
+        return set()
+    try:
+        from firebase_admin import firestore as admin_firestore
+        db = admin_firestore.client()
+        snap = db.collection("users").document(uid).get()
+        if not snap.exists:
+            return set()
+        accounts = (snap.to_dict() or {}).get("minecraftAccounts") or {}
+        return {str(v).lower() for v in accounts.values() if v}
+    except Exception as exc:
+        logger.warning("Ownership lookup failed for uid %s: %s", uid, exc)
+        return set()
+
+
+def _user_owns_player(uuid: str) -> bool:
+    """True if the authenticated caller owns the given Minecraft player UUID.
+
+    Resolves the UUID to a username (usercache) and checks it against the
+    caller's linked Minecraft accounts. Prevents one authenticated user from
+    reading/mutating another player's EssentialsX homes (IDOR).
+    """
+    uid = getattr(g, "auth_uid", None)
+    if not uid:
+        return False
+    name = get_uuid_to_name().get(uuid)
+    if not name:
+        return False
+    return name.lower() in _linked_minecraft_names(uid)
 
 
 def _services_catalog_path() -> Path:
@@ -206,6 +267,10 @@ def player_homes_endpoint(uuid: str):
     Non-hyphenated Bedrock UUIDs (starting with 00000000-0000-0000-0009) will
     return an empty list since EssentialsX only manages Java players.
     """
+    if not _is_valid_uuid(uuid):
+        abort(400)
+    if not _user_owns_player(uuid):
+        abort(403)
     homes = read_essentials_homes(uuid)
     return jsonify(homes)
 
@@ -218,6 +283,10 @@ def create_player_home_endpoint(uuid: str):
     Body JSON: { name, x, y, z, world }
     Returns 409 if a home with that name already exists.
     """
+    if not _is_valid_uuid(uuid):
+        abort(400)
+    if not _user_owns_player(uuid):
+        abort(403)
     body = request.get_json(silent=True) or {}
     name = body.get("name")
     x = body.get("x")
@@ -226,7 +295,11 @@ def create_player_home_endpoint(uuid: str):
     world = body.get("world")
     if any(v is None for v in (name, x, y, z, world)):
         abort(400)
-    ok = create_essentials_home(uuid, str(name), float(x), float(y), float(z), str(world))
+    try:
+        fx, fy, fz = float(x), float(y), float(z)
+    except (TypeError, ValueError):
+        abort(400)
+    ok = create_essentials_home(uuid, str(name), fx, fy, fz, str(world))
     if not ok:
         abort(409)
     return jsonify({"ok": True}), 201
@@ -240,6 +313,10 @@ def update_player_home_endpoint(uuid: str, name: str):
     Body JSON: { x, y, z, world, new_name? }
     Returns 404 if the home or player file does not exist.
     """
+    if not _is_valid_uuid(uuid):
+        abort(400)
+    if not _user_owns_player(uuid):
+        abort(403)
     body = request.get_json(silent=True) or {}
     x = body.get("x")
     y = body.get("y")
@@ -247,8 +324,12 @@ def update_player_home_endpoint(uuid: str, name: str):
     world = body.get("world")
     if any(v is None for v in (x, y, z, world)):
         abort(400)
+    try:
+        fx, fy, fz = float(x), float(y), float(z)
+    except (TypeError, ValueError):
+        abort(400)
     new_name = body.get("new_name") or None
-    ok = update_essentials_home(uuid, name, float(x), float(y), float(z), str(world), new_name)
+    ok = update_essentials_home(uuid, name, fx, fy, fz, str(world), new_name)
     if not ok:
         abort(404)
     return jsonify({"ok": True})
@@ -261,6 +342,10 @@ def delete_player_home_endpoint(uuid: str, name: str):
 
     Returns 404 if the home or player file does not exist.
     """
+    if not _is_valid_uuid(uuid):
+        abort(400)
+    if not _user_owns_player(uuid):
+        abort(403)
     ok = delete_essentials_home(uuid, name)
     if not ok:
         abort(404)
@@ -290,10 +375,14 @@ def force_resync_endpoint():
 
 @app.route("/api/internal/force-resync", methods=["POST"])
 def internal_force_resync_endpoint():
-    """Localhost-only force-resync used by the deploy pipeline.
-    Bypasses Firebase auth because it is only reachable from 127.0.0.1.
-    Returns 403 for any non-loopback caller."""
-    if request.remote_addr not in ("127.0.0.1", "::1"):
+    """Force-resync used by the deploy pipeline. Bypasses Firebase auth but
+    requires a shared secret (INTERNAL_API_SECRET) in the X-Internal-Secret
+    header. remote_addr is NOT trusted: behind a same-host reverse proxy every
+    external request appears to originate from 127.0.0.1, so a loopback check
+    alone would expose this endpoint publicly. Fails closed when unconfigured."""
+    secret = os.environ.get("INTERNAL_API_SECRET", "")
+    provided = request.headers.get("X-Internal-Secret", "")
+    if not secret or not hmac.compare_digest(secret, provided):
         abort(403)
     from .player_data import _cache
     from .skin_resolver import _url_resolution_cache, _url_resolved_at
@@ -389,7 +478,13 @@ def java_status_endpoint():
             logger.warning("Java server ping failed: %s", exc)
             return {"online": False}
 
-    return jsonify(_cached_status("java", fetch))
+    data = _cached_status("java", fetch)
+    # The online-player roster (names + UUIDs) is only exposed to authenticated
+    # callers; anonymous callers still get the online/max counts.
+    players = data.get("players")
+    if isinstance(players, dict) and players.get("sample") and _optional_uid() is None:
+        data = {**data, "players": {**players, "sample": None}}
+    return jsonify(data)
 
 
 @app.route("/api/bedrock-status", methods=["GET"])
@@ -447,14 +542,63 @@ _PERIOD_SECONDS: dict = {
     "year":  365 * 86_400,
 }
 
+# Server-side bucket width per period, chosen so each period returns only a few
+# dozen points regardless of how many raw minute snapshots exist.
+_PERIOD_BUCKET_SECONDS: dict = {
+    "day":   900,          # 15-minute buckets → ≤96 points
+    "week":  6 * 3600,     # 6-hour buckets    → ≤28 points
+    "month": 86_400,       # 1-day buckets     → ≤30 points
+    "year":  7 * 86_400,   # 7-day buckets     → ≤52 points
+}
+
+
+def _aggregate_snapshots(rows: list, period: str) -> dict:
+    """Bucket raw {ts, count} snapshots into a compact server-side series.
+
+    Returns { "points": [{t, avg, peak}, ...], "summary": {peak, avg} }.
+    Replaces the old behaviour of shipping every raw minute row for the browser
+    to aggregate — this is the heavy lifting moved to the backend.
+    """
+    bucket = _PERIOD_BUCKET_SECONDS.get(period, _PERIOD_BUCKET_SECONDS["week"])
+    acc: dict = {}  # bucket_start_ts -> [sum, n, max]
+    peak = 0
+    total = 0
+    n = 0
+    for row in rows:
+        ts = row.get("ts")
+        if ts is None:
+            continue
+        count = int(row.get("count", 0) or 0)
+        key = (int(ts) // bucket) * bucket
+        entry = acc.get(key)
+        if entry is None:
+            acc[key] = [count, 1, count]
+        else:
+            entry[0] += count
+            entry[1] += 1
+            if count > entry[2]:
+                entry[2] = count
+        if count > peak:
+            peak = count
+        total += count
+        n += 1
+    points = [
+        {"t": key, "avg": round(acc[key][0] / acc[key][1]), "peak": acc[key][2]}
+        for key in sorted(acc)
+    ]
+    summary = {"peak": peak, "avg": (round(total / n) if n else 0)}
+    return {"points": points, "summary": summary}
+
+
 @app.route("/api/analytics", methods=["GET"])
 @require_auth
 def analytics_endpoint():
-    """Return player-count snapshots for the requested period.
+    """Return pre-aggregated player-count buckets for the requested period.
 
-    Always reads from the local JSONL file (written on every sync).
-    Also merges Firestore snapshots for periods before the local file existed.
-    Results are deduped by ts and sorted ascending.
+    Reads raw {ts, count} snapshots from the local JSONL file (written on every
+    sync) and merges Firestore history, then buckets/averages server-side so the
+    browser receives only a few dozen points plus a {peak, avg} summary instead
+    of every raw minute-level row.
     """
     period = request.args.get("period", "week")
     seconds_back = _PERIOD_SECONDS.get(period, _PERIOD_SECONDS["week"])
@@ -462,7 +606,7 @@ def analytics_endpoint():
 
     # Start with local data — always available and always correct
     local = read_local_snapshots(since)
-    seen_ts: set[int] = {s["ts"] for s in local}
+    seen_ts: set = {s.get("ts") for s in local if s.get("ts") is not None}
 
     # Attempt to supplement with Firestore data (historical, before local file existed)
     _init_firebase()
@@ -479,13 +623,12 @@ def analytics_endpoint():
             for s in snaps:
                 ts = s.get("ts")
                 if ts and ts not in seen_ts:
-                    local.append({"ts": ts, "count": s.get("count", 0), "online": s.get("online", [])})
+                    local.append({"ts": ts, "count": s.get("count", 0)})
                     seen_ts.add(ts)
         except Exception as exc:
             logger.warning("Analytics Firestore query failed: %s", exc)
 
-    results = sorted(local, key=lambda s: s["ts"])
-    return jsonify(results)
+    return jsonify(_aggregate_snapshots(local, period))
 
 
 # ── AuthMe password verification endpoint ───────────────────────────────────────
@@ -515,16 +658,9 @@ def verify_minecraft_password():
     if len(username) > 64 or len(password) > 256:
         return jsonify({"valid": False}), 400
 
-    # Rate-limit per authenticated Firebase UID (falling back to remote IP).
-    from firebase_admin import auth as _fa
-    rl_key = request.remote_addr or "unknown"
-    try:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            decoded = _fa.verify_id_token(auth_header[len("Bearer "):])
-            rl_key = decoded.get("uid", rl_key)
-    except Exception:
-        pass  # fall back to IP-based key
+    # Rate-limit per authenticated Firebase UID. require_auth already verified
+    # the token and set g.auth_uid, so reuse it instead of verifying again.
+    rl_key = getattr(g, "auth_uid", None) or request.remote_addr or "unknown"
     if not _check_rate_limit(rl_key):
         return jsonify({"valid": False, "error": "Too many attempts. Please wait."}), 429
 
@@ -583,9 +719,8 @@ def verify_minecraft_password():
 @require_auth
 def advancements_endpoint(uuid: str):
     """Return completed advancements for a Java player UUID."""
-    # Basic UUID format validation to prevent path traversal
-    import re
-    if not re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", uuid, re.IGNORECASE):
+    # Strict UUID validation to prevent path traversal (shared with homes routes).
+    if not _is_valid_uuid(uuid):
         return jsonify({"error": "Invalid UUID"}), 400
     from .advancements import get_advancements
     return jsonify(get_advancements(uuid))

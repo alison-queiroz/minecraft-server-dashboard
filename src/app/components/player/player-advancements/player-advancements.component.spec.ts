@@ -212,7 +212,7 @@ describe('PlayerAdvancementsComponent', () => {
 
     const cmp = fixture.componentInstance as unknown as {
       result: { set(v: AdvancementsResult): void };
-      byCategory: () => Map<string, { id: string }[]>;
+      byCategory: () => { key: string; value: { id: string }[] }[];
     };
     cmp.result.set({
       completed: [
@@ -223,7 +223,8 @@ describe('PlayerAdvancementsComponent', () => {
       by_category: { Story: ['a', 'b'] },
     });
 
-    expect(cmp.byCategory().get('Story')?.length).toBe(2);
+    const story = cmp.byCategory().find(g => g.key === 'Story');
+    expect(story?.value.length).toBe(2);
   });
 
   it('keeps existing result unchanged when fetched description is empty', async () => {
