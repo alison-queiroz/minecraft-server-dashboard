@@ -37,7 +37,7 @@
 
   /* Elevated surface tier (server/home cards): larger radius + shadow. */
   .ui-panel--elevated {
-    @apply rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none;
+    @apply rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
   }
 
   /* Recessed/inset tier: nested panel-inside-a-panel. */
