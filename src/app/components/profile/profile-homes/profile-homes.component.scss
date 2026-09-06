@@ -35,18 +35,6 @@
 	       hover:bg-stone-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700;
 }
 
-.homes-toggle {
-	@apply rounded-xl px-3 py-1.5 text-xs font-bold transition-colors;
-}
-
-.homes-toggle--idle {
-	@apply bg-emerald-600 text-white hover:bg-emerald-500;
-}
-
-.homes-toggle--active {
-	@apply bg-stone-100 text-zinc-700 hover:bg-stone-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700;
-}
-
 .home-form-card {
 	@apply flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/60;
 }

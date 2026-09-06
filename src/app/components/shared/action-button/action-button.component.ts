@@ -21,6 +21,8 @@ export class ActionButtonComponent {
   @Input() variant: ActionButtonVariant = 'primary';
   @Input() compact = false;
   @Input() uppercase = false;
+  /** Optional stable hook for e2e/unit tests, rendered as data-testid. */
+  @Input() testId: string | null = null;
 
   @Output() readonly pressed = new EventEmitter<void>();
 

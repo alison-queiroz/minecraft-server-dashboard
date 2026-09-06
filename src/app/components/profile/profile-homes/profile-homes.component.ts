@@ -19,6 +19,7 @@ import { IconButtonComponent } from '../../shared/icon-button/icon-button.compon
 import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { CollapsibleSectionComponent } from '../../shared/collapsible-section/collapsible-section.component';
+import { ActionButtonComponent } from '../../shared/action-button/action-button.component';
 import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card.component';
 import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
 import { MapViewerComponent } from '../../shared/map-viewer/map-viewer.component';
@@ -49,7 +50,7 @@ export interface LocalHome extends EssentialsHome {
   selector: 'app-profile-homes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, IconButtonComponent, InlineErrorComponent, EmptyStateComponent, CollapsibleSectionComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, IconHomeComponent, UiInputComponent],
+  imports: [IconComponent, IconButtonComponent, InlineErrorComponent, EmptyStateComponent, CollapsibleSectionComponent, ActionButtonComponent, DecimalPipe, ProfileItemCardComponent, DimensionTagComponent, MapViewerComponent, UiToggleComponent, SaveButtonComponent, CancelButtonComponent, IconHomeComponent, UiInputComponent],
   templateUrl: './profile-homes.component.html',
   styleUrls: ['./profile-homes.component.scss'],
 })

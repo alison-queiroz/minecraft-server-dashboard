@@ -305,7 +305,7 @@ describe('ProfileHomesComponent', () => {
 
   describe('add form validation', () => {
     const openAddForm = () => {
-      const btn = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.homes-toggle');
+      const btn = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="homes-add-toggle"]');
       btn?.click();
       fixture.detectChanges();
     };

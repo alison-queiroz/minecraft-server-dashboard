@@ -22,12 +22,12 @@
           {{ allPublic() ? 'Deselect All' : 'Select All' }}
         </button>
       }
-      <button (click)="toggleAddForm()"
-        class="homes-toggle"
-        [class.homes-toggle--idle]="!showAddForm()"
-        [class.homes-toggle--active]="showAddForm()">
-        @if (!showAddForm()) { Add home } @else { Cancel }
-      </button>
+      <app-action-button
+        [label]="showAddForm() ? 'Cancel' : 'Add home'"
+        [variant]="showAddForm() ? 'secondary' : 'primary'"
+        [compact]="true"
+        testId="homes-add-toggle"
+        (pressed)="toggleAddForm()" />
     </div>
   </div>
 

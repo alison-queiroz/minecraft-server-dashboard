@@ -1,12 +1,11 @@
 <section class="locations-card">
   <div class="locations-header">
     <h2 class="locations-title">Saved Locations</h2>
-    <button (click)="toggleAddForm()"
-      class="locations-toggle"
-      [class.locations-toggle--idle]="!showAddForm()"
-      [class.locations-toggle--active]="showAddForm()">
-      @if (!showAddForm()) { Add location } @else { Cancel }
-    </button>
+    <app-action-button
+      [label]="showAddForm() ? 'Cancel' : 'Add location'"
+      [variant]="showAddForm() ? 'secondary' : 'primary'"
+      [compact]="true"
+      (pressed)="toggleAddForm()" />
   </div>
 
   @if (showAddForm()) {

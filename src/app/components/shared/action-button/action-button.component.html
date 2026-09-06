@@ -2,6 +2,7 @@
   type="button"
   (click)="handleClick()"
   [disabled]="disabled"
+  [attr.data-testid]="testId"
   class="action-button"
   [class.action-button--primary]="variant === 'primary'"
   [class.action-button--secondary]="variant === 'secondary'"
