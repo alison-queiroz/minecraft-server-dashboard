@@ -25,6 +25,8 @@ def _reset_shared_state():
         srv._STATUS_CACHE.clear()
         with srv._rl_lock:
             srv._rl_attempts.clear()
+        with srv._owner_cache_lock:
+            srv._owner_cache.clear()
     _reset()
     yield
     _reset()
@@ -540,54 +542,22 @@ def test_advancement_description_endpoint_missing_id(client, mocker):
     assert "Missing id" in response.json["error"]
 
 
-# ── analytics: Firestore merge branch ────────────────────────────────────────
+# ── analytics: local-only, never reads Firestore ─────────────────────────────
 
-def test_analytics_merges_firestore_snapshots(client, mocker):
-    """When Firebase is initialized, merges non-duplicate Firestore snapshots."""
+def test_analytics_does_not_read_firestore(client, mocker):
+    """Analytics must aggregate from the local JSONL only and never stream the
+    Firestore snapshots collection — that per-request read (tens of thousands of
+    docs for long periods) previously exhausted the free-tier read quota."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
+    mocker.patch("api.server_api.read_local_snapshots", return_value=[{"ts": 1000, "count": 2}])
+    fs_client = mocker.patch("firebase_admin.firestore.client")
 
-    # Local count 1; Firestore contributes a higher count (3) in a later bucket.
-    local_data = [{"ts": 1000, "count": 1}]
-    mocker.patch("api.server_api.read_local_snapshots", return_value=list(local_data))
-    mocker.patch("api.server_api._init_firebase")
-    srv._FIREBASE_INITIALIZED = True
-
-    # Build a mock Firestore snap document — .get(key) takes one positional arg
-    mock_snap = mocker.MagicMock()
-    firestore_row = {"ts": 1000 + 8 * 3600, "count": 3}  # different 6h bucket
-    mock_snap.get = firestore_row.get  # dict.get already accepts (key, default)
-
-    mock_db = mocker.MagicMock()
-    mock_db.collection.return_value.where.return_value.order_by.return_value.stream.return_value = [mock_snap]
-    mocker.patch("firebase_admin.firestore.client", return_value=mock_db)
-
-    headers = {"Authorization": "Bearer fake_token"}
-    response = client.get("/api/analytics?period=week", headers=headers)
+    response = client.get("/api/analytics?period=week", headers={"Authorization": "Bearer t"})
 
     assert response.status_code == 200
-    body = response.json
-    # Two distinct buckets (local + Firestore) and the Firestore count (3)
-    # is reflected in the overall peak — proving the merge happened.
-    assert len(body["points"]) == 2
-    assert body["summary"]["peak"] == 3
-
-
-def test_analytics_handles_firestore_exception(client, mocker):
-    """Falls back to local-only results when the Firestore query raises."""
-    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
-    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user"})
-    mocker.patch("api.server_api.read_local_snapshots", return_value=[{"ts": 999, "count": 1}])
-    mocker.patch("api.server_api._init_firebase")
-    srv._FIREBASE_INITIALIZED = True
-    mocker.patch("firebase_admin.firestore.client", side_effect=Exception("Firestore down"))
-
-    headers = {"Authorization": "Bearer fake_token"}
-    response = client.get("/api/analytics?period=week", headers=headers)
-
-    assert response.status_code == 200
-    assert len(response.json["points"]) == 1
-    assert response.json["summary"]["peak"] == 1
+    assert response.json["summary"]["peak"] == 2
+    fs_client.assert_not_called()
 
 
 # ── Java / Bedrock status inner fetch logic ───────────────────────────────────
@@ -1307,21 +1277,26 @@ def test_aggregate_snapshots_skips_none_ts():
     assert len(out["points"]) == 1
 
 
-def test_analytics_dedups_local_over_firestore_on_matching_ts(client, mocker):
+def test_homes_get_degrades_to_allow_when_firestore_unavailable(client, mocker):
+    """If the ownership Firestore lookup fails and nothing is cached, homes must
+    still work (availability over strict IDOR) rather than 403 for everyone."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "u"})
-    mocker.patch("api.server_api.read_local_snapshots", return_value=[{"ts": 1000, "count": 1}])
-    mocker.patch("api.server_api._init_firebase")
-    srv._FIREBASE_INITIALIZED = True
-    mock_snap = mocker.MagicMock()
-    row = {"ts": 1000, "count": 9}  # SAME ts as local — must be skipped
-    mock_snap.get = row.get
-    mock_db = mocker.MagicMock()
-    mock_db.collection.return_value.where.return_value.order_by.return_value.stream.return_value = [mock_snap]
-    mocker.patch("firebase_admin.firestore.client", return_value=mock_db)
-    r = client.get("/api/analytics?period=week", headers={"Authorization": "Bearer t"})
-    # Firestore row deduped → local count (1) wins, so peak stays 1 (not 9).
-    assert r.json["summary"]["peak"] == 1
+    mocker.patch("api.server_api.get_uuid_to_name", return_value={VALID_UUID: "Steve"})
+    # Firestore read raises (e.g. 429 quota) and the owner cache is empty.
+    mocker.patch("firebase_admin.firestore.client", side_effect=Exception("429 Quota exceeded"))
+    mocker.patch("api.server_api.read_essentials_homes", return_value=[])
+
+    r = client.get(f"/api/players/{VALID_UUID}/homes", headers={"Authorization": "Bearer t"})
+    assert r.status_code == 200
+
+
+def test_owner_lookup_serves_stale_cache_on_error(mocker):
+    """A transient Firestore error returns the last cached names, not empty."""
+    srv._owner_cache.clear()
+    srv._owner_cache["uid-x"] = (0.0, {"steve"})  # stale (ts=0) so a refresh is attempted
+    mocker.patch("firebase_admin.firestore.client", side_effect=Exception("boom"))
+    assert srv._linked_minecraft_names("uid-x") == {"steve"}
 
 
 # ── AuthMe SHA/bcrypt reject paths ───────────────────────────────────────────

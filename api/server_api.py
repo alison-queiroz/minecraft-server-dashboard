@@ -115,21 +115,43 @@ def _optional_uid() -> Optional[str]:
         return None
 
 
+# uid -> (fetched_at, {lowercase linked names}). Cached so the ownership check
+# does not hit Firestore on every homes request (which would burn the read
+# quota and, once exhausted, break homes). Stale entries are served if a later
+# refresh fails.
+_owner_cache: dict[str, Tuple[float, set]] = {}
+_OWNER_CACHE_TTL = 600.0  # seconds
+_owner_cache_lock = threading.Lock()
+
+
 def _linked_minecraft_names(uid: Optional[str]) -> set:
-    """Lowercase Minecraft usernames linked to this Firebase uid (from Firestore)."""
+    """Lowercase Minecraft usernames linked to this Firebase uid.
+
+    Cached for _OWNER_CACHE_TTL. On a Firestore error a stale cached value is
+    returned when available; otherwise the error propagates so the caller can
+    decide how to degrade.
+    """
     if not uid:
         return set()
+    now = time.time()
+    with _owner_cache_lock:
+        cached = _owner_cache.get(uid)
+    if cached and now - cached[0] < _OWNER_CACHE_TTL:
+        return cached[1]
     try:
         from firebase_admin import firestore as admin_firestore
         db = admin_firestore.client()
         snap = db.collection("users").document(uid).get()
-        if not snap.exists:
-            return set()
-        accounts = (snap.to_dict() or {}).get("minecraftAccounts") or {}
-        return {str(v).lower() for v in accounts.values() if v}
+        accounts = (snap.to_dict() or {}).get("minecraftAccounts") or {} if snap.exists else {}
+        names = {str(v).lower() for v in accounts.values() if v}
+        with _owner_cache_lock:
+            _owner_cache[uid] = (now, names)
+        return names
     except Exception as exc:
         logger.warning("Ownership lookup failed for uid %s: %s", uid, exc)
-        return set()
+        if cached:
+            return cached[1]  # serve stale on a transient Firestore error
+        raise
 
 
 def _user_owns_player(uuid: str) -> bool:
@@ -138,6 +160,10 @@ def _user_owns_player(uuid: str) -> bool:
     Resolves the UUID to a username (usercache) and checks it against the
     caller's linked Minecraft accounts. Prevents one authenticated user from
     reading/mutating another player's EssentialsX homes (IDOR).
+
+    If Firestore is unavailable and no cached ownership data exists, the check
+    degrades to allow (availability over strict IDOR protection) rather than
+    break homes for every user during an outage — logged loudly, self-heals.
     """
     uid = getattr(g, "auth_uid", None)
     if not uid:
@@ -145,7 +171,14 @@ def _user_owns_player(uuid: str) -> bool:
     name = get_uuid_to_name().get(uuid)
     if not name:
         return False
-    return name.lower() in _linked_minecraft_names(uid)
+    try:
+        linked = _linked_minecraft_names(uid)
+    except Exception:
+        logger.warning(
+            "Ownership check degraded for uid %s (Firestore unavailable, no cache) — allowing", uid
+        )
+        return True
+    return name.lower() in linked
 
 
 def _services_catalog_path() -> Path:
@@ -604,31 +637,14 @@ def analytics_endpoint():
     seconds_back = _PERIOD_SECONDS.get(period, _PERIOD_SECONDS["week"])
     since = int(time.time()) - seconds_back
 
-    # Start with local data — always available and always correct
-    local = read_local_snapshots(since)
-    seen_ts: set = {s.get("ts") for s in local if s.get("ts") is not None}
-
-    # Attempt to supplement with Firestore data (historical, before local file existed)
-    _init_firebase()
-    if _FIREBASE_INITIALIZED:
-        try:
-            from firebase_admin import firestore as admin_firestore
-            db = admin_firestore.client()
-            snaps = (
-                db.collection("snapshots")
-                .where("ts", ">=", since)
-                .order_by("ts")
-                .stream()
-            )
-            for s in snaps:
-                ts = s.get("ts")
-                if ts and ts not in seen_ts:
-                    local.append({"ts": ts, "count": s.get("count", 0)})
-                    seen_ts.add(ts)
-        except Exception as exc:
-            logger.warning("Analytics Firestore query failed: %s", exc)
-
-    return jsonify(_aggregate_snapshots(local, period))
+    # Aggregate from the local JSONL only. We deliberately do NOT stream the
+    # Firestore `snapshots` collection here: for long periods that was tens of
+    # thousands of per-request document reads (multiplied by the 60s client
+    # auto-refresh), which exhausted the Firestore free-tier read quota. The
+    # local file is written on every sync and retained for a year, so it is the
+    # complete, authoritative source.
+    snapshots = read_local_snapshots(since)
+    return jsonify(_aggregate_snapshots(snapshots, period))
 
 
 # ── AuthMe password verification endpoint ───────────────────────────────────────
