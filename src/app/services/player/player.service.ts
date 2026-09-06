@@ -1,12 +1,13 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, finalize, tap } from 'rxjs/operators';
 import { Player } from './player.model';
 import type { EssentialsHome } from './player.model';
 import { getApps, initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
+import { LoadingService } from '../loading/loading.service';
 
 interface ApiPlayerLiveData {
   name: string;
@@ -26,6 +27,7 @@ const byLevelDesc = (a: Player, b: Player): number => b.level - a.level;
 @Injectable({ providedIn: 'root' })
 export class PlayerService {
   private readonly http = inject(HttpClient);
+  private readonly loadingService = inject(LoadingService);
 
   protected readonly rawPlayers = signal<Player[]>([]);
   private readonly houseLinks = signal<Record<string, string>>({});
@@ -43,6 +45,9 @@ export class PlayerService {
       });
     });
   });
+
+  /** True until the first player data (Firestore snapshot or HTTP fallback) arrives. */
+  readonly loading = signal(true);
 
   readonly searchTerm = signal<string>('');
   readonly selectedPlayerName = signal<string | null>(null);
@@ -65,9 +70,23 @@ export class PlayerService {
     return this._avatarCache().get(url) ?? url;
   }
 
+  /** Guards the initial-load handoff so the global loading counter is balanced. */
+  private _initialLoadDone = false;
+
   constructor() {
+    // Feed the initial player load into the global loading bar (Firestore's
+    // stream bypasses the HTTP interceptor, so it wouldn't show otherwise).
+    this.loadingService.start();
     this.fetchHouseLinks();
     this.subscribeToFirestorePlayers();
+  }
+
+  /** Ends the initial load exactly once (drops the global bar + local flag). */
+  private finishInitialLoad(): void {
+    if (this._initialLoadDone) return;
+    this._initialLoadDone = true;
+    this.loading.set(false);
+    this.loadingService.done();
   }
 
   protected subscribeToFirestorePlayers(): void {
@@ -89,6 +108,7 @@ export class PlayerService {
           // directly. The previous hand-rolled index-based diff omitted volatile
           // fields (health, pos) and could leave the UI showing stale values.
           this.rawPlayers.set(players);
+          this.finishInitialLoad();
           // If Firestore docs predate advancement_count, enrich once from the API.
           if (!this._enriched && players.some(p => p.advancement_count === undefined)) {
             this._enriched = true;
@@ -114,6 +134,7 @@ export class PlayerService {
           this.rawPlayers.set(data.map(p => new Player(p)).sort(byLevelDesc));
         }
       }),
+      finalize(() => this.finishInitialLoad()),
     ).subscribe();
   }
 

@@ -60,3 +60,83 @@
     display: none;
   }
 }
+
+/* ── Loading skeleton / empty state ─────────────────────────────────────── */
+.player-list-skeleton {
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0;
+}
+
+.player-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 65px;
+  padding: 0 0.75rem;
+}
+
+.skeleton-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1 1 auto;
+}
+
+.skeleton-line {
+  height: 10px;
+  border-radius: 999px;
+}
+
+.skeleton-line--wide {
+  width: 40%;
+}
+
+.skeleton-line--narrow {
+  width: 25%;
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.12) 37%,
+    rgba(0, 0, 0, 0.06) 63%
+  );
+  background-size: 400% 100%;
+  animation: player-skeleton-shimmer 1.4s ease infinite;
+}
+
+:host-context([data-theme='dark']) .shimmer,
+:root:not([data-theme='light']) .shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.11) 37%,
+    rgba(255, 255, 255, 0.05) 63%
+  );
+  background-size: 400% 100%;
+}
+
+@keyframes player-skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer { animation: none; }
+}
+
+.player-list-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.6;
+}

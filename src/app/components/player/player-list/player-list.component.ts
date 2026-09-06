@@ -35,6 +35,9 @@ export class PlayerListComponent implements AfterViewInit, OnDestroy {
   protected readonly sortField = signal<SortField>('level');
   protected readonly sortDir   = signal<SortDir>('desc');
 
+  /** Placeholder rows rendered while the player stream is loading. */
+  protected readonly skeletonRows = Array.from({ length: 8 }, (_, i) => i);
+
   protected readonly displayedPlayers = computed(() => {
     const players = this.service.filteredPlayers();
     const field   = this.sortField();

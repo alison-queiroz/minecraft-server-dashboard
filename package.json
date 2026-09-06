@@ -13,6 +13,7 @@
     "test:api": ".\\.venv\\Scripts\\python.exe -m pytest tests/",
     "test:api:coverage": ".\\.venv\\Scripts\\python.exe -m pytest tests/ --cov=api --cov-report=term-missing --cov-report=xml",
     "test:api:coverage:100": ".\\.venv\\Scripts\\python.exe -m pytest tests/ --cov=api --cov-report=term-missing --cov-fail-under=100",
+    "backend:setup": "python -m venv .venv && .\\.venv\\Scripts\\python.exe -m pip install -r api/requirements.txt -r api/requirements-dev.txt",
     "backend:start": ".\\.venv\\Scripts\\python.exe .\\run.py",
     "backend:wait": "wait-on tcp:5000",
     "e2e": "ng e2e",

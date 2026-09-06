@@ -11,6 +11,9 @@
 npm-debug.log
 yarn-error.log
 
+# Python virtualenv (created via `npm run backend:setup`)
+/.venv
+
 # IDEs and editors
 .idea/
 .project
