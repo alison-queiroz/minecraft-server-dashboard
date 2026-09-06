@@ -1,5 +1,6 @@
+/* Surface from shared .ui-panel + .ui-panel--padded tokens; layout stays local. */
 .homes-card {
-	@apply flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none;
+	@apply flex flex-col gap-4;
 }
 
 .homes-header {

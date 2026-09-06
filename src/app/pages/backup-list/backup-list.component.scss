@@ -1,6 +1,4 @@
-.backup-card {
-  @apply overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
-}
+/* Surface comes from the shared .ui-panel--elevated token (see index HTML). */
 .breadcrumb-container {
   @apply flex items-center flex-wrap gap-2 border-b border-stone-200 bg-stone-50 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-900/50;
 }

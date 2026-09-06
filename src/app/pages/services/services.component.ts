@@ -5,6 +5,7 @@ import { LucideServer } from '@lucide/angular';
 import { IconComponent } from '../../components/shared/icon/icon.component';
 import { InlineErrorComponent } from '../../components/shared/inline-error/inline-error.component';
 import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
+import { ActionButtonComponent } from '../../components/shared/action-button/action-button.component';
 
 interface ServiceEntry {
   name: string;
@@ -36,7 +37,7 @@ interface ServicesCatalogResponse {
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [IconComponent, InlineErrorComponent, PageContainerComponent],
+  imports: [IconComponent, InlineErrorComponent, PageContainerComponent, ActionButtonComponent],
   templateUrl: './services.component.html',
   styleUrls: ['./services.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

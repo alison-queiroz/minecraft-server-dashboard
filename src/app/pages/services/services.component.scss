@@ -29,27 +29,9 @@
   @apply mt-2;
 }
 
-.services-edit-button,
-.services-cancel-button,
-.services-save-button {
-  @apply rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors;
-}
-
-.services-edit-button,
-.services-save-button {
-  @apply border-emerald-300 bg-emerald-50 text-emerald-700 hover:border-emerald-400 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300;
-}
-
-.services-cancel-button {
-  @apply border-stone-300 bg-stone-100 text-zinc-700 hover:border-stone-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200;
-}
-
-.services-save-button:disabled {
-  @apply cursor-not-allowed opacity-60;
-}
-
+/* Surface comes from the shared .ui-panel token; only layout stays local. */
 .services-editor {
-  @apply rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900;
+  @apply p-4;
 }
 
 .editor-title {
@@ -78,7 +60,7 @@
 }
 
 .service-section {
-  @apply rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:p-5;
+  @apply p-4 md:p-5;
 }
 
 .section-header {
@@ -98,7 +80,7 @@
 }
 
 .service-card {
-  @apply rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-800 dark:bg-zinc-950;
+  @apply p-4;
 }
 
 .service-head-row {

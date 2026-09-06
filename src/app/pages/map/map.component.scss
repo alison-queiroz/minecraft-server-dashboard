@@ -25,8 +25,9 @@
   @apply rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400;
 }
 
+/* Surface from shared .ui-panel token; layout stays local. */
 .map-viewer-card {
-  @apply flex-1 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none;
+  @apply flex-1 overflow-hidden;
 }
 
 .map-save-card {

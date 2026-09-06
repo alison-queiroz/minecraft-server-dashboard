@@ -11,9 +11,21 @@
     @if (canEdit()) {
       <div class="services-admin-actions">
         @if (!editMode()) {
-          <button class="services-edit-button" type="button" (click)="startEditing()">Edit catalog</button>
+          <app-action-button
+            label="Edit catalog"
+            variant="primary"
+            [compact]="true"
+            [uppercase]="true"
+            testId="services-edit"
+            (pressed)="startEditing()" />
         } @else {
-          <button class="services-cancel-button" type="button" (click)="cancelEditing()">Cancel</button>
+          <app-action-button
+            label="Cancel"
+            variant="secondary"
+            [compact]="true"
+            [uppercase]="true"
+            testId="services-cancel"
+            (pressed)="cancelEditing()" />
         }
       </div>
     }
@@ -23,7 +35,7 @@
   <app-inline-error variant="banner" [message]="loadError()" />
 
   @if (editMode()) {
-    <section class="services-editor">
+    <section class="services-editor ui-panel">
       <h3 class="editor-title">Catalog JSON Editor</h3>
       <p class="editor-copy">Update entries and save to the server-managed catalog file.</p>
       <textarea
@@ -35,9 +47,14 @@
         <p class="editor-error">{{ saveError() }}</p>
       }
       <div class="editor-actions">
-        <button class="services-save-button" type="button" [disabled]="saving()" (click)="saveCatalog()">
-          {{ saving() ? 'Saving...' : 'Save catalog' }}
-        </button>
+        <app-action-button
+          [label]="saving() ? 'Saving...' : 'Save catalog'"
+          variant="primary"
+          [compact]="true"
+          [uppercase]="true"
+          [disabled]="saving()"
+          testId="services-save"
+          (pressed)="saveCatalog()" />
       </div>
     </section>
   }
@@ -45,7 +62,7 @@
   @if (catalog(); as cfg) {
     <div class="services-sections">
       @for (section of cfg.sections; track section.title) {
-        <section class="service-section">
+        <section class="service-section ui-panel">
           <header class="section-header">
             <h3 class="section-title">{{ section.title }}</h3>
             <p class="section-description">{{ section.description }}</p>
@@ -53,7 +70,7 @@
 
           <div class="service-grid">
             @for (entry of section.services; track entry.name) {
-              <article class="service-card">
+              <article class="service-card ui-panel--inset">
                 <div class="service-head-row">
                   <h4 class="service-name">{{ entry.name }}</h4>
                   <span class="service-access">{{ entry.access }}</span>

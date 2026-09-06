@@ -15,7 +15,6 @@ import { UserProfileService } from '../../../services/user-profile/user-profile.
 import { PlayerService } from '../../../services/player/player.service';
 import type { Player } from '../../../services/player/player.model';
 import { PlayerFaceComponent } from '../../shared/player-face/player-face.component';
-import { IconComponent } from '../../shared/icon/icon.component';
 import { IconButtonComponent } from '../../shared/icon-button/icon-button.component';
 import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
 import { ActionButtonComponent } from '../../shared/action-button/action-button.component';
@@ -26,7 +25,7 @@ import { MinecraftCredentialService } from '../../../services/minecraft-credenti
   selector: 'app-profile-accounts',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PlayerFaceComponent, IconComponent, IconButtonComponent, InlineErrorComponent, ActionButtonComponent, UiInputComponent],
+  imports: [PlayerFaceComponent, IconButtonComponent, InlineErrorComponent, ActionButtonComponent, UiInputComponent],
   templateUrl: './profile-accounts.component.html',
   styleUrls: ['./profile-accounts.component.scss'],
 })

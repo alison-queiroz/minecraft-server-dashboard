@@ -11,12 +11,18 @@ export type UiInputAccent = 'emerald' | 'blue' | 'orange';
       class="ui-input"
       [class.focus-accent-blue]="accent() === 'blue'"
       [class.focus-accent-orange]="accent() === 'orange'"
+      [class.ui-input--mono]="mono()"
       [type]="type()"
       [value]="value()"
       [placeholder]="placeholder()"
+      [disabled]="disabled()"
+      [required]="required()"
+      [attr.id]="inputId() ?? null"
+      [attr.name]="name() ?? null"
       [attr.maxlength]="maxlength() ?? null"
       [attr.list]="list() ?? null"
       [attr.autocomplete]="autocomplete() ?? null"
+      [attr.aria-label]="ariaLabel() ?? null"
       [attr.readonly]="readonly() ? '' : null"
       (input)="valueChange.emit($any($event.target).value)"
     />
@@ -35,6 +41,13 @@ export class UiInputComponent {
   readonly list = input<string | null>(null);
   readonly autocomplete = input<string | null>(null);
   readonly readonly = input(false);
+  readonly disabled = input(false);
+  readonly required = input(false);
+  readonly mono = input(false);
+  /** Native id, so an external <label for="..."> can target the input. */
+  readonly inputId = input<string | null>(null);
+  readonly name = input<string | null>(null);
+  readonly ariaLabel = input<string | null>(null);
   readonly accent = input<UiInputAccent>('emerald');
   readonly valueChange = output<string>();
 }

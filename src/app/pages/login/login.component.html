@@ -52,32 +52,28 @@
     @if (step() === 'minecraft') {
       <form class="login-mc-form" (ngSubmit)="submitMinecraft()">
         <label class="login-field-label" for="mc-name">In-game name</label>
-        <input
-          id="mc-name"
-          class="login-field"
+        <app-ui-input
+          inputId="mc-name"
+          name="mcName"
           type="text"
           autocomplete="username"
           placeholder="Your Minecraft username"
-          [ngModel]="mcName()"
-          (ngModelChange)="mcName.set($event)"
-          name="mcName"
+          [value]="mcName()"
+          (valueChange)="mcName.set($event)"
           [disabled]="signing()"
-          required
-        />
+          [required]="true" />
 
         <label class="login-field-label" for="mc-password">In-game password</label>
-        <input
-          id="mc-password"
-          class="login-field"
+        <app-ui-input
+          inputId="mc-password"
+          name="mcPassword"
           type="password"
           autocomplete="current-password"
           placeholder="Your AuthMe password"
-          [ngModel]="mcPassword()"
-          (ngModelChange)="mcPassword.set($event)"
-          name="mcPassword"
+          [value]="mcPassword()"
+          (valueChange)="mcPassword.set($event)"
           [disabled]="signing()"
-          required
-        />
+          [required]="true" />
 
         <button
           type="submit"

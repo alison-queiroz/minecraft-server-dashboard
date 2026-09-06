@@ -6,12 +6,13 @@ import { UserProfileService } from '../../services/user-profile/user-profile.ser
 import { MinecraftCredentialService } from '../../services/minecraft-credential/minecraft-credential.service';
 import { ServerIconComponent } from '../../components/shared/server-icon/server-icon.component';
 import { InlineErrorComponent } from '../../components/shared/inline-error/inline-error.component';
+import { UiInputComponent } from '../../components/shared/ui-input/ui-input.component';
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ServerIconComponent, InlineErrorComponent, FormsModule],
+  imports: [ServerIconComponent, InlineErrorComponent, UiInputComponent, FormsModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

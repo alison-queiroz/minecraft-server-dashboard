@@ -1,5 +1,5 @@
 @if (compact) {
-  <div class="connection-card connection-card--compact">
+  <div class="connection-card connection-card--compact ui-panel--elevated overflow-hidden">
     <div class="server-card-header">
       <h3 class="server-card-title">
         <app-icon [icon]="LucideWifi" [size]="12" [strokeWidth]="2.5"></app-icon>
@@ -33,7 +33,7 @@
     </div>
   </div>
 } @else {
-  <div class="connection-card">
+  <div class="connection-card ui-panel--elevated overflow-hidden">
     <div class="server-card-header">
       <h3 class="server-card-title">
         <app-icon [icon]="LucideWifi" [size]="12" [strokeWidth]="2.5"></app-icon>

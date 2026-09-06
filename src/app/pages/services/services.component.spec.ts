@@ -84,7 +84,7 @@ describe('ServicesComponent', () => {
     fixture.detectChanges();
 
     const editButton = (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('.services-edit-button');
+      .querySelector<HTMLButtonElement>('[data-testid="services-edit"]');
     expect(editButton).toBeTruthy();
     editButton?.click();
     fixture.detectChanges();
@@ -99,7 +99,7 @@ describe('ServicesComponent', () => {
     fixture.detectChanges();
 
     const saveButton = (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('.services-save-button');
+      .querySelector<HTMLButtonElement>('[data-testid="services-save"]');
     saveButton?.click();
 
     const saveReq = httpMock.expectOne('/api/services-catalog');
