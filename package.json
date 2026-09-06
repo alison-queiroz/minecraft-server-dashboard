@@ -30,7 +30,8 @@
     "analyze:bundle": "npx webpack-bundle-analyzer ./dist/minecraft-server-dashboard/stats.json",
     "analyze:bundle-report": "node ./scripts/bundle-report.mjs",
     "analyze:bundle:initial": "node ./scripts/bundle-filter.mjs initial && npx webpack-bundle-analyzer ./dist/minecraft-server-dashboard/stats.initial.json",
-    "analyze:bundle:lazy": "node ./scripts/bundle-filter.mjs lazy && npx webpack-bundle-analyzer ./dist/minecraft-server-dashboard/stats.lazy.json"
+    "analyze:bundle:lazy": "node ./scripts/bundle-filter.mjs lazy && npx webpack-bundle-analyzer ./dist/minecraft-server-dashboard/stats.lazy.json",
+    "prepare": "husky"
   },
   "private": true,
   "dependencies": {
@@ -67,6 +68,7 @@
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
     "eslint": "^10.0.3",
+    "husky": "^9.1.7",
     "jsdom": "^29.0.1",
     "postcss": "^8.5.8",
     "prettier": "^3.6.2",

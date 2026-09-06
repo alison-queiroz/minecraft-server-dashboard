@@ -1,0 +1,2 @@
+# Fast feedback on commit: lint only (keeps commits quick).
+npm run lint

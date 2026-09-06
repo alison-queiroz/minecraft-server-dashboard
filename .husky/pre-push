@@ -1,0 +1,4 @@
+# Full quality gate before pushing: lint + strict typecheck + frontend + API tests.
+# Prevents pushing code that would fail CI or break the site.
+# Requires the Python venv — run `npm run backend:setup` once if it's missing.
+npm run ci:quality
