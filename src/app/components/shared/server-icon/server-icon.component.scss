@@ -27,18 +27,3 @@
     @apply w-32 h-32;
   }
 }
-
-svg {
-  @apply w-9 h-9;
-  display: block;
-}
-
-:host([data-size="nav"]) svg {
-  @apply w-5 h-5;
-}
-:host([data-size="login"]) svg {
-  @apply w-7 h-7;
-}
-:host([data-size="home"]) svg {
-  @apply w-10 h-10;
-}

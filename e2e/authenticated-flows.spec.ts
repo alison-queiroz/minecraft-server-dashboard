@@ -17,14 +17,10 @@ test.describe('Authenticated post-login flows', () => {
     await expectNotOnLogin('/', page.url());
 
     await expect(page.locator('app-nav')).toBeVisible();
-    await expect(page.locator('app-server-hero-card')).toBeVisible();
-  });
-
-  test('opens server status page', async ({ page }) => {
-    await page.goto('/server');
-    await expectNotOnLogin('/server', page.url());
-
-    await expect(page.getByRole('heading', { name: 'Server Status' })).toBeVisible();
+    await expect(page.locator('app-server-hero-banner')).toBeVisible();
+    // Server detail cards were merged into the home dashboard.
+    await expect(page.locator('app-server-players-card')).toBeVisible();
+    await expect(page.locator('app-server-connection-card')).toBeVisible();
   });
 
   test('opens players page', async ({ page }) => {

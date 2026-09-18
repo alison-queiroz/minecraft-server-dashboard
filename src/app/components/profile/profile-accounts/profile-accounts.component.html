@@ -6,192 +6,67 @@
   } @else {
     <app-inline-error [message]="accountError()" />
 
-    <!-- Java -->
-    <div class="account-section">
-      <div class="account-row">
-        <span class="account-type account-type--java">Java</span>
-        @if (profileService.minecraftAccounts().java) {
-          @if (findJavaPlayer(profileService.minecraftAccounts().java); as player) {
-            <app-player-face [player]="player" [size]="28" class="account-face"> </app-player-face>
+    @for (row of accountRows; track row.type) {
+      <div class="account-section">
+        <div class="account-row">
+          <span [class]="'account-type account-type--' + row.type">{{ row.label }}</span>
+          @if (profileService.minecraftAccounts()[row.type]) {
+            @if (linkedFace(row.type); as player) {
+              <app-player-face [player]="player" [size]="28" class="account-face"> </app-player-face>
+            }
+            <span class="account-name">{{ profileService.minecraftAccounts()[row.type] }}</span>
+            <app-icon-button
+              [icon]="LucideX"
+              variant="danger"
+              [strokeWidth]="2.5"
+              [disabled]="savingAccount() === row.type"
+              title="Remove linked account"
+              (pressed)="unlink(row.type)"
+            />
           }
-          <span class="account-name">{{ profileService.minecraftAccounts().java }}</span>
-          <app-icon-button
-            [icon]="LucideX"
-            variant="danger"
-            [strokeWidth]="2.5"
-            [disabled]="savingAccount() === 'java'"
-            title="Remove linked account"
-            (pressed)="unlink('java')"
-          />
-        }
-      </div>
-      <div class="account-form-row">
-        <app-ui-input
-          [value]="accountInputs().java"
-          (valueChange)="updateInput('java', $event)"
-          list="java-players"
-          placeholder="Java username..."
-          accent="emerald"
-        >
-        </app-ui-input>
-      </div>
-      @if (accountInputs().java.trim()) {
+        </div>
         <div class="account-form-row">
           <app-ui-input
-            type="password"
-            [value]="gamePasswords().java"
-            (valueChange)="updatePassword('java', $event)"
-            placeholder="In-game password..."
-            autocomplete="off"
-            accent="emerald"
+            [value]="accountInputs()[row.type]"
+            (valueChange)="updateInput(row.type, $event)"
+            [list]="row.datalist"
+            [placeholder]="row.label + ' username...'"
+            [accent]="row.accent"
           >
           </app-ui-input>
-          <app-action-button
-            [label]="
-              savingAccount() === 'java'
-                ? '...'
-                : profileService.minecraftAccounts().java
-                  ? 'Update'
-                  : 'Link'
-            "
-            [disabled]="savingAccount() === 'java'"
-            variant="primary"
-            (pressed)="save('java')"
-          ></app-action-button>
         </div>
-      }
-    </div>
-
-    <!-- Bedrock -->
-    <div class="account-section">
-      <div class="account-row">
-        <span class="account-type account-type--bedrock">Bedrock</span>
-        @if (profileService.minecraftAccounts().bedrock) {
-          @if (findBedrockPlayer(profileService.minecraftAccounts().bedrock); as player) {
-            <app-player-face [player]="player" [size]="28" class="account-face"> </app-player-face>
-          }
-          <span class="account-name">{{ profileService.minecraftAccounts().bedrock }}</span>
-          <app-icon-button
-            [icon]="LucideX"
-            variant="danger"
-            [strokeWidth]="2.5"
-            [disabled]="savingAccount() === 'bedrock'"
-            title="Remove linked account"
-            (pressed)="unlink('bedrock')"
-          />
+        @if (accountInputs()[row.type].trim()) {
+          <div class="account-form-row">
+            <app-ui-input
+              type="password"
+              [value]="gamePasswords()[row.type]"
+              (valueChange)="updatePassword(row.type, $event)"
+              placeholder="In-game password..."
+              autocomplete="off"
+              [accent]="row.accent"
+            >
+            </app-ui-input>
+            <app-action-button
+              [label]="
+                savingAccount() === row.type
+                  ? '...'
+                  : profileService.minecraftAccounts()[row.type]
+                    ? 'Update'
+                    : 'Link'
+              "
+              [disabled]="savingAccount() === row.type"
+              [variant]="row.variant"
+              (pressed)="save(row.type)"
+            ></app-action-button>
+          </div>
         }
-      </div>
-      <div class="account-form-row">
-        <app-ui-input
-          [value]="accountInputs().bedrock"
-          (valueChange)="updateInput('bedrock', $event)"
-          list="bedrock-players"
-          placeholder="Bedrock username..."
-          accent="blue"
-        >
-        </app-ui-input>
-      </div>
-      @if (accountInputs().bedrock.trim()) {
-        <div class="account-form-row">
-          <app-ui-input
-            type="password"
-            [value]="gamePasswords().bedrock"
-            (valueChange)="updatePassword('bedrock', $event)"
-            placeholder="In-game password..."
-            autocomplete="off"
-            accent="blue"
-          >
-          </app-ui-input>
-          <app-action-button
-            [label]="
-              savingAccount() === 'bedrock'
-                ? '...'
-                : profileService.minecraftAccounts().bedrock
-                  ? 'Update'
-                  : 'Link'
-            "
-            [disabled]="savingAccount() === 'bedrock'"
-            variant="blue"
-            (pressed)="save('bedrock')"
-          ></app-action-button>
-        </div>
-      }
-    </div>
 
-    <!-- Admin -->
-    <div class="account-section">
-      <div class="account-row">
-        <span class="account-type account-type--admin">Admin</span>
-        @if (profileService.minecraftAccounts().admin) {
-          @if (
-            findBedrockPlayer(profileService.minecraftAccounts().admin) ??
-              findJavaPlayer(profileService.minecraftAccounts().admin);
-            as player
-          ) {
-            <app-player-face [player]="player" [size]="28" class="account-face"> </app-player-face>
+        <datalist [id]="row.datalist">
+          @for (name of availablePlayersFor(row.type); track name) {
+            <option [value]="name">{{ name }}</option>
           }
-          <span class="account-name">{{ profileService.minecraftAccounts().admin }}</span>
-          <app-icon-button
-            [icon]="LucideX"
-            variant="danger"
-            [strokeWidth]="2.5"
-            [disabled]="savingAccount() === 'admin'"
-            title="Remove linked account"
-            (pressed)="unlink('admin')"
-          />
-        }
+        </datalist>
       </div>
-      <div class="account-form-row">
-        <app-ui-input
-          [value]="accountInputs().admin"
-          (valueChange)="updateInput('admin', $event)"
-          list="admin-players"
-          placeholder="Admin username..."
-          accent="orange"
-        >
-        </app-ui-input>
-      </div>
-      @if (accountInputs().admin.trim()) {
-        <div class="account-form-row">
-          <app-ui-input
-            type="password"
-            [value]="gamePasswords().admin"
-            (valueChange)="updatePassword('admin', $event)"
-            placeholder="In-game password..."
-            autocomplete="off"
-            accent="orange"
-          >
-          </app-ui-input>
-          <app-action-button
-            [label]="
-              savingAccount() === 'admin'
-                ? '...'
-                : profileService.minecraftAccounts().admin
-                  ? 'Update'
-                  : 'Link'
-            "
-            [disabled]="savingAccount() === 'admin'"
-            variant="orange"
-            (pressed)="save('admin')"
-          ></app-action-button>
-        </div>
-      }
-    </div>
-
-    <datalist id="java-players">
-      @for (name of availableJavaPlayers(); track name) {
-        <option [value]="name">{{ name }}</option>
-      }
-    </datalist>
-    <datalist id="bedrock-players">
-      @for (name of availableBedrockPlayers(); track name) {
-        <option [value]="name">{{ name }}</option>
-      }
-    </datalist>
-    <datalist id="admin-players">
-      @for (name of availableAdminPlayers(); track name) {
-        <option [value]="name">{{ name }}</option>
-      }
-    </datalist>
+    }
   }
 </section>

@@ -116,7 +116,7 @@ describe('ProfileHomesComponent', () => {
     await setup();
     getHomes(component).set([makeLocalHome({ isPublic: true })]);
     fixture.detectChanges();
-    const badge = (fixture.nativeElement as HTMLElement).querySelector('.item-badge');
+    const badge = (fixture.nativeElement as HTMLElement).querySelector('.ui-badge--emerald');
     expect(badge).toBeTruthy();
   });
 
@@ -124,7 +124,7 @@ describe('ProfileHomesComponent', () => {
     await setup();
     getHomes(component).set([makeLocalHome({ isPublic: false })]);
     fixture.detectChanges();
-    const badge = (fixture.nativeElement as HTMLElement).querySelector('.item-badge');
+    const badge = (fixture.nativeElement as HTMLElement).querySelector('.ui-badge--emerald');
     expect(badge).toBeNull();
   });
 

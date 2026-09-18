@@ -61,18 +61,18 @@ describe('HomeComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('renders the server hero card', () => {
+  it('renders the server hero banner', () => {
     const fixture = TestBed.createComponent(HomeComponent);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('app-server-hero-card')).toBeTruthy();
+    expect(el.querySelector('app-server-hero-banner')).toBeTruthy();
   });
 
-  it('renders the quick-nav', () => {
+  it('renders the players card', () => {
     const fixture = TestBed.createComponent(HomeComponent);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('app-home-quick-nav')).toBeTruthy();
+    expect(el.querySelector('app-server-players-card')).toBeTruthy();
   });
 
   it('renders the connection card', () => {

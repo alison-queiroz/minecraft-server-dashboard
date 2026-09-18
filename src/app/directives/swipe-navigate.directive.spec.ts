@@ -13,7 +13,7 @@ class BlankComponent {}
   template: '<div appSwipeNavigate [appSwipeNavigatePageOrder]="pageOrder"></div>',
 })
 class HostComponent {
-  readonly pageOrder = ['/', '/server', '/players', '/profile', '/map', '/backups', '/analytics'];
+  readonly pageOrder = ['/', '/players', '/profile', '/map', '/backups', '/analytics'];
 }
 
 function createTouchList(clientX: number, clientY: number): TouchList {
@@ -43,7 +43,6 @@ describe('SwipeNavigateDirective', () => {
       providers: [
         provideRouter([
           { path: '', component: BlankComponent },
-          { path: 'server', component: BlankComponent },
           { path: 'players', component: BlankComponent },
           { path: 'profile', component: BlankComponent },
           { path: 'map', component: BlankComponent },
@@ -107,7 +106,7 @@ describe('SwipeNavigateDirective', () => {
     directive.onTouchEnd({ changedTouches: createTouchList(10, 52) } as unknown as TouchEvent);
 
     expect(directionSpy).toHaveBeenCalledWith('right');
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/server');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/players');
   });
 
   it('does not navigate when swipe threshold is not met', async () => {
@@ -217,7 +216,7 @@ function createEmptyTouchList(): TouchList {
   template: '<div appSwipeNavigate [appSwipeNavigatePageOrder]="pageOrder"></div>',
 })
 class CoverageHostComponent {
-  readonly pageOrder = ['/', '/server', '/players', '/profile', '/map', '/backups', '/analytics'];
+  readonly pageOrder = ['/', '/players', '/profile', '/map', '/backups', '/analytics'];
 }
 
 describe('SwipeNavigateDirective — coverage', () => {
@@ -227,7 +226,6 @@ describe('SwipeNavigateDirective — coverage', () => {
       providers: [
         provideRouter([
           { path: '', component: BlankComponent },
-          { path: 'server', component: BlankComponent },
           { path: 'players', component: BlankComponent },
           { path: 'profile', component: BlankComponent },
           { path: 'map', component: BlankComponent },

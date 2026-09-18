@@ -14,13 +14,8 @@
       <a routerLink="/" routerLinkActive="is-active"
         [routerLinkActiveOptions]="{ exact: true }"
         class="nav-link">
-        <app-icon-home [size]="14"></app-icon-home>
+        <app-icon [icon]="LucideHouse" [size]="14"></app-icon>
         Home
-      </a>
-      <a routerLink="/server" routerLinkActive="is-active"
-        class="nav-link">
-        <app-icon [icon]="LucideServer" [size]="14"></app-icon>
-        Server
       </a>
       <a routerLink="/players" routerLinkActive="is-active"
         class="nav-link">
@@ -123,14 +118,8 @@
       <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }"
         (click)="closeMenu()"
         class="mobile-link">
-        <app-icon-home [size]="16"></app-icon-home>
+        <app-icon [icon]="LucideHouse" [size]="16"></app-icon>
         Home
-      </a>
-      <a routerLink="/server" routerLinkActive="is-active"
-        (click)="closeMenu()"
-        class="mobile-link">
-        <app-icon [icon]="LucideServer" [size]="16"></app-icon>
-        Server Status
       </a>
       <a routerLink="/players" routerLinkActive="is-active"
         (click)="closeMenu()"

@@ -17,15 +17,15 @@
   <div class="bedrock-body">
     <div class="bedrock-grid">
       <div>
-        <p class="bedrock-label">Port</p>
+        <p class="card-label mb-1">Port</p>
         <code class="bedrock-value">{{ serverService.bedrockPort() ?? 19132 }}</code>
       </div>
       <div>
-        <p class="bedrock-label">Version</p>
+        <p class="card-label mb-1">Version</p>
         <code class="bedrock-value">{{ serverService.bedrockVersion() || '—' }}</code>
       </div>
       <div>
-        <p class="bedrock-label">Online</p>
+        <p class="card-label mb-1">Online</p>
         <p class="bedrock-online"
           [class.text-blue-400]="serverService.bedrockOnlinePlayers() > 0"
           [class.text-zinc-500]="serverService.bedrockOnlinePlayers() === 0">
@@ -33,7 +33,7 @@
         </p>
       </div>
       <div>
-        <p class="bedrock-label">Edition</p>
+        <p class="card-label mb-1">Edition</p>
         <p class="bedrock-edition">Bedrock</p>
       </div>
     </div>

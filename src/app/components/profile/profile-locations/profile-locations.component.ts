@@ -21,8 +21,6 @@ import { ProfileItemCardComponent } from '../profile-item-card/profile-item-card
 import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.component';
 import { UiToggleComponent } from '../../shared/ui-toggle/ui-toggle.component';
 import { ActionButtonComponent } from '../../shared/action-button/action-button.component';
-import { SaveButtonComponent } from '../../shared/save-button/save-button.component';
-import { CancelButtonComponent } from '../../shared/cancel-button/cancel-button.component';
 import { UiInputComponent } from '../../shared/ui-input/ui-input.component';
 import { environment } from '../../../../environments/environment';
 
@@ -30,7 +28,7 @@ import { environment } from '../../../../environments/environment';
   selector: 'app-profile-locations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, IconButtonComponent, InlineErrorComponent, EmptyStateComponent, MapViewerComponent, ProfileItemCardComponent, DimensionTagComponent, UiToggleComponent, ActionButtonComponent, SaveButtonComponent, CancelButtonComponent, UiInputComponent],
+  imports: [IconComponent, IconButtonComponent, InlineErrorComponent, EmptyStateComponent, MapViewerComponent, ProfileItemCardComponent, DimensionTagComponent, UiToggleComponent, ActionButtonComponent, UiInputComponent],
   templateUrl: './profile-locations.component.html',
   styleUrls: ['./profile-locations.component.scss'],
 })

@@ -38,7 +38,8 @@ type ErrorCallback = (err: Error) => void;
 // ---------------------------------------------------------------------------
 @Injectable()
 class RealFirestoreHarness extends PlayerService {
-  // Do not override — let real subscribeToFirestorePlayers() run
+  // Do not override — the constructor runs the real HTTP loadInitialPlayers(),
+  // and each test opts into the real Firestore path via enableLiveUpdates().
 }
 
 const MOCK_HOUSE_MAPPING = {
@@ -73,7 +74,7 @@ describe('PlayerService – subscribeToFirestorePlayers branches', () => {
   let capturedOnNext: SnapshotCallback | null = null;
   let capturedOnError: ErrorCallback | null = null;
 
-  function bootstrapService() {
+  async function bootstrapService() {
     capturedOnNext = null;
     capturedOnError = null;
 
@@ -101,6 +102,11 @@ describe('PlayerService – subscribeToFirestorePlayers branches', () => {
     service = TestBed.inject(PlayerService);
     httpMock = TestBed.inject(HttpTestingController);
     httpMock.expectOne('assets/player-houses-mapping.json').flush(MOCK_HOUSE_MAPPING);
+    // The constructor now loads the roster over HTTP by default; flush that.
+    httpMock.expectOne('/api/players').flush([]);
+    // Opt into the Firestore real-time path under test — this lazy-imports the
+    // SDK and (await-ed) registers onSnapshot so capturedOnNext/onError are set.
+    await service.enableLiveUpdates();
   }
 
   afterEach(() => {
@@ -110,8 +116,8 @@ describe('PlayerService – subscribeToFirestorePlayers branches', () => {
 
   // ── empty snapshot → falls back to HTTP API ───────────────────────────────
 
-  it('calls fetchPlayersFromApi when the snapshot is empty', () => {
-    bootstrapService();
+  it('calls fetchPlayersFromApi when the snapshot is empty', async () => {
+    await bootstrapService();
     capturedOnNext?.({ empty: true, docs: [] });
 
     const req = httpMock.expectOne('/api/players');
@@ -120,8 +126,8 @@ describe('PlayerService – subscribeToFirestorePlayers branches', () => {
 
   // ── unchanged snapshot → early return (no signal update) ─────────────────
 
-  it('does not make HTTP call when snapshot data is unchanged', () => {
-    bootstrapService();
+  it('does not make HTTP call when snapshot data is unchanged', async () => {
+    await bootstrapService();
 
     const doc = makeDoc();
     capturedOnNext?.({ empty: false, docs: [doc] });
@@ -134,8 +140,8 @@ describe('PlayerService – subscribeToFirestorePlayers branches', () => {
 
   // ── advancement_count undefined → enrichFromApi ───────────────────────────
 
-  it('calls enrichFromApi when a player doc lacks advancement_count', () => {
-    bootstrapService();
+  it('calls enrichFromApi when a player doc lacks advancement_count', async () => {
+    await bootstrapService();
 
     capturedOnNext?.({ empty: false, docs: [makeDoc({ advancement_count: undefined })] });
     // Signal updated; enrichFromApi fires an HTTP request
@@ -157,8 +163,8 @@ describe('PlayerService – subscribeToFirestorePlayers branches', () => {
 
   // ── listener error callback → falls back to HTTP ──────────────────────────
 
-  it('calls fetchPlayersFromApi on Firestore listener error', () => {
-    bootstrapService();
+  it('calls fetchPlayersFromApi on Firestore listener error', async () => {
+    await bootstrapService();
     jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     capturedOnError?.(new Error('Firestore down'));
@@ -173,11 +179,11 @@ describe('PlayerService – subscribeToFirestorePlayers branches', () => {
 
   // ── try/catch around Firestore init ───────────────────────────────────────
 
-  it('catches Firestore init errors and falls back to HTTP API', () => {
+  it('catches Firestore init errors and falls back to HTTP API', async () => {
     shouldThrow = true;
     jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-    bootstrapService();
+    await bootstrapService();
 
     expect(console.warn).toHaveBeenCalledWith(
       'Could not initialize Firestore player listener:',

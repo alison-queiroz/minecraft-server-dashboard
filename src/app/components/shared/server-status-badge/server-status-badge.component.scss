@@ -3,14 +3,7 @@
 }
 
 .badge {
-  @apply flex items-center rounded-full border transition-colors;
-}
-
-:host([data-size="sm"]) .badge {
-  @apply gap-2 px-3 py-1.5 text-xs font-bold;
-}
-:host([data-size="lg"]) .badge {
-  @apply gap-2.5 px-4 py-2 text-sm font-black;
+  @apply flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors;
 }
 
 /* Status colours */
@@ -25,11 +18,8 @@
 }
 
 /* Dot sizing */
-:host([data-size="sm"]) .dot {
+.dot {
   @apply h-2 w-2;
-}
-:host([data-size="lg"]) .dot {
-  @apply h-2.5 w-2.5;
 }
 
 /* Dot fill for non-online states */

@@ -16,7 +16,7 @@ import { LoadingService } from './services/loading/loading.service';
 import { ThemeService } from './services/theme/theme.service';
 import { LoadingIndicatorComponent } from './components/shared/loading-indicator/loading-indicator.component';
 
-const PAGE_ORDER = ['/', '/server', '/players', '/profile', '/map', '/backups', '/analytics'];
+const PAGE_ORDER = ['/', '/players', '/profile', '/map', '/backups', '/analytics'];
 
 @Component({
   selector: 'app-root',
@@ -46,6 +46,9 @@ export class AppComponent {
    */
   protected readonly routeLoading = signal(false);
 
+  /** Path (no query/fragment) of the last fully-resolved navigation. */
+  private lastResolvedPath: string | null = null;
+
   constructor() {
     // Clear slide-in class once animation completes
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
@@ -54,15 +57,33 @@ export class AppComponent {
 
     this.router.events.subscribe(event => {
       if (event instanceof NavigationStart) {
+        // Query-param-only navigations (syncing ?player= / ?tab= into the URL)
+        // reuse the same route component and load nothing, so showing the
+        // full-screen loader for them just makes the page flash on every
+        // selection change. Only show it when the route path actually changes.
+        const targetPath = this.pathOf(event.url);
+        if (this.lastResolvedPath !== null && targetPath === this.lastResolvedPath) {
+          return;
+        }
         this.routeLoading.set(true);
       } else if (
         event instanceof NavigationEnd ||
         event instanceof NavigationCancel ||
         event instanceof NavigationError
       ) {
+        if (event instanceof NavigationEnd) {
+          this.lastResolvedPath = this.pathOf(event.urlAfterRedirects);
+        }
         this.routeLoading.set(false);
       }
     });
+  }
+
+  /** Strips the query string and fragment from a router URL, leaving the path. */
+  private pathOf(url: string): string {
+    const [beforeHash = ''] = url.split('#');
+    const [path = ''] = beforeHash.split('?');
+    return path;
   }
 
   protected onDragXChange(value: number): void {

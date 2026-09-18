@@ -10,13 +10,8 @@ import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth/auth.service';
 import { UserProfileService } from '../services/user-profile/user-profile.service';
 
-const makeMinecraftAccounts = (java: string | null = null) => ({ java, bedrock: null, admin: null });
-
-const makeProfileStub = (java: string | null = 'Steve') => ({
-  minecraftAccounts: signal(makeMinecraftAccounts(java)),
-  isLoading: signal(false),
-  isLoaded: signal(false),
-  loadProfile: jest.fn().mockResolvedValue(undefined),
+const makeProfileStub = (hasLinkedAccount = true) => ({
+  fetchLinkedStatus: jest.fn().mockResolvedValue(hasLinkedAccount),
 });
 
 describe('authGuard', () => {
@@ -29,7 +24,7 @@ describe('authGuard', () => {
     isLoading = signal(false);
     currentUser = signal<User | null>(null);
     mockRouter = { navigate: jest.fn() };
-    profileStub = makeProfileStub('Steve');
+    profileStub = makeProfileStub(true);
 
     TestBed.configureTestingModule({
       providers: [
@@ -66,18 +61,18 @@ describe('authGuard', () => {
     expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
-  it('redirects to /login when Firebase-authed but no Java account is linked', async () => {
+  it('redirects to /login when Firebase-authed but no account is linked', async () => {
     currentUser.set({ uid: 'user-abc' } as User);
-    profileStub.minecraftAccounts.set(makeMinecraftAccounts(null));
+    profileStub.fetchLinkedStatus.mockResolvedValue(false);
     const result = await runGuard();
     expect(result).toBe(false);
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
   });
 
-  it('calls loadProfile() to ensure the profile is loaded before checking', async () => {
+  it('checks linked-account status (over HTTP, not client Firestore) before allowing', async () => {
     currentUser.set({ uid: 'user-abc' } as User);
     await runGuard();
-    expect(profileStub.loadProfile).toHaveBeenCalled();
+    expect(profileStub.fetchLinkedStatus).toHaveBeenCalled();
   });
 });
 

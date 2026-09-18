@@ -36,20 +36,19 @@ export class ProfileAccountsComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly minecraftCredentialService = inject(MinecraftCredentialService);
 
+  /** Drives the three near-identical account rows (Java / Bedrock / Admin). */
+  protected readonly accountRows = [
+    { type: 'java'    as AccountType, label: 'Java',    accent: 'emerald' as const, variant: 'primary' as const, datalist: 'java-players' },
+    { type: 'bedrock' as AccountType, label: 'Bedrock', accent: 'blue'    as const, variant: 'blue'    as const, datalist: 'bedrock-players' },
+    { type: 'admin'   as AccountType, label: 'Admin',   accent: 'orange'  as const, variant: 'orange'  as const, datalist: 'admin-players' },
+  ] as const;
+
   protected readonly accountInputs = signal({ java: '', bedrock: '', admin: '' });
   protected readonly gamePasswords = signal({ java: '', bedrock: '', admin: '' });
   protected readonly savingAccount = signal<AccountType | null>(null);
   protected readonly accountError = signal<string | null>(null);
   /** Names from ops.json — only these appear in the admin dropdown. */
   protected readonly opNames = signal<string[]>([]);
-
-  /** Players not already linked to any account type */
-  protected readonly availablePlayers = computed(() => {
-    const linked = new Set(
-      Object.values(this.profileService.minecraftAccounts()).filter((v): v is string => !!v)
-    );
-    return this.playerService.players().map(p => p.name).filter(n => !linked.has(n));
-  });
 
   protected readonly availableJavaPlayers = computed(() =>
     this.playerService.players()
@@ -74,11 +73,6 @@ export class ProfileAccountsComponent implements OnInit {
       .filter(n => ops.has(n) && n !== current);
   });
 
-  protected findPlayer(username: string | null | undefined): Player | null {
-    if (!username) return null;
-    return this.playerService.players().find(p => p.name === username) ?? null;
-  }
-
   /** Finds a Java (non-Bedrock) player by username. */
   protected findJavaPlayer(username: string | null | undefined): Player | null {
     if (!username) return null;
@@ -89,6 +83,21 @@ export class ProfileAccountsComponent implements OnInit {
   protected findBedrockPlayer(username: string | null | undefined): Player | null {
     if (!username) return null;
     return this.playerService.players().find(p => p.name === username && p.isBedrock()) ?? null;
+  }
+
+  /** Face avatar for a linked account. Admin may be either edition. */
+  protected linkedFace(type: AccountType): Player | null {
+    const name = this.profileService.minecraftAccounts()[type];
+    if (type === 'bedrock') return this.findBedrockPlayer(name);
+    if (type === 'admin') return this.findBedrockPlayer(name) ?? this.findJavaPlayer(name);
+    return this.findJavaPlayer(name);
+  }
+
+  /** Datalist suggestions for an account row. */
+  protected availablePlayersFor(type: AccountType): string[] {
+    if (type === 'bedrock') return this.availableBedrockPlayers();
+    if (type === 'admin') return this.availableAdminPlayers();
+    return this.availableJavaPlayers();
   }
 
   ngOnInit(): void {

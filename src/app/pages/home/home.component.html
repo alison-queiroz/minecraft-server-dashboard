@@ -1,9 +1,18 @@
 <app-page-container class="space-y-6">
-  <app-server-hero-card></app-server-hero-card>
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <app-server-connection-card [compact]="true"></app-server-connection-card>
-    <app-server-bedrock-card></app-server-bedrock-card>
+  <div class="ui-panel--elevated overflow-hidden">
+    <app-server-hero-banner></app-server-hero-banner>
   </div>
-  <app-home-quick-nav></app-home-quick-nav>
+
+  <!-- Balanced halves: two equal columns so neither is left with a lonely card. -->
+  <div class="status-grid">
+    <div class="status-column">
+      <app-server-players-card></app-server-players-card>
+      <app-server-connection-card></app-server-connection-card>
+      <app-server-motd-card></app-server-motd-card>
+    </div>
+    <div class="status-column">
+      <app-server-bedrock-card></app-server-bedrock-card>
+      <app-server-details-card></app-server-details-card>
+    </div>
+  </div>
 </app-page-container>

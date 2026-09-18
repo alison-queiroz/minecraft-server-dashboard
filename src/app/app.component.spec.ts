@@ -30,7 +30,6 @@ describe('AppComponent', () => {
         { provide: ThemeService, useValue: makeThemeStub() },
         provideRouter([
           { path: '', component: BlankComponent },
-          { path: 'server', component: BlankComponent },
           { path: 'players', component: BlankComponent },
           { path: 'profile', component: BlankComponent },
           { path: 'map', component: BlankComponent },
@@ -121,7 +120,7 @@ describe('AppComponent', () => {
     comp.onNavigateDirection('right');
     expect(comp.enterFrom()).toBe('right');
 
-    await router.navigate(['/server']);
+    await router.navigate(['/players']);
     vi.advanceTimersByTime(350);
     fixture.detectChanges();
     expect(comp.enterFrom()).toBeNull();

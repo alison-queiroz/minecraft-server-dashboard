@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mockFirebaseAuth } from './helpers';
 
-const PAGE_ORDER = ['/', '/server', '/players', '/profile', '/map', '/backups', '/analytics'];
+const PAGE_ORDER = ['/', '/players', '/profile', '/map', '/backups', '/analytics'];
 
 async function dispatchTouch(
   page: Page,

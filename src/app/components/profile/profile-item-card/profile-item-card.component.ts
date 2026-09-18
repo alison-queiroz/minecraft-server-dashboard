@@ -14,6 +14,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
   selector: 'app-profile-item-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'ui-item-card' },
   templateUrl: './profile-item-card.component.html',
   styleUrls: ['./profile-item-card.component.scss'],
 })

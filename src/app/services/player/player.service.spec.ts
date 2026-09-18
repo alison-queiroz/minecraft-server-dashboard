@@ -48,7 +48,8 @@ const MOCK_HOUSE_MAPPING = {
 
 @Injectable()
 class PlayerServiceHarness extends PlayerService {
-  protected override subscribeToFirestorePlayers(): void { return; }
+  // Bypass the constructor's initial HTTP roster load so tests drive state manually.
+  protected override loadInitialPlayers(): void { return; }
 
   pushPlayers(players: Partial<Player>[] = MOCK_PLAYERS): void {
     const sorted = players

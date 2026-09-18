@@ -21,13 +21,12 @@ export const authGuard: CanActivateFn = () => {
         void router.navigate(['/login']);
         return of(false);
       }
-      // Load the Firestore profile (idempotent — instant if already loaded).
-      // This lets us check whether a Minecraft account has been linked.
-      return from(profileService.loadProfile()).pipe(
-        map(() => {
-          // Any linked Minecraft account (java, bedrock, or admin) grants access
-          // — not only Java — so a bedrock/admin-only user isn't bounced to login.
-          const hasLinkedAccount = Object.values(profileService.minecraftAccounts()).some(Boolean);
+      // Check whether the user has a linked Minecraft account over the Python API
+      // (server-side Firestore) instead of the client Firestore SDK, so guarded
+      // routes don't pull the heavy Firestore bundle into the browser. Any linked
+      // account (java, bedrock, or admin) grants access.
+      return from(profileService.fetchLinkedStatus()).pipe(
+        map(hasLinkedAccount => {
           if (!hasLinkedAccount) {
             void router.navigate(['/login']);
             return false;

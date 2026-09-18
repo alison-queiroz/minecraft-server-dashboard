@@ -1,5 +1,6 @@
 ﻿import { Injectable, inject, signal, computed } from '@angular/core';
-import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, firstValueFrom } from 'rxjs';
 import { getApps, initializeApp } from 'firebase/app';
 import type { Firestore } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
@@ -63,6 +64,34 @@ const DEFAULT_PROFILE: UserProfile = { minecraftAccounts: DEFAULT_ACCOUNTS, save
 @Injectable({ providedIn: 'root' })
 export class UserProfileService {
   private readonly auth = inject(AuthService);
+  // Optional so existing Firestore-focused specs (which don't provide HttpClient
+  // and never call fetchLinkedStatus) still construct the service; the running
+  // app always provides HttpClient.
+  private readonly http = inject(HttpClient, { optional: true });
+
+  /** Session cache for the guard's access check — a positive result is sticky. */
+  private _linkedStatus: boolean | null = null;
+
+  /**
+   * Firestore-free access check for the route guard: does the current user have
+   * any linked Minecraft account? Reads it over the Python API (which queries
+   * Firestore server-side) so the guard never pulls the ~166 KiB Firestore SDK
+   * into the browser. A positive result is cached for the session; a negative is
+   * always re-checked so a freshly-linked account is picked up immediately.
+   */
+  async fetchLinkedStatus(): Promise<boolean> {
+    if (this._linkedStatus === true) return true;
+    if (!this.http) return false;
+    try {
+      const res = await firstValueFrom(
+        this.http.get<{ hasLinkedAccount: boolean }>('/api/profile'),
+      );
+      this._linkedStatus = !!res?.hasLinkedAccount;
+      return this._linkedStatus;
+    } catch {
+      return false; // fail-closed → the guard sends the user to /login
+    }
+  }
 
   /**
    * Lazily loads the Firestore SDK on first use (dynamic import) so it stays out

@@ -288,6 +288,30 @@ def services_catalog_put_endpoint():
     return jsonify({"ok": True})
 
 
+@app.route("/api/profile", methods=["GET"])
+@require_auth
+def profile_endpoint():
+    """Return the caller's linked Minecraft accounts + whether any is linked.
+
+    Lets the frontend route guard gate access WITHOUT loading the Firestore
+    client SDK in the browser (keeps ~166 KiB off every protected route except
+    the ones that genuinely need real-time Firestore). Reads users/{uid} fresh
+    (not via the ownership cache) so a just-linked account is reflected
+    immediately — no post-onboarding lockout.
+    """
+    uid = getattr(g, "auth_uid", None)
+    try:
+        from firebase_admin import firestore as admin_firestore
+        db = admin_firestore.client()
+        snap = db.collection("users").document(uid).get()
+        accounts = (snap.to_dict() or {}).get("minecraftAccounts") or {} if snap.exists else {}
+    except Exception as exc:
+        logger.warning("Profile lookup failed for uid %s: %s", uid, exc)
+        return jsonify({"error": "Failed to read profile"}), 503
+    has_linked = any(bool(v) for v in accounts.values())
+    return jsonify({"hasLinkedAccount": has_linked, "minecraftAccounts": accounts})
+
+
 @app.route("/api/players", methods=["GET"])
 @require_auth
 def players_endpoint():

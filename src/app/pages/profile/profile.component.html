@@ -41,11 +41,11 @@
         </button>
       }
       <button class="profile-tab" [class.profile-tab--active]="activeTab() === 'locations'" (click)="setTab('locations')">
-        <app-icon-map-pin [size]="14"></app-icon-map-pin>
+        <app-icon [icon]="LucideMapPin" [size]="14"></app-icon>
         Locations
       </button>
       <button class="profile-tab" [class.profile-tab--active]="activeTab() === 'homes'" (click)="setTab('homes')">
-        <app-icon-home [size]="14"></app-icon-home>
+        <app-icon [icon]="LucideHouse" [size]="14"></app-icon>
         Homes
       </button>
     </div>

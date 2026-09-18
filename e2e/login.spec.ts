@@ -54,7 +54,8 @@ test.describe('Auth redirect', () => {
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
   });
 
-  test('redirects unauthenticated users from /server to /login', async ({ page }) => {
+  test('redirects unauthenticated users from an unknown route to /login', async ({ page }) => {
+    // '/server' was merged into '/'; it now falls through the wildcard → '' → auth guard.
     await page.goto('/server');
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
   });

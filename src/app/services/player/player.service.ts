@@ -5,7 +5,6 @@ import { catchError, finalize, tap } from 'rxjs/operators';
 import { Player } from './player.model';
 import type { EssentialsHome } from './player.model';
 import { getApps, initializeApp } from 'firebase/app';
-import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
 import { LoadingService } from '../loading/loading.service';
 
@@ -78,8 +77,19 @@ export class PlayerService {
     // stream bypasses the HTTP interceptor, so it wouldn't show otherwise).
     this.loadingService.start();
     this.fetchHouseLinks();
-    this.subscribeToFirestorePlayers();
+    this.loadInitialPlayers();
   }
+
+  /**
+   * Cheap default roster source (HTTP snapshot), used by every route — the home
+   * only needs the count, so it must not pay for the Firestore SDK. Real-time is
+   * opt-in per route via {@link enableLiveUpdates}. Overridable seam for tests.
+   */
+  protected loadInitialPlayers(): void {
+    this.fetchPlayersFromApi();
+  }
+
+  private liveEnabled = false;
 
   /** Ends the initial load exactly once (drops the global bar + local flag). */
   private finishInitialLoad(): void {
@@ -89,8 +99,17 @@ export class PlayerService {
     this.loadingService.done();
   }
 
-  protected subscribeToFirestorePlayers(): void {
+  /**
+   * Upgrades the roster to Firestore's real-time stream, lazy-loading the heavy
+   * (~166 kB gzip) Firestore SDK on demand. Idempotent. Call only from routes
+   * that show the live player list (e.g. /players) so lighter routes (the home,
+   * which only needs the count) never download the SDK at all.
+   */
+  async enableLiveUpdates(): Promise<void> {
+    if (this.liveEnabled) return;
+    this.liveEnabled = true;
     try {
+      const { getFirestore, collection, onSnapshot } = await import('firebase/firestore');
       const app = getApps().at(0) ?? initializeApp(environment.firebaseConfig);
       const db = getFirestore(app);
       onSnapshot(

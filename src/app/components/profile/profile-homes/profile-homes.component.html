@@ -1,13 +1,13 @@
 ﻿<section class="homes-card ui-panel ui-panel--padded">
   <div class="homes-header">
     <h2 class="homes-title">
-      <app-icon-home [size]="16" class="homes-title-icon"></app-icon-home>
+      <app-icon [icon]="LucideHouse" [size]="16" class="homes-title-icon"></app-icon>
       Homes
     </h2>
     <div class="homes-header-actions">
       @if (players().length) {
         <button (click)="refreshFromServer()" [disabled]="syncing()"
-          class="homes-refresh"
+          class="homes-pill-btn"
           title="Re-sync coordinates from the server">
           <app-icon [icon]="LucideRefreshCw" [size]="11"></app-icon>
           {{ syncing() ? 'Syncing...' : 'Sync from server' }}
@@ -16,7 +16,7 @@
       @if (homes().length > 0) {
         <button
           (click)="setAllVisible(!allPublic())"
-          class="homes-select-all"
+          class="homes-pill-btn"
           [title]="allPublic() ? 'Hide all from player cards' : 'Show all on player cards'">
           <app-icon [icon]="LucideCheck" [size]="11"></app-icon>
           {{ allPublic() ? 'Deselect All' : 'Select All' }}
@@ -40,7 +40,7 @@
   }
 
   @if (showAddForm()) {
-    <div class="home-form-card">
+    <div class="ui-form-card">
       <!-- Inline map picker -->
       <div class="home-map-wrap">
         <app-map-viewer
@@ -75,7 +75,11 @@
         note="(visible to all users)">
       </app-ui-toggle>
       <app-inline-error [message]="addError()" />
-      <app-save-button [saving]="saving()" label="Save home" (save)="addHome()" class="home-form-submit"></app-save-button>
+      <app-action-button
+        [label]="saving() ? 'Saving...' : 'Save home'"
+        [disabled]="saving()"
+        (pressed)="addHome()"
+        class="home-form-submit"></app-action-button>
     </div>
   }
 
@@ -102,7 +106,7 @@
       @if (!group.playerName || !isGroupCollapsed(group.playerName)) {
         @for (home of group.homes; track home.id) {
         @if (editingId() === home.id) {
-          <div class="home-card">
+          <div class="ui-item-card">
             <!-- Visibility-only edit form: coords/name are managed on the server -->
             <p class="home-edit-name">{{ homeDisplayName(home.name) }}</p>
             <p class="home-coords">
@@ -115,8 +119,12 @@
               label="Show on player card">
             </app-ui-toggle>
             <div class="home-edit-actions">
-              <app-cancel-button [compact]="true" (cancelled)="cancelEdit()"></app-cancel-button>
-              <app-save-button [compact]="true" [saving]="saving()" (save)="saveEdit(home.id)"></app-save-button>
+              <app-action-button label="Cancel" variant="secondary" [compact]="true" (pressed)="cancelEdit()"></app-action-button>
+              <app-action-button
+                [label]="saving() ? 'Saving...' : 'Save'"
+                [disabled]="saving()"
+                [compact]="true"
+                (pressed)="saveEdit(home.id)"></app-action-button>
             </div>
           </div>
         } @else {

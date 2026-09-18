@@ -72,6 +72,78 @@ def test_players_endpoint_authorized(client, mocker):
     assert response.status_code == 200
     assert response.json == mocked_players
 
+
+# ── /api/profile (route-guard access check) ──────────────────────────────────
+
+def _mock_profile_firestore(mocker, minecraft_accounts):
+    """Patch firebase_admin.firestore.client so users/{uid} returns the given
+    minecraftAccounts dict (or None to simulate a missing profile doc)."""
+    from unittest.mock import MagicMock
+    snap = MagicMock()
+    snap.exists = minecraft_accounts is not None
+    snap.to_dict.return_value = (
+        {"minecraftAccounts": minecraft_accounts} if minecraft_accounts is not None else None
+    )
+    db = MagicMock()
+    db.collection.return_value.document.return_value.get.return_value = snap
+    mocker.patch("firebase_admin.firestore.client", return_value=db)
+
+
+def test_profile_endpoint_unauthorized(client, mocker):
+    """Returns 401 when no token is provided."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    response = client.get("/api/profile")
+    assert response.status_code == 401
+
+
+def test_profile_endpoint_reports_linked_account(client, mocker):
+    """A user with any linked account gets hasLinkedAccount=True + the accounts."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user-1"})
+    _mock_profile_firestore(mocker, {"java": "Steve", "bedrock": None, "admin": None})
+
+    response = client.get("/api/profile", headers={"Authorization": "Bearer t"})
+
+    assert response.status_code == 200
+    assert response.json["hasLinkedAccount"] is True
+    assert response.json["minecraftAccounts"]["java"] == "Steve"
+
+
+def test_profile_endpoint_reports_no_linked_account(client, mocker):
+    """A user with no linked accounts gets hasLinkedAccount=False."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user-2"})
+    _mock_profile_firestore(mocker, {"java": None, "bedrock": None, "admin": None})
+
+    response = client.get("/api/profile", headers={"Authorization": "Bearer t"})
+
+    assert response.status_code == 200
+    assert response.json["hasLinkedAccount"] is False
+
+
+def test_profile_endpoint_missing_doc_reports_no_linked_account(client, mocker):
+    """A brand-new user with no profile doc yet gets hasLinkedAccount=False."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "new-user"})
+    _mock_profile_firestore(mocker, None)
+
+    response = client.get("/api/profile", headers={"Authorization": "Bearer t"})
+
+    assert response.status_code == 200
+    assert response.json["hasLinkedAccount"] is False
+
+
+def test_profile_endpoint_firestore_error_returns_503(client, mocker):
+    """A Firestore failure is surfaced as 503 (guard then fails closed → login)."""
+    mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+    mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user-3"})
+    mocker.patch("firebase_admin.firestore.client", side_effect=Exception("no firestore"))
+
+    response = client.get("/api/profile", headers={"Authorization": "Bearer t"})
+
+    assert response.status_code == 503
+
+
 def test_backups_endpoint_authorized(client, mocker):
     """Ensure authorized requests return the mocked Google Drive backup list."""
     # Mock Firebase Auth

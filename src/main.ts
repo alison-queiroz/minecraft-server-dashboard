@@ -29,14 +29,6 @@ bootstrapApplication(AppComponent, {
         canActivate: [authGuard],
       },
       {
-        path: 'server',
-        loadComponent: () =>
-          import('./app/pages/server-status/server-status.component').then(
-            (m) => m.ServerStatusComponent,
-          ),
-        canActivate: [authGuard],
-      },
-      {
         path: 'players',
         loadComponent: () =>
           import('./app/pages/players/players.component').then(

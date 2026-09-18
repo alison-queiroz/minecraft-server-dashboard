@@ -21,10 +21,6 @@
   @apply text-emerald-400;
 }
 
-.map-saved-badge {
-  @apply rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400;
-}
-
 /* Surface from shared .ui-panel token; layout stays local. */
 .map-viewer-card {
   @apply flex-1 overflow-hidden;

@@ -19,7 +19,8 @@
 	@apply flex items-center gap-2;
 }
 
-.homes-refresh {
+/* Shared ghost-pill button for the header's Sync / Select-all actions. */
+.homes-pill-btn {
 	@apply flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold
 	       bg-stone-100 text-zinc-600 transition-colors
 	       hover:bg-stone-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700
@@ -28,16 +29,6 @@
 
 .homes-syncing {
 	@apply text-xs text-zinc-500 dark:text-zinc-400 animate-pulse;
-}
-
-.homes-select-all {
-	@apply flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold
-	       bg-stone-100 text-zinc-600 transition-colors
-	       hover:bg-stone-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700;
-}
-
-.home-form-card {
-	@apply flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/60;
 }
 
 .home-coords-row {
@@ -51,11 +42,6 @@
 .home-world-select {
 	@apply appearance-none cursor-pointer;
 }
-
-.homes-toggle-note {
-	@apply text-xs text-zinc-500 dark:text-zinc-500;
-}
-
 
 .home-form-submit {
 	@apply self-end;
@@ -74,24 +60,12 @@
 	@apply h-52 overflow-hidden rounded-xl border border-stone-200 dark:border-zinc-700;
 }
 
-.home-card {
-	@apply flex flex-col gap-2 rounded-xl border border-stone-200 p-4 dark:border-zinc-800;
-}
-
 .home-edit-name {
 	@apply text-sm font-semibold text-zinc-800 dark:text-zinc-200;
 }
 
-.home-edit-input {
-	@apply px-3 py-2;
-}
-
 .home-edit-actions {
 	@apply flex justify-end gap-2;
-}
-
-.home-edit-button {
-	@apply px-3 py-1.5 text-xs;
 }
 
 .home-coords {

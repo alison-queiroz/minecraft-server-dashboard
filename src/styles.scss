@@ -45,32 +45,22 @@
     @apply rounded-xl border border-stone-200 bg-stone-50 dark:border-zinc-800 dark:bg-zinc-950;
   }
 
+  /* List item card (profile locations/homes, view + edit modes). */
+  .ui-item-card {
+    @apply flex flex-col gap-2 rounded-xl border border-stone-200 p-4 dark:border-zinc-800;
+  }
+
+  /* Inline add/edit form card (tinted inset surface). */
+  .ui-form-card {
+    @apply flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/60;
+  }
+
   .ui-input {
     @apply w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-emerald-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500;
   }
 
   .ui-input--mono {
     @apply font-mono text-xs;
-  }
-
-  .ui-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
-  }
-
-  .ui-button--primary {
-    @apply bg-emerald-600 text-white hover:bg-emerald-500;
-  }
-
-  .ui-button--secondary {
-    @apply bg-white text-zinc-700 ring-1 ring-inset ring-stone-300 hover:bg-stone-100 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-700;
-  }
-
-  .ui-button--blue {
-    @apply bg-blue-700 text-white hover:bg-blue-600;
-  }
-
-  .ui-button--orange {
-    @apply bg-orange-700 text-white hover:bg-orange-600;
   }
 
   .ui-icon-button {

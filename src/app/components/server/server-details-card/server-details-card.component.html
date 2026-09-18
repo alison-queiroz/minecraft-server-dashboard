@@ -7,19 +7,19 @@
   </div>
   <div class="details-grid">
     <div>
-      <p class="details-label">Software</p>
+      <p class="card-label mb-1">Software</p>
       <p class="details-value">{{ serverService.software() || '—' }}</p>
     </div>
     <div>
-      <p class="details-label">Version</p>
+      <p class="card-label mb-1">Version</p>
       <p class="details-value details-value--mono">{{ serverService.version() || '—' }}</p>
     </div>
     <div>
-      <p class="details-label">Protocol</p>
+      <p class="card-label mb-1">Protocol</p>
       <p class="details-value details-value--mono">{{ serverService.protocol()?.version ?? '—' }}</p>
     </div>
     <div>
-      <p class="details-label">Edition</p>
+      <p class="card-label mb-1">Edition</p>
       <p class="details-value">Java</p>
     </div>
   </div>

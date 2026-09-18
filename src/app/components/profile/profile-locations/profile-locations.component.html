@@ -9,7 +9,7 @@
   </div>
 
   @if (showAddForm()) {
-    <div class="location-form-card">
+    <div class="ui-form-card">
       <!-- Inline map for picking a location -->
       <div class="location-map-wrap">
         <app-map-viewer
@@ -34,7 +34,11 @@
         note="(visible to all users)">
       </app-ui-toggle>
       <app-inline-error [message]="addError()" />
-      <app-save-button [saving]="saving()" label="Save location" (save)="addLocation()" class="location-form-submit"></app-save-button>
+      <app-action-button
+        [label]="saving() ? 'Saving...' : 'Save location'"
+        [disabled]="saving()"
+        (pressed)="addLocation()"
+        class="location-form-submit"></app-action-button>
     </div>
   }
 
@@ -45,7 +49,7 @@
   <div class="locations-list">
   @for (loc of profileService.savedLocations(); track loc.id) {
     @if (editingId() === loc.id) {
-      <div class="location-card">
+      <div class="ui-item-card">
         <app-ui-input [value]="editName()" (valueChange)="editName.set($event)" [maxlength]="64"
           placeholder="Location name" class="location-edit-input">
         </app-ui-input>
@@ -62,8 +66,12 @@
           label="Show on player card">
         </app-ui-toggle>
         <div class="location-edit-actions">
-          <app-cancel-button [compact]="true" (cancelled)="cancelEdit()"></app-cancel-button>
-          <app-save-button [compact]="true" [saving]="saving()" (save)="saveEdit(loc.id)"></app-save-button>
+          <app-action-button label="Cancel" variant="secondary" [compact]="true" (pressed)="cancelEdit()"></app-action-button>
+          <app-action-button
+            [label]="saving() ? 'Saving...' : 'Save'"
+            [disabled]="saving()"
+            [compact]="true"
+            (pressed)="saveEdit(loc.id)"></app-action-button>
         </div>
       </div>
     } @else {

@@ -35,6 +35,11 @@ export class PlayersComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // The player list is where real-time updates matter, so this is where we pay
+    // for the Firestore SDK (lazy-loaded). Lighter routes (home) stay on the
+    // cheap HTTP snapshot and never download it.
+    void this.playerService.enableLiveUpdates();
+
     const name = this.route.snapshot.queryParamMap.get('player');
     if (name) {
       this.playerService.selectedPlayerName.set(decodeURIComponent(name));
