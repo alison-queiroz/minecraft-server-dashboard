@@ -21,19 +21,6 @@ const ONLINE_RESPONSE = {
   icon: 'data:image/png;base64,abc123',
 };
 
-// Java status response that includes a Floodgate Bedrock player in the sample.
-const ONLINE_WITH_BEDROCK_SAMPLE = {
-  ...ONLINE_RESPONSE,
-  players: {
-    online: 3, max: 10,
-    sample: [
-      { name: 'JavaPlayer1', id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
-      { name: 'BedrockPlayer', id: '00000000-0000-0000-0009-123456789abc' },
-      { name: 'JavaPlayer2', id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901' },
-    ],
-  },
-};
-
 const OFFLINE_RESPONSE = { online: false };
 
 /** Helper: create service and return it alongside its httpMock. */
@@ -96,6 +83,22 @@ describe('ServerService', () => {
 
   });
 
+  it('exposes the Bedrock split when the Java status includes players.bedrock', () => {
+    const { service } = createService();
+    const httpMock = TestBed.inject(HttpTestingController);
+    httpMock.expectOne(JAVA_URL).flush({ ...ONLINE_RESPONSE, players: { online: 3, max: 10, bedrock: 2 } });
+    httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
+    expect(service.bedrockOnlinePlayers()).toBe(2);
+  });
+
+  it('leaves the Bedrock count null when the status omits it', () => {
+    const { service } = createService();
+    const httpMock = TestBed.inject(HttpTestingController);
+    httpMock.expectOne(JAVA_URL).flush(ONLINE_RESPONSE);
+    httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
+    expect(service.bedrockOnlinePlayers()).toBeNull();
+  });
+
   describe('when Java server is OFFLINE', () => {
     let service: ServerService;
 
@@ -144,7 +147,7 @@ describe('ServerService', () => {
     beforeEach(() => {
       ({ service } = createService());
       const httpMock = TestBed.inject(HttpTestingController);
-      httpMock.expectOne(JAVA_URL).flush(ONLINE_WITH_BEDROCK_SAMPLE);
+      httpMock.expectOne(JAVA_URL).flush(ONLINE_RESPONSE);
       httpMock.expectOne(BEDROCK_URL).flush(BEDROCK_ONLINE);
     });
 
@@ -152,41 +155,23 @@ describe('ServerService', () => {
       expect(service.bedrockStatus()).toBe(SERVER_STATUS.ONLINE);
     });
 
-    it('should populate bedrock player counts', () => {
-      expect(service.bedrockOnlinePlayers()).toBe(1);
-      expect(service.bedrockMaxPlayers()).toBe(10);
-    });
-
+    // No per-edition player count is exposed: Geyser's ping mirrors the Java
+    // total, so a Bedrock-specific count can't be derived. Only version/port.
     it('should populate bedrock version and port', () => {
       expect(service.bedrockVersion()).toBe('1.21.0');
       expect(service.bedrockPort()).toBe(19132);
     });
   });
 
-  describe('setInterval triggers a refresh of both statuses', () => {
-    it('calls fetchStatus and fetchBedrockStatus again after the interval fires', () => {
-      let intervalCallback: (() => void) | undefined;
-      jest.spyOn(window, 'setInterval').mockImplementation((fn: TimerHandler): ReturnType<typeof setInterval> => {
-        intervalCallback = fn as () => void;
-        return 0 as unknown as ReturnType<typeof setInterval>;
-      });
+  it('fetches each status exactly once on construction (no interval polling)', () => {
+    const { service } = createService();
+    const httpMock = TestBed.inject(HttpTestingController);
 
-      const { service } = createService();
-      const httpMock = TestBed.inject(HttpTestingController);
+    httpMock.expectOne(JAVA_URL).flush(ONLINE_RESPONSE);
+    httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
 
-      // Initial constructor calls
-      httpMock.expectOne(JAVA_URL).flush(ONLINE_RESPONSE);
-      httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
-
-      // Manually trigger what the interval would do
-      intervalCallback!();
-
-      // Two more requests should appear
-      httpMock.expectOne(JAVA_URL).flush(OFFLINE_RESPONSE);
-      httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
-
-      expect(service.status()).toBe(SERVER_STATUS.OFFLINE);
-    });
+    // No further requests are scheduled — verify() in afterEach would flag any.
+    expect(service.status()).toBe(SERVER_STATUS.ONLINE);
   });
 
   describe('when Bedrock server is OFFLINE', () => {
@@ -199,9 +184,8 @@ describe('ServerService', () => {
       httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
     });
 
-    it('should set bedrockStatus to OFFLINE with zero counts', () => {
+    it('should set bedrockStatus to OFFLINE', () => {
       expect(service.bedrockStatus()).toBe(SERVER_STATUS.OFFLINE);
-      expect(service.bedrockOnlinePlayers()).toBe(0);
     });
   });
 
@@ -215,9 +199,8 @@ describe('ServerService', () => {
       httpMock.expectOne(BEDROCK_URL).error(new ProgressEvent('error'));
     });
 
-    it('should set bedrockStatus to OFFLINE with zero counts', () => {
+    it('should set bedrockStatus to OFFLINE', () => {
       expect(service.bedrockStatus()).toBe(SERVER_STATUS.OFFLINE);
-      expect(service.bedrockOnlinePlayers()).toBe(0);
     });
   });
 

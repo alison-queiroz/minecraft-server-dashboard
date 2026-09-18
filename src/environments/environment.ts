@@ -8,8 +8,6 @@ export const environment = {
   serverIP: '163.176.228.223',
   statusApiUrl: '/api/status',
   bedrockStatusApiUrl: '/api/bedrock-status',
-  playerRefreshInterval: 30_000,
-  statusRefreshInterval: 60_000,
   mapBaseUrl: 'https://exvegan-minecraft-map.duckdns.org/',
   firebaseConfig: {
     apiKey: 'AIzaSyAeOOLsxweoOo8zwOfSJ6s4_mCmGIETzCo',

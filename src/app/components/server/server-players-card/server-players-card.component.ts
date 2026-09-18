@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ServerService } from '../../../services/server/server.service';
-import { PlayerService } from '../../../services/player/player.service';
 import { LucideUsers } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 
@@ -17,7 +16,6 @@ export class ServerPlayersCardComponent {
   protected readonly LucideUsers = LucideUsers;
 
   protected readonly serverService = inject(ServerService);
-  protected readonly playerService = inject(PlayerService);
 
   // computed (not a getter) so it isn't recomputed on every change-detection pass.
   readonly playersPercent = computed(() => {

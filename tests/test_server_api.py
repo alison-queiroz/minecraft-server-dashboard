@@ -97,7 +97,7 @@ def test_profile_endpoint_unauthorized(client, mocker):
 
 
 def test_profile_endpoint_reports_linked_account(client, mocker):
-    """A user with any linked account gets hasLinkedAccount=True + the accounts."""
+    """A user with any linked account gets hasLinkedAccount=True."""
     mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
     mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "user-1"})
     _mock_profile_firestore(mocker, {"java": "Steve", "bedrock": None, "admin": None})
@@ -106,7 +106,8 @@ def test_profile_endpoint_reports_linked_account(client, mocker):
 
     assert response.status_code == 200
     assert response.json["hasLinkedAccount"] is True
-    assert response.json["minecraftAccounts"]["java"] == "Steve"
+    # Account names are NOT shipped here — the guard only needs the boolean.
+    assert "minecraftAccounts" not in response.json
 
 
 def test_profile_endpoint_reports_no_linked_account(client, mocker):

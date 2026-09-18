@@ -16,6 +16,7 @@ from flask_compress import Compress
 from .player_data import get_players, get_op_names, read_essentials_homes, create_essentials_home, update_essentials_home, delete_essentials_home, get_uuid_to_name
 from .firestore_sync import read_local_snapshots
 from .firebase_init import ensure_initialized
+from .online_edition import bedrock_online_count
 
 # Google Drive API imports
 from google.oauth2 import service_account
@@ -291,13 +292,15 @@ def services_catalog_put_endpoint():
 @app.route("/api/profile", methods=["GET"])
 @require_auth
 def profile_endpoint():
-    """Return the caller's linked Minecraft accounts + whether any is linked.
+    """Report only whether the caller has any linked Minecraft account.
 
     Lets the frontend route guard gate access WITHOUT loading the Firestore
     client SDK in the browser (keeps ~166 KiB off every protected route except
-    the ones that genuinely need real-time Firestore). Reads users/{uid} fresh
-    (not via the ownership cache) so a just-linked account is reflected
-    immediately — no post-onboarding lockout.
+    the ones that genuinely need real-time Firestore). Returns just the boolean
+    the guard needs — the account names live in the /profile page's own
+    (Firestore) load, so they aren't shipped on every navigation. Reads
+    users/{uid} fresh (not via the ownership cache) so a just-linked account is
+    reflected immediately — no post-onboarding lockout.
     """
     uid = getattr(g, "auth_uid", None)
     try:
@@ -309,7 +312,7 @@ def profile_endpoint():
         logger.warning("Profile lookup failed for uid %s: %s", uid, exc)
         return jsonify({"error": "Failed to read profile"}), 503
     has_linked = any(bool(v) for v in accounts.values())
-    return jsonify({"hasLinkedAccount": has_linked, "minecraftAccounts": accounts})
+    return jsonify({"hasLinkedAccount": has_linked})
 
 
 @app.route("/api/players", methods=["GET"])
@@ -529,10 +532,17 @@ def java_status_endpoint():
             players_sample = None
             if s.players and s.players.sample:
                 players_sample = [{"name": p.name, "id": str(p.id)} for p in s.players.sample]
+            players = {"online": players_online, "max": players_max, "sample": players_sample}
+            # Bedrock-vs-Java split from the server log (the only reliable source
+            # once Floodgate linking/offline-mode makes them the same identity).
+            # Omitted (not zeroed) when the log can't be read.
+            bedrock = bedrock_online_count()
+            if bedrock is not None:
+                players["bedrock"] = min(bedrock, players_online)
             return {
                 "online": True,
                 "version": s.version.name,
-                "players": {"online": players_online, "max": players_max, "sample": players_sample},
+                "players": players,
                 "motd": {"clean": [motd_text]},
                 "protocol": {"version": s.version.protocol, "name": s.version.name},
             }

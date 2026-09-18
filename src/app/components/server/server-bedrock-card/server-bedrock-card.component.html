@@ -24,14 +24,14 @@
         <p class="card-label mb-1">Version</p>
         <code class="bedrock-value">{{ serverService.bedrockVersion() || '—' }}</code>
       </div>
-      <div>
-        <p class="card-label mb-1">Online</p>
-        <p class="bedrock-online"
-          [class.text-blue-400]="serverService.bedrockOnlinePlayers() > 0"
-          [class.text-zinc-500]="serverService.bedrockOnlinePlayers() === 0">
-          {{ serverService.bedrockOnlinePlayers() }}<span class="bedrock-online-max">/{{ serverService.bedrockMaxPlayers() }}</span>
-        </p>
-      </div>
+      @if (serverService.bedrockOnlinePlayers() !== null) {
+        <div>
+          <p class="card-label mb-1">Online</p>
+          <p class="bedrock-value" [class.text-blue-400]="(serverService.bedrockOnlinePlayers() ?? 0) > 0">
+            {{ serverService.bedrockOnlinePlayers() }}
+          </p>
+        </div>
+      }
       <div>
         <p class="card-label mb-1">Edition</p>
         <p class="bedrock-edition">Bedrock</p>
