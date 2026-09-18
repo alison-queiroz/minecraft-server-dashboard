@@ -2,8 +2,9 @@
   display: block;
 }
 
+/* Surface from shared .ui-panel--elevated token; only local extras remain. */
 .detail-card {
-  @apply flex flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 lg:h-full;
+  @apply flex flex-col overflow-hidden lg:h-full;
 }
 
 .detail-hero {
@@ -71,8 +72,9 @@
   @apply mb-4 grid grid-cols-2 gap-3;
 }
 
+/* Surface from shared .ui-panel--inset token; only local extras remain. */
 .stat-card {
-  @apply rounded-2xl border border-stone-200 bg-stone-50 p-4 transition-colors hover:border-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950;
+  @apply p-4 transition-colors hover:border-emerald-500/30;
 }
 
 .stat-label {
@@ -107,8 +109,9 @@
   @apply mb-4 space-y-3;
 }
 
+/* Surface from shared .ui-panel--inset token; only local extras remain. */
 .attribute-row {
-  @apply flex items-center justify-between rounded-2xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/50;
+  @apply flex items-center justify-between p-4;
 }
 
 .attribute-label-group {
@@ -148,8 +151,9 @@
   @apply mt-1 flex flex-col gap-2;
 }
 
+/* Surface from shared .ui-panel--inset token; only local extras remain. */
 .detail-location-link {
-  @apply flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3 transition-colors hover:border-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950/50;
+  @apply flex items-center gap-3 p-3 transition-colors hover:border-emerald-500/30;
 }
 
 .detail-location-icon {

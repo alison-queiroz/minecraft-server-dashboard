@@ -48,18 +48,3 @@
 	@apply flex gap-2;
 }
 
-.account-input {
-	@apply flex-1 rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500;
-}
-
-.account-input--java:focus {
-	@apply border-emerald-500;
-}
-
-.account-input--bedrock:focus {
-	@apply border-blue-500;
-}
-
-.account-input--admin:focus {
-	@apply border-orange-500;
-}

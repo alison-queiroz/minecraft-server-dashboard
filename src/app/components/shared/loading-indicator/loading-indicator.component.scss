@@ -1,0 +1,29 @@
+.loading-indicator {
+  @apply flex h-full w-full flex-col items-center justify-center gap-4;
+}
+
+.loading-indicator__spinner {
+  width: 42px;
+  height: 42px;
+  border-radius: 9999px;
+  border: 3px solid rgba(120, 120, 128, 0.25);
+  border-top-color: #22c55e; /* green-500, matches the app-splash accent */
+  animation: loading-indicator-spin 0.8s linear infinite;
+}
+
+.loading-indicator__label {
+  @apply text-sm tracking-wide text-zinc-600;
+}
+
+:host-context([data-theme='dark']) .loading-indicator__label,
+:root:not([data-theme='light']) .loading-indicator__label {
+  @apply text-zinc-400;
+}
+
+@keyframes loading-indicator-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-indicator__spinner { animation: none; }
+}

@@ -65,9 +65,14 @@ if "%SKIP_CHECKS%"=="1" (
   echo ==========================================================
   rem Runs quality gate (lint + strict typecheck), Angular unit tests,
   rem Python unit tests, and Playwright e2e concurrently.
-  rem CI=1 is NOT set here - playwright uses reuseExistingServer:true so
-  rem it will reuse a running dev server (VS Code task) or start a new one.
+  rem CI=1 only affects playwright.config.ts (retries:2, workers:1) - it does
+  rem NOT disable reuseExistingServer, which is hardcoded true regardless of
+  rem CI. Without it, a single known-flaky e2e test (0 local retries) aborts
+  rem the whole deploy via --kill-others-on-fail even when every other check
+  rem passes.
+  set CI=1
   call npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "QUALITY,UI,API,E2E" -c "yellow,cyan,green,magenta" "npm run ci:quality" "npm run test" "npm run test:api" "npm run e2e:playwright"
+  set CI=
   set CHECKS_EXIT=!ERRORLEVEL!
 
   if !CHECKS_EXIT! NEQ 0 (

@@ -6,18 +6,18 @@
 
   <!-- Summary cards -->
   <div class="stat-cards">
-    <div class="stat-card">
+    <div class="stat-card ui-panel">
       <span class="stat-label">Peak online</span>
       <span class="stat-value">{{ peakOnline() }}</span>
     </div>
-    <div class="stat-card">
+    <div class="stat-card ui-panel">
       <span class="stat-label">Avg online</span>
       <span class="stat-value">{{ avgOnline() }}</span>
     </div>
   </div>
 
   <!-- Chart card -->
-  <div class="chart-card">
+  <div class="chart-card ui-panel">
     <!-- Period pills -->
     <div class="period-tabs">
       @for (p of periods; track p.key) {

@@ -1,5 +1,5 @@
 @if (service.selectedPlayer(); as player) {
-  <div class="detail-card animate-profile">
+  <div class="detail-card ui-panel--elevated animate-profile">
     <!-- Skin Display Area -->
     <div class="detail-hero">
       <div class="detail-hero-overlay"></div>
@@ -25,7 +25,7 @@
 
       <!-- Stats Grid -->
       <div class="detail-stats-grid">
-        <div class="stat-card">
+        <div class="stat-card ui-panel--inset">
           <span class="stat-label">Vitality</span>
           <div class="stat-value-row">
             <div class="health-track">
@@ -34,7 +34,7 @@
             <span class="health-value">{{ player.health }}</span>
           </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card ui-panel--inset">
           <span class="stat-label">Experience</span>
           <div class="experience-value">
             {{ player.level }}<span class="experience-unit">LVL</span>
@@ -44,7 +44,7 @@
 
       <!-- Attributes List -->
       <div class="detail-attributes">
-        <div class="attribute-row">
+        <div class="attribute-row ui-panel--inset">
           <div class="attribute-label-group">
             <div class="attribute-icon-box">
               <app-icon [icon]="LucideClock" [size]="16"></app-icon>
@@ -55,7 +55,7 @@
         </div>
 
         @if (player.play_hours !== undefined) {
-          <div class="attribute-row">
+          <div class="attribute-row ui-panel--inset">
             <div class="attribute-label-group">
               <div class="attribute-icon-box">
                 <app-icon [icon]="LucideTimer" [size]="16"></app-icon>
@@ -67,7 +67,7 @@
         }
 
         <!-- Clickable location → opens map at player's position -->
-        <div class="attribute-row">
+        <div class="attribute-row ui-panel--inset">
           <div class="attribute-label-group">
             <div class="attribute-icon-box">
               <app-icon [icon]="LucideMapPin" [size]="16"></app-icon>
@@ -96,7 +96,7 @@
             <div class="detail-locations-list">
               @for (loc of publicLocations(); track loc.id) {
                 <a [routerLink]="['/map']" [fragment]="locFragment(loc.mapHash)"
-                  class="detail-location-link group">
+                  class="detail-location-link ui-panel--inset group">
                   <app-icon [icon]="LucideMap" [size]="14" class="detail-location-icon"></app-icon>
                   <div class="detail-location-copy">
                     <p class="detail-location-name">{{ loc.name }}</p>
@@ -123,7 +123,7 @@
             <div class="detail-locations-list">
               @for (home of publicHomes(); track home.id) {
                 <a [routerLink]="['/map']" [fragment]="homeFragment(home)"
-                  class="detail-location-link group">
+                  class="detail-location-link ui-panel--inset group">
                   <app-icon [icon]="LucideHouse" [size]="14" class="detail-location-icon"></app-icon>
                   <div class="detail-location-copy">
                     <p class="detail-location-name">{{ homeDisplayName(home.name) }}</p>

@@ -26,7 +26,8 @@
   @apply hidden flex-1 items-center justify-center gap-1 md:flex;
 }
 
-.nav-link {
+.nav-link,
+.more-button {
   @apply flex items-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-bold text-zinc-600 transition-all hover:bg-stone-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100;
 }
 
@@ -36,10 +37,6 @@
 
 .nav-dropdown {
   @apply relative;
-}
-
-.more-button {
-  @apply flex items-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-bold text-zinc-600 transition-all hover:bg-stone-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100;
 }
 
 .dropdown-menu {

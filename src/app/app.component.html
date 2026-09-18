@@ -17,6 +17,9 @@
           [class.swipe-spring]="!isDragging() && !enterFrom()"
           [class.slide-in-from-right]="enterFrom() === 'right'"
           [class.slide-in-from-left]="enterFrom() === 'left'">
+      @if (routeLoading()) {
+        <app-loading-indicator></app-loading-indicator>
+      }
       <router-outlet></router-outlet>
     </main>
     <app-footer></app-footer>

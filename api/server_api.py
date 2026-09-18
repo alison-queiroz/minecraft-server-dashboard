@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from flask import Flask, jsonify, request, abort, g
+from flask_compress import Compress
 
 from .player_data import get_players, get_op_names, read_essentials_homes, create_essentials_home, update_essentials_home, delete_essentials_home, get_uuid_to_name
 from .firestore_sync import read_local_snapshots
@@ -24,6 +25,10 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Gzip/Brotli-compress JSON responses (players/analytics payloads shrink a lot);
+# only kicks in when the client sends Accept-Encoding, so it's a no-op in tests.
+Compress(app)
 
 _FIREBASE_INITIALIZED = False
 
