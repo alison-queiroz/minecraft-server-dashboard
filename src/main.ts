@@ -7,11 +7,12 @@ import { AppComponent } from './app/app.component';
 import { authGuard } from './app/guards/auth.guard';
 import { authInterceptor } from './app/interceptors/auth.interceptor';
 import { loadingInterceptor } from './app/interceptors/loading.interceptor';
+import { ngswBypassInterceptor } from './app/interceptors/ngsw-bypass.interceptor';
 
 bootstrapApplication(AppComponent, {
   providers: [
     provideZonelessChangeDetection(),
-    provideHttpClient(withFetch(), withInterceptors([loadingInterceptor, authInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([loadingInterceptor, authInterceptor, ngswBypassInterceptor])),
     provideRouter([
       {
         path: 'login',
