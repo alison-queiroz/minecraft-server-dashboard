@@ -1,3 +1,8 @@
+# Production runs Python 3.9, where PEP 604 unions (`int | None`) in an
+# annotation are evaluated at runtime and raise. Defer annotations so modern
+# syntax stays safe — enforced across api/ by tests/test_python39_compat.py.
+from __future__ import annotations
+
 import hashlib
 import hmac
 import json
