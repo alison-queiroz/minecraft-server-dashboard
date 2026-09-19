@@ -81,6 +81,16 @@ export class UserProfileService {
    */
   async fetchLinkedStatus(): Promise<boolean> {
     if (this._linkedStatus === true) return true;
+    // E2E test bypass – mirror _doLoadProfile so the guard's access check works
+    // without a live backend (Playwright injects __E2E_PROFILE__ before boot).
+    if (!environment.production) {
+      const e2eProfile = (globalThis as { __E2E_PROFILE__?: Partial<UserProfile> }).__E2E_PROFILE__;
+      if (e2eProfile) {
+        const acc = e2eProfile.minecraftAccounts;
+        this._linkedStatus = [acc?.java, acc?.bedrock, acc?.admin].some(Boolean);
+        return this._linkedStatus;
+      }
+    }
     if (!this.http) return false;
     try {
       const res = await firstValueFrom(
