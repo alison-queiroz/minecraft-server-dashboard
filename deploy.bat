@@ -166,8 +166,17 @@ del build_log.txt
 
 echo.
 echo ==========================================================
-echo   5. COMPRESSING ^& UPLOADING FRONT-END
+echo   5. PRE-COMPRESSING (brotli + gzip), COMPRESSING ^& UPLOADING FRONT-END
 echo ==========================================================
+:: Emit .br/.gz siblings so nginx serves them via brotli_static/gzip_static.
+node scripts\precompress.mjs "%BUILD_DIR%"
+if %ERRORLEVEL% NEQ 0 (
+  color 0C
+  echo [ERROR] Pre-compression step failed.
+  pause
+  exit /b 1
+)
+
 tar -czf "%TAR_FILE%" -C "%BUILD_DIR%" .
 if %ERRORLEVEL% NEQ 0 (
   color 0C
