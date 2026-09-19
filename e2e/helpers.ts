@@ -89,6 +89,15 @@ export async function mockFirebaseAuth(page: Page): Promise<void> {
     }),
   );
 
+  // The route guard checks linked-account access via GET /api/profile.
+  await page.route('**/api/profile', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ hasLinkedAccount: true }),
+    }),
+  );
+
   await page.route('**/api/bedrock-status', (route) =>
     route.fulfill({
       status: 200,
