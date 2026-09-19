@@ -24,7 +24,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NODE_VERSION: "20"
+  # Match the Node/npm that generated package-lock.json (npm 11 → Node 24).
+  NODE_VERSION: "24"
 
 jobs:
   build:

@@ -16,7 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20"
+  # Match the Node/npm that generated package-lock.json (npm 11 → Node 24).
+  # Older Node ships npm 10, whose resolver rejects this lockfile-v3 tree
+  # (Angular 22 + TypeScript 6) with a false "npm ci out of sync" error.
+  NODE_VERSION: "24"
   # Match production (Oracle VM runs Python 3.9); keeps 3.9-only breaks out of
   # main — see tests/test_python39_compat.py and .python-version.
   PYTHON_VERSION: "3.9"
