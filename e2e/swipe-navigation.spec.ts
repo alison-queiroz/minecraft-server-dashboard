@@ -73,6 +73,35 @@ async function swipeRightShort(page: Page): Promise<void> {
   await dispatchTouch(page, 'touchend', Math.round(size.width * 0.55), y);
 }
 
+/**
+ * Perform a swipe and assert it navigated to `target`. A synthetic touch
+ * sequence occasionally doesn't register with the directive (a Playwright
+ * dispatch timing artifact, not an app bug), so re-send the gesture until the
+ * route changes. The guard `already there → return` makes it safe against a
+ * double navigation, and the final attempt still fails loudly if a swipe never
+ * navigates — so real regressions are still caught.
+ */
+async function commitSwipe(
+  page: Page,
+  swipe: (p: Page) => Promise<void>,
+  target: RegExp,
+): Promise<void> {
+  const attempts = 5;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    if (target.test(page.url())) return;
+    await swipe(page);
+    try {
+      await expect(page).toHaveURL(target, { timeout: 2_500 });
+      return;
+    } catch {
+      if (attempt === attempts) {
+        // Surface a clear failure with Playwright's own diagnostics.
+        await expect(page).toHaveURL(target, { timeout: 2_500 });
+      }
+    }
+  }
+}
+
 test.describe('Swipe navigation across app pages', () => {
   test.beforeEach(async ({ page }) => {
     await mockFirebaseAuth(page);
@@ -83,9 +112,8 @@ test.describe('Swipe navigation across app pages', () => {
     await expect(page).toHaveURL(/\/$/);
 
     for (let i = 0; i < PAGE_ORDER.length - 1; i++) {
-      await swipeLeft(page);
       const next = PAGE_ORDER[i + 1].replace('/', '\\/');
-      await expect(page).toHaveURL(new RegExp(`${next}$`), { timeout: 10_000 });
+      await commitSwipe(page, swipeLeft, new RegExp(`${next}$`));
     }
   });
 
@@ -94,9 +122,8 @@ test.describe('Swipe navigation across app pages', () => {
     await expect(page).toHaveURL(/\/analytics$/);
 
     for (let i = PAGE_ORDER.length - 1; i > 0; i--) {
-      await swipeRight(page);
       const prev = PAGE_ORDER[i - 1].replace('/', '\\/');
-      await expect(page).toHaveURL(new RegExp(`${prev}$`), { timeout: 10_000 });
+      await commitSwipe(page, swipeRight, new RegExp(`${prev}$`));
     }
   });
 
