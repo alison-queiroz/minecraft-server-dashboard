@@ -1,0 +1,118 @@
+name: Release
+
+# Build a production bundle and deploy it to the Oracle VM after code lands on
+# master. The deploy job only runs when the repo variable ENABLE_GH_DEPLOY is
+# "true" AND the ORACLE_* secrets are set — otherwise the workflow just builds
+# and uploads the artifact, so it never fails on a repo without deploy creds.
+#
+# Required to enable server deploys (Settings -> Secrets and variables -> Actions):
+#   Variable: ENABLE_GH_DEPLOY = true
+#   Secrets:  ORACLE_SSH_PRIVATE_KEY, ORACLE_HOST, ORACLE_USER
+#   Optional: ORACLE_KNOWN_HOSTS (else the host key is scanned at deploy time)
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy to the Oracle VM after build"
+        type: boolean
+        default: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  build:
+    name: Build & Pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Build (production)
+        run: npx ng build --configuration production
+      - name: Pre-compress assets (brotli + gzip)
+        run: node scripts/precompress.mjs dist/minecraft-server-dashboard/browser
+      - name: Pack frontend (includes .br/.gz siblings)
+        run: tar -czf deploy_build.tar.gz -C dist/minecraft-server-dashboard/browser .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: deploy_build.tar.gz
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy to Oracle VM
+    runs-on: ubuntu-latest
+    needs: build
+    if: >-
+      vars.ENABLE_GH_DEPLOY == 'true' &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'workflow_dispatch' && inputs.deploy))
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: .
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
+      - name: Add host key
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_KNOWN_HOSTS: ${{ secrets.ORACLE_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -n "$ORACLE_KNOWN_HOSTS" ]; then
+            echo "$ORACLE_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H "$ORACLE_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          fi
+      - name: Upload backend + provisioning scripts
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_USER: ${{ secrets.ORACLE_USER }}
+        run: |
+          scp -r api "$ORACLE_USER@$ORACLE_HOST:/home/opc/minecraft/"
+          scp run.py "$ORACLE_USER@$ORACLE_HOST:/home/opc/minecraft/run.py"
+          scp config/setup-nginx-map.sh "$ORACLE_USER@$ORACLE_HOST:/tmp/setup-nginx-map.sh"
+          scp config/setup-nginx-compression.sh "$ORACLE_USER@$ORACLE_HOST:/tmp/setup-nginx-compression.sh"
+      - name: Deploy backend, provision nginx, restart services
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_USER: ${{ secrets.ORACLE_USER }}
+        run: |
+          ssh "$ORACLE_USER@$ORACLE_HOST" "
+            sudo rm -rf /var/www/dashboard/* &&
+            pip install -q -r /home/opc/minecraft/api/requirements.txt &&
+            find /home/opc/minecraft/api -name '*.pyc' -delete &&
+            find /home/opc/minecraft/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null;
+            sudo systemctl restart minecraft-api.service &&
+            sed -i '1s/^\xEF\xBB\xBF//;s/\r$//' /tmp/setup-nginx-map.sh /tmp/setup-nginx-compression.sh &&
+            chmod +x /tmp/setup-nginx-map.sh /tmp/setup-nginx-compression.sh &&
+            sudo bash /tmp/setup-nginx-map.sh &&
+            sudo bash /tmp/setup-nginx-compression.sh &&
+            rm /tmp/setup-nginx-map.sh /tmp/setup-nginx-compression.sh
+          "
+      - name: Upload & extract frontend
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_USER: ${{ secrets.ORACLE_USER }}
+        run: |
+          scp deploy_build.tar.gz "$ORACLE_USER@$ORACLE_HOST:/tmp/deploy_build.tar.gz"
+          ssh "$ORACLE_USER@$ORACLE_HOST" "
+            sudo tar -xzf /tmp/deploy_build.tar.gz -C /var/www/dashboard &&
+            rm /tmp/deploy_build.tar.gz
+          "

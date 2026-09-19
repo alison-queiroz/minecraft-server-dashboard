@@ -123,8 +123,16 @@ if %ERRORLEVEL% NEQ 0 (
   exit /b 1
 )
 
+scp -q -i %KEY_PATH% "%PROJECT_DIR%\config\setup-nginx-compression.sh" %SERVER_USER%@%SERVER_IP%:"/tmp/setup-nginx-compression.sh"
+if %ERRORLEVEL% NEQ 0 (
+  color 0C
+  echo [ERROR] Failed to upload setup-nginx-compression.sh.
+  pause
+  exit /b 1
+)
+
 echo [INFO] Executing remote backend updates and cleaning WWW folder...
-ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/* && python3 -m pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && find %REMOTE_API_DIR%/api -name '*.pyc' -delete && find %REMOTE_API_DIR%/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null && sudo systemctl restart minecraft-api.service && sed -i '1s/^\xEF\xBB\xBF//;s/\r$//' /tmp/setup-nginx-map.sh && sudo bash /tmp/setup-nginx-map.sh && rm /tmp/setup-nginx-map.sh"
+ssh -i %KEY_PATH% %SERVER_USER%@%SERVER_IP% "sudo rm -rf %REMOTE_WWW_DIR%/* && python3 -m pip install -q -r %REMOTE_API_DIR%/api/requirements.txt && find %REMOTE_API_DIR%/api -name '*.pyc' -delete && find %REMOTE_API_DIR%/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null && sudo systemctl restart minecraft-api.service && sed -i '1s/^\xEF\xBB\xBF//;s/\r$//' /tmp/setup-nginx-map.sh /tmp/setup-nginx-compression.sh && sudo bash /tmp/setup-nginx-map.sh && sudo bash /tmp/setup-nginx-compression.sh && rm /tmp/setup-nginx-map.sh /tmp/setup-nginx-compression.sh"
 if %ERRORLEVEL% NEQ 0 (
   color 0C
   echo [ERROR] Remote backend/nginx update failed. Deployment aborted.
