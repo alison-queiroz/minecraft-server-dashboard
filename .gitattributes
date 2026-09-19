@@ -1,3 +1,5 @@
 # Shell scripts must stay LF — they run on the Linux server (and via git-bash
 # locally); CRLF breaks the shebang/heredocs.
 *.sh text eol=lf
+
+# (CI smoke test: verifying branch protection + required checks)
