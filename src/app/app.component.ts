@@ -14,7 +14,7 @@ import { filter } from 'rxjs/operators';
 import { SWIPE_ANIMATION_RESET_MS } from './constants/ui.constants';
 import { LoadingService } from './services/loading/loading.service';
 import { ThemeService } from './services/theme/theme.service';
-import { LoadingIndicatorComponent } from './components/shared/loading-indicator/loading-indicator.component';
+import { CardSkeletonComponent } from './components/shared/card-skeleton/card-skeleton.component';
 
 const PAGE_ORDER = ['/', '/players', '/profile', '/map', '/backups', '/analytics'];
 
@@ -22,7 +22,7 @@ const PAGE_ORDER = ['/', '/players', '/profile', '/map', '/backups', '/analytics
   selector: 'app-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, NavComponent, FooterComponent, SwipeNavigateModule, LoadingIndicatorComponent],
+  imports: [RouterOutlet, NavComponent, FooterComponent, SwipeNavigateModule, CardSkeletonComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
