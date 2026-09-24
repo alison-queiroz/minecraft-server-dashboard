@@ -29,6 +29,14 @@
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
 
+  <!-- Warm up the TLS connections the app needs on boot: Firebase Auth restores
+       the session (securetoken + identitytoolkit) before the route guard runs,
+       and the dashboard opens a Firestore channel. Shaves the handshake off the
+       critical path, most noticeable on cold PWA launches. -->
+  <link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+
   <!-- Boot splash: shown while the JS/CSS bundle downloads and Angular boots.
        An HttpInterceptor can't cover this window (Angular isn't running yet).
        Angular removes this markup automatically when it renders <app-root>. -->

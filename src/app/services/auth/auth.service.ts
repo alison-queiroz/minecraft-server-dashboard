@@ -11,6 +11,7 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import { environment } from '../../../environments/environment';
+import { LINKED_STATUS_CACHE_KEY } from '../../constants/storage.constants';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -57,6 +58,14 @@ export class AuthService {
   }
 
   async signOut(): Promise<void> {
+    // Drop the optimistic linked-account cache so a different user signing in on
+    // this browser doesn't briefly inherit the previous user's access.
+    try {
+      localStorage.removeItem(LINKED_STATUS_CACHE_KEY);
+    } catch {
+      /* storage unavailable → nothing to clear */
+    }
+
     if (this.e2eAuthEnabled) {
       this.currentUser.set(null);
       this.isLoading.set(false);

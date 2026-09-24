@@ -5,6 +5,7 @@ import { getApps, initializeApp } from 'firebase/app';
 import type { Firestore } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth/auth.service';
+import { LINKED_STATUS_CACHE_KEY } from '../../constants/storage.constants';
 
 // Firestore is dynamically imported (kept out of the initial bundle). This
 // typeof-import types its function surface without importing the values.
@@ -82,14 +83,49 @@ export class UserProfileService {
   async fetchLinkedStatus(): Promise<boolean> {
     if (this._linkedStatus === true) return true;
     if (!this.http) return false;
+
+    // Optimistic path: a previous session confirmed a linked account, so trust
+    // the cached result and let the guard render immediately, revalidating in
+    // the background. This keeps the /api/profile round-trip off the critical
+    // path (noticeable on cold PWA launches). If the recheck comes back
+    // negative it clears the cache, so the next navigation blocks correctly.
+    if (this.readLinkedCache()) {
+      this._linkedStatus = true;
+      void this.refreshLinkedStatus();
+      return true;
+    }
+    return this.refreshLinkedStatus();
+  }
+
+  /** Fetch the authoritative linked-account status and update the cache. */
+  private async refreshLinkedStatus(): Promise<boolean> {
+    if (!this.http) return false;
     try {
       const res = await firstValueFrom(
         this.http.get<{ hasLinkedAccount: boolean }>('/api/profile'),
       );
       this._linkedStatus = !!res?.hasLinkedAccount;
+      this.writeLinkedCache(this._linkedStatus);
       return this._linkedStatus;
     } catch {
       return false; // fail-closed → the guard sends the user to /login
+    }
+  }
+
+  private readLinkedCache(): boolean {
+    try {
+      return localStorage.getItem(LINKED_STATUS_CACHE_KEY) === '1';
+    } catch {
+      return false; // private mode / storage blocked → just skip the optimism
+    }
+  }
+
+  private writeLinkedCache(linked: boolean): void {
+    try {
+      if (linked) localStorage.setItem(LINKED_STATUS_CACHE_KEY, '1');
+      else localStorage.removeItem(LINKED_STATUS_CACHE_KEY);
+    } catch {
+      /* storage unavailable → optimism simply won't persist */
     }
   }
 
