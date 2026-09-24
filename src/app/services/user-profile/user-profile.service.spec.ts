@@ -1,5 +1,8 @@
 ﻿import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
+import { LINKED_STATUS_CACHE_KEY } from '../../constants/storage.constants';
 import type {
   UserProfile,
   SavedLocation,
@@ -592,6 +595,78 @@ describe('UserProfileService', () => {
       const locs = await firstValueFrom(service.getPublicLocationsStream('Steve'));
       expect(locs).toEqual([]);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchLinkedStatus() — route guard's access check (HTTP + optimistic cache)
+// ---------------------------------------------------------------------------
+describe('UserProfileService.fetchLinkedStatus()', () => {
+  let service: UserProfileService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    try {
+      localStorage.removeItem(LINKED_STATUS_CACHE_KEY);
+    } catch {
+      /* ignore */
+    }
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        UserProfileService,
+        { provide: AuthService, useValue: makeAuthStub() },
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    service = TestBed.inject(UserProfileService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+    try {
+      localStorage.removeItem(LINKED_STATUS_CACHE_KEY);
+    } catch {
+      /* ignore */
+    }
+  });
+
+  it('calls /api/profile and caches a positive result', async () => {
+    const promise = service.fetchLinkedStatus();
+    httpMock.expectOne('/api/profile').flush({ hasLinkedAccount: true });
+    await expect(promise).resolves.toBe(true);
+    expect(localStorage.getItem(LINKED_STATUS_CACHE_KEY)).toBe('1');
+  });
+
+  it('does not cache a negative result', async () => {
+    const promise = service.fetchLinkedStatus();
+    httpMock.expectOne('/api/profile').flush({ hasLinkedAccount: false });
+    await expect(promise).resolves.toBe(false);
+    expect(localStorage.getItem(LINKED_STATUS_CACHE_KEY)).toBeNull();
+  });
+
+  it('returns true optimistically from cache while revalidating in the background', async () => {
+    localStorage.setItem(LINKED_STATUS_CACHE_KEY, '1');
+    await expect(service.fetchLinkedStatus()).resolves.toBe(true);
+    // The background revalidation still hits the API.
+    httpMock.expectOne('/api/profile').flush({ hasLinkedAccount: true });
+  });
+
+  it('clears the cache when the background recheck reports no linked account', async () => {
+    localStorage.setItem(LINKED_STATUS_CACHE_KEY, '1');
+    await service.fetchLinkedStatus();
+    httpMock.expectOne('/api/profile').flush({ hasLinkedAccount: false });
+    await vi.waitFor(() => {
+      expect(localStorage.getItem(LINKED_STATUS_CACHE_KEY)).toBeNull();
+    });
+  });
+
+  it('fails closed (returns false) on an API error', async () => {
+    const promise = service.fetchLinkedStatus();
+    httpMock.expectOne('/api/profile').error(new ProgressEvent('error'));
+    await expect(promise).resolves.toBe(false);
   });
 });
 
