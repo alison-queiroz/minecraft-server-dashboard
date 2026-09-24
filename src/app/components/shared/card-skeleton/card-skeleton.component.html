@@ -1,0 +1,32 @@
+<div class="sk" role="status" aria-label="Loading" aria-busy="true">
+  <div class="sk-hero"></div>
+
+  <div class="sk-grid">
+    <div class="sk-col">
+      @for (card of leftCards; track $index) {
+        <div class="sk-card">
+          <div class="sk-card-head">
+            <span class="sk-icon sk-fill"></span>
+            <span class="sk-line sk-fill" style="width: 42%"></span>
+          </div>
+          <span class="sk-line sk-fill" style="width: 100%"></span>
+          <span class="sk-line sk-fill" style="width: 84%"></span>
+          <span class="sk-line sk-fill" style="width: 60%"></span>
+        </div>
+      }
+    </div>
+    <div class="sk-col">
+      @for (card of rightCards; track $index) {
+        <div class="sk-card">
+          <div class="sk-card-head">
+            <span class="sk-icon sk-fill"></span>
+            <span class="sk-line sk-fill" style="width: 42%"></span>
+          </div>
+          <span class="sk-line sk-fill" style="width: 100%"></span>
+          <span class="sk-line sk-fill" style="width: 84%"></span>
+          <span class="sk-line sk-fill" style="width: 60%"></span>
+        </div>
+      }
+    </div>
+  </div>
+</div>

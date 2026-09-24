@@ -1,0 +1,78 @@
+:host {
+  @apply block;
+}
+
+.sk {
+  @apply space-y-6 py-2;
+}
+
+/* Full-width hero banner placeholder. */
+.sk-hero {
+  @apply h-40 rounded-3xl border border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900;
+}
+
+/* Two balanced columns, matching the home dashboard grid. */
+.sk-grid {
+  @apply grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start;
+}
+
+.sk-col {
+  @apply space-y-6;
+}
+
+.sk-card {
+  @apply space-y-3 rounded-3xl border border-stone-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900;
+}
+
+.sk-card-head {
+  @apply flex items-center gap-3;
+}
+
+.sk-icon {
+  @apply h-9 w-9 shrink-0 rounded-xl;
+}
+
+.sk-line {
+  @apply block h-3 rounded-md;
+}
+
+/* Static placeholder fill; the shimmer sweep runs over it. */
+.sk-fill {
+  @apply bg-stone-200/90 dark:bg-zinc-800;
+}
+
+/* Shimmer: a light band sweeping left-to-right across each panel. */
+.sk-hero,
+.sk-card {
+  @apply relative overflow-hidden;
+}
+
+.sk-hero::after,
+.sk-card::after {
+  content: '';
+  @apply pointer-events-none absolute inset-0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.55) 50%, transparent 100%);
+  animation: sk-sweep 1.6s ease-in-out infinite;
+}
+
+/* Dim the sweep on dark surfaces so it reads as a soft highlight, not a flash. */
+:host-context([data-theme='dark']) .sk-hero::after,
+:host-context([data-theme='dark']) .sk-card::after,
+:root:not([data-theme='light']) .sk-hero::after,
+:root:not([data-theme='light']) .sk-card::after {
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
+}
+
+@keyframes sk-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-hero::after,
+  .sk-card::after {
+    animation: none;
+  }
+}
