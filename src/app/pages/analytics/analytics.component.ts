@@ -5,11 +5,17 @@ import type {
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ViewChild,
   effect,
   inject,
   signal,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import type { Observable } from 'rxjs';
+import { EMPTY, Subject, concat, of, timer } from 'rxjs';
+import { catchError, map, startWith, switchMap } from 'rxjs/operators';
 import { LucideChartLine } from '@lucide/angular';
 import {
   Chart,
@@ -29,8 +35,29 @@ import { PageHeaderComponent } from '../../components/shared/page-header/page-he
 import { LoadingService } from '../../services/loading/loading.service';
 import { ThemeService } from '../../services/theme/theme.service';
 import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
+import { pageVisible$ } from '../../utils/page-visibility.util';
 
 Chart.register(CategoryScale, LinearScale, LineController, LineElement, PointElement, Tooltip, Filler);
+
+/**
+ * Silent auto-refresh cadence per period, matched to the backend bucket width
+ * (`_PERIOD_BUCKET_SECONDS` in api/routes/analytics.py): the 24 h view's live 15-min
+ * bucket moves every minute, 6 h / 1 d buckets barely move between polls, and
+ * the 1 y view's 7-day buckets effectively never do — polling it would only
+ * make the server re-read a year of snapshots for no visible change.
+ */
+const REFRESH_INTERVAL_MS: Readonly<Record<Period, number | null>> = {
+  day: 60_000,
+  week: 5 * 60_000,
+  month: 15 * 60_000,
+  year: null,
+};
+
+interface LoadResult {
+  period: Period;
+  /** Null when the request failed. */
+  series: AnalyticsSeries | null;
+}
 
 @Component({
   selector: 'app-analytics',
@@ -48,6 +75,8 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
   private readonly analyticsService = inject(AnalyticsService);
   protected readonly loadingService = inject(LoadingService);
   private readonly themeService = inject(ThemeService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly document = inject(DOCUMENT);
 
   protected readonly period = signal<Period>('week');
   protected readonly hasData = signal(false);
@@ -56,7 +85,7 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
   protected readonly avgOnline = signal(0);
 
   private chart?: Chart;
-  private refreshTimer?: ReturnType<typeof setInterval>;
+  private readonly periodChanges = new Subject<Period>();
 
   readonly periods: { key: Period; label: string }[] = [
     { key: 'day',   label: '24 h' },
@@ -74,20 +103,56 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.buildChart();
-    void this.loadData();
-    this.refreshTimer = setInterval(() => {
-      void this.loadData();
-    }, 60_000);
+    // Every load (period switch or poll) goes through one switchMap chain, so a
+    // newer request cancels the in-flight one and an older response can never
+    // overwrite the chart with another period's data.
+    this.periodChanges.pipe(
+      startWith(this.period()),
+      switchMap(period => this.loadTriggers(period).pipe(
+        switchMap(background => this.fetchSeries(period, background)),
+      )),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(({ period, series }) => {
+      if (!series) {
+        // Surface a distinct error state instead of masking failures as "no data".
+        this.hasError.set(true);
+        return;
+      }
+      this.hasError.set(false);
+      this.updateChart(series, period);
+    });
   }
 
   ngOnDestroy(): void {
     this.chart?.destroy();
-    clearInterval(this.refreshTimer);
   }
 
   protected setPeriod(p: Period): void {
     this.period.set(p);
-    void this.loadData();
+    this.periodChanges.next(p);
+  }
+
+  /**
+   * Emits `false` once for the user-visible load, then `true` for each silent
+   * refresh. Refreshes pause while the tab is hidden and fire once as soon as
+   * it is visible again before resuming the period's cadence.
+   */
+  private loadTriggers(period: Period): Observable<boolean> {
+    const every = REFRESH_INTERVAL_MS[period];
+    if (every === null) return of(false);
+
+    const refreshes = pageVisible$(this.document).pipe(
+      switchMap((visible, i) => visible ? timer(i === 0 ? every : 0, every) : EMPTY),
+      map(() => true),
+    );
+    return concat(of(false), refreshes);
+  }
+
+  private fetchSeries(period: Period, background: boolean): Observable<LoadResult> {
+    return this.analyticsService.getSeries(period, { background }).pipe(
+      map((series): LoadResult => ({ period, series })),
+      catchError(() => of<LoadResult>({ period, series: null })),
+    );
   }
 
   private buildChart(): void {
@@ -148,28 +213,16 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
     this.applyThemeToChart();
   }
 
-  private async loadData(): Promise<void> {
-    try {
-      const series = await this.analyticsService.getSeries(this.period());
-      this.hasError.set(false);
-      this.updateChart(series);
-    } catch {
-      // Surface a distinct error state instead of masking failures as "no data".
-      this.hasError.set(true);
-    }
-  }
-
   /**
    * Thin renderer: the backend already returns pre-bucketed points and a
    * peak/avg summary, so the component only maps them onto the chart and
    * formats each bucket's timestamp as a label (presentation only).
    */
-  private updateChart(series: AnalyticsSeries): void {
+  private updateChart(series: AnalyticsSeries, period: Period): void {
     if (!this.chart) return;
 
     this.hasData.set(series.points.length > 0);
 
-    const period = this.period();
     this.chart.data.labels = series.points.map(p => this.formatTs(p.t, period));
     // Plot the per-bucket PEAK: on a small, mostly-empty server the true average
     // rounds to 0 in almost every bucket, so an avg line reads as a flat zero.

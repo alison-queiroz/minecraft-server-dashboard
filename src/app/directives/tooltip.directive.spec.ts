@@ -3,6 +3,7 @@ import type { ComponentFixture } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import type { DebugElement } from '@angular/core';
 import { By } from '@angular/platform-browser';
+import type { MockInstance } from 'vitest';
 import { TooltipDirective } from './tooltip.directive';
 
 @Component({
@@ -20,6 +21,18 @@ class HostComponent {}
 class DynamicHostComponent {
   tooltipText = 'Initial text';
 }
+
+/** Mirrors a player row: several tooltips side by side. */
+@Component({
+  standalone: true,
+  imports: [TooltipDirective],
+  template: `
+    <span [appTooltip]="'Name'">A</span>
+    <span [appTooltip]="'UUID'">B</span>
+    <span [appTooltip]="'Dimension'">C</span>
+  `,
+})
+class RowHostComponent {}
 
 describe('TooltipDirective', () => {
   let fixture: ComponentFixture<HostComponent>;
@@ -195,6 +208,34 @@ describe('TooltipDirective', () => {
     expect(document.querySelector('.app-tooltip')).toBeTruthy();
   });
 
+  it('registers its long-press touchstart/touchmove listeners as passive', async () => {
+    const addSpy = jest.spyOn(HTMLElement.prototype, 'addEventListener');
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    const f = TestBed.createComponent(HostComponent);
+    f.detectChanges();
+    const host = f.debugElement.query(By.directive(TooltipDirective)).nativeElement as HTMLElement;
+
+    const passiveOnHost = (type: string): boolean => addSpy.mock.calls.some(([name, , options], i) =>
+      addSpy.mock.contexts[i] === host && name === type && typeof options === 'object' && options.passive === true);
+    expect(passiveOnHost('touchstart')).toBe(true);
+    expect(passiveOnHost('touchmove')).toBe(true);
+    addSpy.mockRestore();
+  });
+
+  it('stops reacting to touches once destroyed', () => {
+    jest.useFakeTimers();
+    const host = spanEl.nativeElement as HTMLElement;
+    fixture.destroy();
+
+    host.dispatchEvent(new TouchEvent('touchstart', {
+      touches: [new Touch({ identifier: 1, target: host, clientX: 10, clientY: 10 })],
+    }));
+    jest.advanceTimersByTime(600);
+
+    expect(document.querySelector('.app-tooltip')).toBeNull();
+  });
+
   it('text setter hides tooltip when set to empty string while tooltip is visible', () => {
     spanEl.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
     expect(document.querySelector('.app-tooltip')).toBeTruthy();
@@ -202,6 +243,76 @@ describe('TooltipDirective', () => {
     const dir = spanEl.injector.get(TooltipDirective);
     dir.text = '';
     expect(document.querySelector('.app-tooltip')).toBeNull();
+  });
+});
+
+describe('TooltipDirective shared outside-press listener', () => {
+  let addSpy: MockInstance<typeof document.addEventListener>;
+  let removeSpy: MockInstance<typeof document.removeEventListener>;
+
+  const pointerdownCalls = (spy: MockInstance<typeof document.addEventListener>): number =>
+    spy.mock.calls.filter(([type]) => type === 'pointerdown').length;
+
+  function renderRow() {
+    const fixture = TestBed.createComponent(RowHostComponent);
+    fixture.detectChanges();
+    const spans = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('span'));
+    return { fixture, spans };
+  }
+
+  beforeEach(async () => {
+    addSpy = jest.spyOn(document, 'addEventListener');
+    removeSpy = jest.spyOn(document, 'removeEventListener');
+    await TestBed.configureTestingModule({ imports: [RowHostComponent] }).compileComponents();
+  });
+
+  afterEach(() => {
+    addSpy.mockRestore();
+    removeSpy.mockRestore();
+    document.querySelectorAll('.app-tooltip').forEach((el: Element) => el.remove());
+  });
+
+  it('adds no document listener per instance while every tooltip is hidden', () => {
+    renderRow();
+    expect(pointerdownCalls(addSpy)).toBe(0);
+  });
+
+  it('uses one shared listener for all visible tooltips and drops it once they all hide', () => {
+    const { spans } = renderRow();
+    spans[0]?.dispatchEvent(new MouseEvent('mouseenter'));
+    spans[1]?.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(document.querySelectorAll('.app-tooltip').length).toBe(2);
+    expect(pointerdownCalls(addSpy)).toBe(1);
+
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    outside.remove();
+
+    expect(document.querySelectorAll('.app-tooltip').length).toBe(0);
+    expect(pointerdownCalls(removeSpy)).toBe(1);
+  });
+
+  it('keeps a tooltip open when its own host is pressed, closing only the others', () => {
+    const { spans } = renderRow();
+    spans[0]?.dispatchEvent(new MouseEvent('mouseenter'));
+    spans[1]?.dispatchEvent(new MouseEvent('mouseenter'));
+
+    spans[0]?.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+    const open = Array.from(document.querySelectorAll('.app-tooltip')).map(el => el.textContent);
+    expect(open).toEqual(['Name']);
+    expect(pointerdownCalls(removeSpy)).toBe(0);
+  });
+
+  it('releases the shared listener when a visible tooltip is destroyed', () => {
+    const { fixture, spans } = renderRow();
+    spans[2]?.dispatchEvent(new MouseEvent('mouseenter'));
+
+    fixture.destroy();
+
+    expect(document.querySelector('.app-tooltip')).toBeNull();
+    expect(pointerdownCalls(removeSpy)).toBe(1);
   });
 });
 

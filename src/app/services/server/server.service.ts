@@ -4,8 +4,12 @@ import { of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { SKIP_LOADING } from '../../interceptors/loading.interceptor';
+import { SKIP_AUTH } from '../../interceptors/auth.interceptor';
 
-const SILENT = { context: new HttpContext().set(SKIP_LOADING, true) };
+// Both status endpoints are public, so they go out right away without the
+// global loading bar or waiting for Firebase to restore the session. The UI
+// only reads the player counts, never the signed-in-only name sample.
+const SILENT_PUBLIC = { context: new HttpContext().set(SKIP_LOADING, true).set(SKIP_AUTH, true) };
 
 export const SERVER_STATUS = {
   ONLINE: 'ONLINE',
@@ -33,7 +37,6 @@ export class ServerService {
   private readonly http = inject(HttpClient);
   private readonly statusUrl = environment.statusApiUrl;
   private readonly bedrockStatusUrl = environment.bedrockStatusApiUrl;
-  private readonly serverIP = environment.serverIP;
 
   // Java
   readonly status = signal<ServerStatus>(SERVER_STATUS.LOADING);
@@ -63,7 +66,7 @@ export class ServerService {
   }
 
   private fetchStatus() {
-    this.http.get<ServerStatusResponse>(this.statusUrl, SILENT).pipe(
+    this.http.get<ServerStatusResponse>(this.statusUrl, SILENT_PUBLIC).pipe(
       tap(res => this.applyJavaStatus(res)),
       catchError(() => {
         this.setJavaOffline();
@@ -73,7 +76,7 @@ export class ServerService {
   }
 
   private fetchBedrockStatus() {
-    this.http.get<ServerStatusResponse>(this.bedrockStatusUrl, SILENT).pipe(
+    this.http.get<ServerStatusResponse>(this.bedrockStatusUrl, SILENT_PUBLIC).pipe(
       tap(res => {
         // We can only report whether the Bedrock/Geyser listener is up, not a
         // Bedrock-specific player count: Geyser's ping mirrors the Java total

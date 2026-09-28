@@ -42,12 +42,12 @@
     </div>
   }
 
-  @if (profileService.savedLocations().length === 0 && !showAddForm()) {
+  @if (locationsService.savedLocations().length === 0 && !showAddForm()) {
     <app-empty-state message="No saved locations yet." testId="locations-empty" />
   }
 
   <div class="locations-list">
-  @for (loc of profileService.savedLocations(); track loc.id) {
+  @for (loc of locationsService.savedLocations(); track loc.id) {
     @if (editingId() === loc.id) {
       <div class="ui-item-card">
         <app-ui-input [value]="editName()" (valueChange)="editName.set($event)" [maxlength]="64"

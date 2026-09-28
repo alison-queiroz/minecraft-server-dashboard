@@ -1,0 +1,80 @@
+version: 2
+
+# Weekly, grouped update PRs. Each PR runs the full CI gate, so keep the
+# number of open PRs small enough to review.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      # Angular packages peer-depend on each other's exact version, and the
+      # Analog vitest plugin tracks the Angular compiler: bump them together.
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+          - "angular-eslint"
+          - "@analogjs/*"
+      firebase:
+        patterns:
+          - "firebase"
+      # Everything else; majors still get their own PR.
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Angular majors need `ng update` migrations, which Dependabot cannot run.
+      - dependency-name: "@angular/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@angular-devkit/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "angular-eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@analogjs/*"
+        update-types: ["version-update:semver-major"]
+
+  # Covers requirements.txt, requirements-dev.txt and requirements-lock.txt
+  # (Dependabot edits the pin in every file that lists it). Production runs
+  # Python 3.9: a release that needs >= 3.10 fails to install in the Unit
+  # Tests job, so close such PRs. If a bump also needs new transitive
+  # versions, the "Python Lockfile" job fails until the lock is regenerated
+  # (command in its header).
+  - package-ecosystem: pip
+    directory: /api
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      python-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns:
+          - "*"

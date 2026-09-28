@@ -1,20 +1,13 @@
 import pytest
 import json
-import time
+from datetime import datetime, timezone
 import api.firestore_sync as fs_module
 import api.firebase_init as fb_init
+import api.snapshot_store as snapshot_store
 from api.firestore_sync import _to_native, sync_players
 
 
-@pytest.fixture(autouse=True)
-def _reset_firebase_init():
-    """Firebase init state is now a shared module-global; reset it around every
-    test so init-path assertions are deterministic regardless of order."""
-    fb_init._reset_for_tests()
-    fs_module._firebase_initialized = False
-    yield
-    fb_init._reset_for_tests()
-    fs_module._firebase_initialized = False
+pytestmark = pytest.mark.usefixtures("reset_sync_state")
 
 
 # ── _to_native ────────────────────────────────────────────────────────────────
@@ -75,7 +68,7 @@ def test_ensure_firebase_success(mocker):
     mocker.patch("firebase_admin.initialize_app")
     result = fs_module._ensure_firebase()
     assert result is True
-    assert fs_module._firebase_initialized is True
+    assert fb_init._initialized is True
 
 
 def test_ensure_firebase_failure(mocker):
@@ -84,7 +77,19 @@ def test_ensure_firebase_failure(mocker):
     mocker.patch("firebase_admin.credentials.Certificate", side_effect=Exception("file not found"))
     result = fs_module._ensure_firebase()
     assert result is False
-    assert fs_module._firebase_initialized is False
+    assert fb_init._initialized is False
+
+
+def test_ensure_firebase_warns_once_then_logs_retries_at_debug(mocker):
+    """A persistent init failure warns on the first attempt only; retries log at debug."""
+    mocker.patch("firebase_admin._apps", [])
+    mocker.patch("firebase_admin.credentials.Certificate", side_effect=Exception("file not found"))
+    warning = mocker.patch.object(fb_init.logger, "warning")
+    debug = mocker.patch.object(fb_init.logger, "debug")
+    assert fs_module._ensure_firebase() is False
+    assert fs_module._ensure_firebase() is False
+    warning.assert_called_once()
+    debug.assert_called_once()
 
 
 def test_ensure_firebase_skip_init_when_apps_already_exist(mocker):
@@ -94,76 +99,6 @@ def test_ensure_firebase_skip_init_when_apps_already_exist(mocker):
     mock_init = mocker.patch("firebase_admin.initialize_app")
     fs_module._ensure_firebase()
     mock_init.assert_not_called()
-
-
-# ── _write_local_snapshot / read_local_snapshots ─────────────────────────────
-
-def test_write_and_read_local_snapshots(tmp_path, mocker):
-    """Writes a snapshot then reads it back via read_local_snapshots."""
-    snap_file = tmp_path / "snapshots.jsonl"
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
-
-    ts = int(time.time())
-    fs_module._write_local_snapshot(ts, 2)
-
-    results = fs_module.read_local_snapshots(ts - 1)
-    assert len(results) == 1
-    assert results[0]["ts"] == ts
-    assert results[0]["count"] == 2
-    # 'online' is no longer persisted (it was never read back).
-    assert "online" not in results[0]
-
-
-def test_write_local_snapshot_prunes_old_entries(tmp_path, mocker):
-    """Entries older than the cutoff are pruned on the scheduled prune pass."""
-    snap_file = tmp_path / "snapshots.jsonl"
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
-    # Force a prune on the very next write instead of once per ~day.
-    mocker.patch.object(fs_module, "_PRUNE_EVERY", 1)
-    mocker.patch.object(fs_module, "_writes_since_prune", 0)
-
-    old_ts = int(time.time()) - (fs_module._LOCAL_SNAPSHOTS_MAX_DAYS + 1) * 86_400
-    recent_ts = int(time.time())
-
-    # Prime the file with an old entry
-    snap_file.write_text(json.dumps({"ts": old_ts, "count": 0}) + "\n")
-
-    # Write a new entry — the scheduled prune should drop the old one
-    fs_module._write_local_snapshot(recent_ts, 1)
-
-    results = fs_module.read_local_snapshots(0)
-    assert all(r["ts"] >= (recent_ts - 1) for r in results)
-
-
-def test_read_local_snapshots_missing_file(tmp_path, mocker):
-    """Returns an empty list when the snapshot file does not exist."""
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(tmp_path / "nope.jsonl"))
-    assert fs_module.read_local_snapshots(0) == []
-
-
-def test_read_local_snapshots_skips_malformed_lines(tmp_path, mocker):
-    """Skips lines that are not valid JSON and returns the valid ones."""
-    snap_file = tmp_path / "snapshots.jsonl"
-    snap_file.write_text("not-json\n" + json.dumps({"ts": 1000, "count": 1, "online": []}) + "\n")
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
-
-    results = fs_module.read_local_snapshots(0)
-    assert len(results) == 1
-    assert results[0]["ts"] == 1000
-
-
-def test_read_local_snapshots_filters_by_since(tmp_path, mocker):
-    """Only returns snapshots at or after the `since` timestamp."""
-    snap_file = tmp_path / "snapshots.jsonl"
-    snap_file.write_text(
-        json.dumps({"ts": 100, "count": 1, "online": []}) + "\n" +
-        json.dumps({"ts": 500, "count": 2, "online": ["Steve"]}) + "\n"
-    )
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
-
-    results = fs_module.read_local_snapshots(300)
-    assert len(results) == 1
-    assert results[0]["ts"] == 500
 
 
 # ── _get_online_from_server ───────────────────────────────────────────────────
@@ -205,39 +140,146 @@ def test_get_online_from_server_unreachable_returns_empty(mocker):
 
 # ── sync_players ──────────────────────────────────────────────────────────────
 
-def test_sync_players_success(mocker):
-    """Ensure players are successfully batched and synced to Firestore."""
-    mocker.patch.object(fs_module, "_ensure_firebase", return_value=True)
-    mock_client = mocker.patch("firebase_admin.firestore.client")
-    mock_db = mock_client.return_value
-    mock_batch = mock_db.batch.return_value
-    mock_ref = mock_db.collection.return_value.document.return_value
+MINUTE_A = datetime(2026, 9, 28, 12, 0, 5, tzinfo=timezone.utc)
+MINUTE_B = datetime(2026, 9, 28, 12, 1, 5, tzinfo=timezone.utc)
 
+
+@pytest.fixture
+def sync_env(tmp_path, mocker):
+    """Hermetic sync: temp JSONL, fixed online count, controllable clock, mocked Firestore."""
+    mocker.patch.object(snapshot_store, "_LOCAL_SNAPSHOTS_PATH", str(tmp_path / "snapshots.jsonl"))
+    mocker.patch.object(fs_module, "_get_online_from_server", return_value=([], 2))
+    mocker.patch.object(fs_module, "_ensure_firebase", return_value=True)
+    clock = mocker.patch.object(fs_module, "datetime")
+    clock.now.return_value = MINUTE_A
+    client = mocker.patch("firebase_admin.firestore.client")
+    db = client.return_value
+    # Fresh leader state (as in a newly started process); restored afterwards.
+    mocker.patch.object(fs_module, "_written_hashes", {})
+    mocker.patch.object(fs_module, "_last_snapshot_minute", None)
+    return {"clock": clock, "db": db, "batch": db.batch.return_value, "jsonl": tmp_path / "snapshots.jsonl"}
+
+
+def _written_docs(db):
+    """Firestore doc ids passed to db.collection(...).document(...) in call order."""
+    return [c.args[0] for c in db.collection.return_value.document.call_args_list]
+
+
+def test_sync_players_success(sync_env):
+    """Ensure players are successfully batched and synced to Firestore."""
     players = [{"uuid": "123", "name": "Steve"}, {"uuid": "456", "name": "Alex"}]
 
     sync_players(players)
 
-    assert mock_db.batch.called
+    assert sync_env["db"].batch.called
     # 2 player documents + 1 analytics snapshot
-    assert mock_batch.set.call_count == 3
-    mock_batch.commit.assert_called_once()
+    assert sync_env["batch"].set.call_count == 3
+    sync_env["batch"].commit.assert_called_once()
 
 
-def test_sync_players_firebase_unavailable(mocker):
+def test_sync_players_snapshot_doc_is_minute_keyed_ts_count(sync_env):
+    """The analytics snapshot is {ts, count}, merged into snapshots/<UTC minute>."""
+    sync_players([])
+    assert _written_docs(sync_env["db"]) == ["2026-09-28T12:00"]
+    args, kwargs = sync_env["batch"].set.call_args
+    assert args[1] == {"ts": int(MINUTE_A.timestamp()), "count": 2}
+    assert kwargs == {"merge": True}
+    assert json.loads(sync_env["jsonl"].read_text()) == {"ts": int(MINUTE_A.timestamp()), "count": 2}
+
+
+def test_sync_players_skips_unchanged_players_but_writes_snapshot(sync_env):
+    """Next minute with identical players: only the snapshot is written (1 write, not N+1)."""
+    players = [{"uuid": "123", "name": "Steve", "level": 3}, {"uuid": "456", "name": "Alex", "level": 9}]
+    sync_players(players)
+    sync_env["db"].collection.return_value.document.reset_mock()
+    sync_env["batch"].set.reset_mock()
+
+    sync_env["clock"].now.return_value = MINUTE_B
+    sync_players([dict(p) for p in players])
+
+    assert _written_docs(sync_env["db"]) == ["2026-09-28T12:01"]
+    assert sync_env["batch"].set.call_count == 1
+    assert len(sync_env["jsonl"].read_text().splitlines()) == 2
+
+
+def test_sync_players_rewrites_only_changed_players(sync_env):
+    """A player whose content changed is rewritten; the unchanged one is not."""
+    sync_players([{"uuid": "123", "level": 3}, {"uuid": "456", "level": 9}])
+    sync_env["db"].collection.return_value.document.reset_mock()
+
+    sync_env["clock"].now.return_value = MINUTE_B
+    sync_players([{"uuid": "123", "level": 4}, {"uuid": "456", "level": 9}])
+
+    assert _written_docs(sync_env["db"]) == ["123", "2026-09-28T12:01"]
+
+
+def test_sync_players_same_minute_writes_nothing_new(sync_env):
+    """A second sync inside the same minute with no changes commits nothing and adds no JSONL line."""
+    players = [{"uuid": "123", "level": 3}]
+    sync_players(players)
+    sync_env["db"].batch.reset_mock()
+
+    sync_players(players)
+
+    sync_env["db"].batch.assert_not_called()
+    assert len(sync_env["jsonl"].read_text().splitlines()) == 1
+
+
+def test_sync_players_same_minute_change_writes_player_only(sync_env):
+    """A change inside the same minute writes the player doc but not a second snapshot."""
+    sync_players([{"uuid": "123", "level": 3}])
+    sync_env["db"].collection.return_value.document.reset_mock()
+
+    sync_players([{"uuid": "123", "level": 5}])
+
+    assert _written_docs(sync_env["db"]) == ["123"]
+
+
+def test_sync_players_failed_commit_retries_players(sync_env):
+    """If the batch commit fails, the same docs are written again on the next sync."""
+    sync_env["batch"].commit.side_effect = [Exception("unavailable"), None]
+    sync_players([{"uuid": "123", "level": 3}])
+    sync_env["db"].collection.return_value.document.reset_mock()
+
+    sync_env["clock"].now.return_value = MINUTE_B
+    sync_players([{"uuid": "123", "level": 3}])
+
+    assert _written_docs(sync_env["db"]) == ["123", "2026-09-28T12:01"]
+
+
+def test_sync_players_first_sync_after_reset_writes_everything(sync_env, mocker):
+    """With an empty hash map (fresh process / new leader) every player doc is written."""
+    players = [{"uuid": "123", "level": 3}]
+    sync_players(players)
+    mocker.patch.object(fs_module, "_written_hashes", {})  # new leader process
+    mocker.patch.object(fs_module, "_last_snapshot_minute", None)
+    sync_env["db"].collection.return_value.document.reset_mock()
+
+    sync_players(players)
+
+    assert _written_docs(sync_env["db"]) == ["123", "2026-09-28T12:00"]
+
+
+def test_doc_hash_ignores_key_order():
+    """Two docs with the same content hash identically regardless of key order."""
+    assert fs_module._doc_hash({"a": 1, "b": [1, 2]}) == fs_module._doc_hash({"b": [1, 2], "a": 1})
+    assert fs_module._doc_hash({"a": 1}) != fs_module._doc_hash({"a": 2})
+
+
+def test_sync_players_firebase_unavailable(sync_env, mocker):
     """Writes the local snapshot but skips Firestore when Firebase is not available."""
     mocker.patch.object(fs_module, "_ensure_firebase", return_value=False)
     mock_write = mocker.patch.object(fs_module, "_write_local_snapshot")
-    mocker.patch.object(fs_module, "_get_online_from_server", return_value=([], 0))
 
     sync_players([{"uuid": "123", "name": "Steve"}])
 
     mock_write.assert_called_once()
+    sync_env["db"].batch.assert_not_called()
 
 
-def test_sync_players_exception(mocker):
+def test_sync_players_exception(sync_env, mocker):
     """Ensure the sync process handles exceptions gracefully without crashing."""
-    mocker.patch.object(fs_module, "_ensure_firebase", return_value=True)
-    mock_client = mocker.patch("firebase_admin.firestore.client", side_effect=Exception("Firestore offline"))
+    mocker.patch("firebase_admin.firestore.client", side_effect=Exception("Firestore offline"))
     mock_logger = mocker.patch("api.firestore_sync.logger.warning")
 
     players = [{"uuid": "123", "name": "Steve"}]
@@ -245,67 +287,4 @@ def test_sync_players_exception(mocker):
 
     mock_logger.assert_called_once()
     assert "Firestore player sync failed" in mock_logger.call_args[0][0]
-
-
-# ── _write_local_snapshot edge cases ─────────────────────────────────────────
-
-def test_write_snapshot_skips_empty_lines_in_existing_file(tmp_path, mocker):
-    """Blank lines in the existing snapshot file are silently skipped during write."""
-    snap_file = tmp_path / "snapshots.jsonl"
-    ts = 5000
-    # Write an entry followed by a blank line
-    snap_file.write_text(json.dumps({"ts": ts - 10, "count": 0}) + "\n\n")
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
-
-    fs_module._write_local_snapshot(ts, 1)
-
-    results = fs_module.read_local_snapshots(0)
-    ts_values = [r["ts"] for r in results]
-    assert ts in ts_values
-    assert ts - 10 in ts_values
-
-
-def test_write_snapshot_handles_corrupt_json_in_existing_file(tmp_path, mocker):
-    """Corrupt JSON lines in the existing file are skipped and not retained."""
-    snap_file = tmp_path / "snapshots.jsonl"
-    ts = 6000
-    snap_file.write_text("this is not valid json\n")
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
-
-    fs_module._write_local_snapshot(ts, 0)
-
-    results = fs_module.read_local_snapshots(0)
-    assert len(results) == 1
-    assert results[0]["ts"] == ts
-
-
-def test_write_snapshot_exception_is_caught(tmp_path, mocker):
-    """An OS-level write failure (non-existent parent dir) is caught silently."""
-    bad_path = tmp_path / "nonexistent_subdir" / "snap.jsonl"
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(bad_path))
-    # Should not raise — the outer except catches any OSError
-    fs_module._write_local_snapshot(9999, 0)
-
-
-# ── read_local_snapshots edge cases ──────────────────────────────────────────
-
-def test_read_snapshots_skips_empty_lines(tmp_path, mocker):
-    """Blank lines in the snapshot file are silently skipped."""
-    snap_file = tmp_path / "snapshots.jsonl"
-    snap_file.write_text("\n" + json.dumps({"ts": 100, "count": 0, "online": []}) + "\n\n")
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
-
-    results = fs_module.read_local_snapshots(0)
-    assert len(results) == 1
-    assert results[0]["ts"] == 100
-
-
-def test_read_snapshots_exception_is_caught(tmp_path, mocker):
-    """An OS-level read failure is caught and returns an empty list."""
-    snap_file = tmp_path / "snapshots.jsonl"
-    snap_file.write_text("{}\n")
-    mocker.patch.object(fs_module, "_LOCAL_SNAPSHOTS_PATH", str(snap_file))
-    mocker.patch("builtins.open", side_effect=OSError("permission denied"))
-
-    result = fs_module.read_local_snapshots(0)
-    assert result == []
+    assert mock_logger.call_args.kwargs.get("exc_info") is True

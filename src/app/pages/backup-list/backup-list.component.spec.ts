@@ -19,6 +19,7 @@ type WritableSignalLike<T> = (() => T) & {
 interface BackupListTestAccess {
   currentPath: WritableSignalLike<NavigationPath[]>;
   backups: WritableSignalLike<BackupFile[]>;
+  loadError(): boolean;
   loadCurrentFolder(): void;
   navigateTo(folderId: string | null, folderName: string): void;
   isFolder(file: BackupFile): boolean;
@@ -129,7 +130,7 @@ describe('BackupListComponent', () => {
     expect(cmp.backups()).toEqual(mockData);
   });
 
-  it('should handle API errors gracefully', () => {
+  it('shows the error state (not "This folder is empty") when the API fails', () => {
     fixture.detectChanges();
     const cmp = asBackupListTestAccess(component);
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -139,13 +140,32 @@ describe('BackupListComponent', () => {
       status: 500,
       statusText: 'Internal Server Error',
     });
+    fixture.detectChanges();
 
+    const host = fixture.nativeElement as HTMLElement;
     expect(console.error).toHaveBeenCalled();
     expect(cmp.backups()).toEqual([]);
+    expect(cmp.loadError()).toBe(true);
+    expect(host.querySelector('[data-testid="backups-error"]')).toBeTruthy();
+    expect(host.textContent).not.toContain('This folder is empty');
   });
 
-  it('loadCurrentFolder catchError logs and leaves backups untouched on parse error', () => {
-    // Bypass BackupService's own catchError by making getBackups throw directly
+  it('clears the error state once a later folder load succeeds', () => {
+    fixture.detectChanges();
+    const cmp = asBackupListTestAccess(component);
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    httpMock.expectOne('/api/backups').flush('boom', { status: 500, statusText: 'Server Error' });
+    expect(cmp.loadError()).toBe(true);
+
+    cmp.navigateTo('folder-1', 'world');
+    httpMock.expectOne('/api/backups?folderId=folder-1').flush([]);
+    fixture.detectChanges();
+
+    expect(cmp.loadError()).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('This folder is empty');
+  });
+
+  it('logs and flags the error when getBackups errors synchronously', () => {
     const cmp = asBackupListTestAccess(component);
     const backupService = TestBed.inject(BackupService);
     jest.spyOn(backupService, 'getBackups').mockReturnValue(throwError(() => new Error('parse error')));
@@ -154,10 +174,39 @@ describe('BackupListComponent', () => {
     cmp.loadCurrentFolder();
 
     expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to parse backups'),
+      expect.stringContaining('Failed to load backups'),
       expect.anything()
     );
     expect(cmp.backups()).toEqual([]);
+    expect(cmp.loadError()).toBe(true);
+  });
+
+  it('keeps only the latest folder when navigation outpaces the responses', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/backups').flush([]);
+    const cmp = asBackupListTestAccess(component);
+    const regionFile: BackupFile = {
+      id: 'r1', name: 'region.zip', mimeType: 'application/zip', createdTime: '2026-01-01T00:00:00Z',
+    };
+
+    cmp.navigateTo('world', 'world');
+    const worldReq = httpMock.expectOne('/api/backups?folderId=world');
+    cmp.navigateTo('region', 'region');
+    const regionReq = httpMock.expectOne('/api/backups?folderId=region');
+
+    // The superseded request is cancelled, so its late response can never land.
+    expect(worldReq.cancelled).toBe(true);
+    regionReq.flush([regionFile]);
+
+    expect(cmp.backups()).toEqual([regionFile]);
+  });
+
+  it('stops listening for folder responses once destroyed', () => {
+    fixture.detectChanges();
+    const req = httpMock.expectOne('/api/backups');
+    fixture.destroy();
+
+    expect(req.cancelled).toBe(true);
   });
 
   it('should request the current folder when loadCurrentFolder runs', () => {
@@ -232,7 +281,8 @@ describe('BackupListComponent', () => {
   it('ngAfterViewInit ResizeObserver callback calls viewport.checkViewportSize', () => {
     // Mock ResizeObserver to fire the callback immediately with a fake entry
     const checkSpy = jest.fn();
-    let capturedCallback: ResizeObserverCallback | null = null;
+    // Cast (not annotation) so TS doesn't narrow it to `null` past the closure.
+    let capturedCallback = null as ResizeObserverCallback | null;
     const mockObserve = jest.fn();
     class MockResizeObserver {
       constructor(cb: ResizeObserverCallback) {
@@ -255,7 +305,7 @@ describe('BackupListComponent', () => {
 
     // Fire the ResizeObserver callback manually
     if (capturedCallback) {
-      capturedCallback([] as unknown, {});
+      capturedCallback([], {} as ResizeObserver);
     }
     // The callback fires viewport?.checkViewportSize — no error is the key assertion
     expect(mockObserve).toHaveBeenCalled();

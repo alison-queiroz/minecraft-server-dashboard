@@ -88,7 +88,6 @@
 
       @if (activeTab() === 'homes') {
         <app-profile-homes
-          [players]="linkedPlayers()"
           (previewRequested)="previewMap($event)">
         </app-profile-homes>
       }

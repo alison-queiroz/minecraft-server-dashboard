@@ -14,10 +14,10 @@
         </div>
         <div>
           <p class="card-label mb-0.5">Hostname</p>
-          <code class="connection-value connection-value--accent">{{ serverService.hostname() || 'exvegan.duckdns.org' }}</code>
+          <code class="connection-value connection-value--accent">{{ serverService.hostname() || serverAddress }}</code>
         </div>
       </div>
-      <app-copy-button [value]="serverService.hostname() || 'exvegan.duckdns.org'"></app-copy-button>
+      <app-copy-button [value]="serverService.hostname() || serverAddress"></app-copy-button>
     </div>
     <!-- IP -->
     @if (serverService.ip()) {

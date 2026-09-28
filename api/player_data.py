@@ -1,35 +1,28 @@
+"""Player data read from the Minecraft server directory (MINECRAFT_DIR).
+
+Parses the players' .dat (NBT) and stats files, usercache.json and ops.json
+into this worker's player list, served stale-while-revalidate by
+get_players(); invalidate_caches() drops it (and the skin caches) and asks the
+sync leader to do the same. The leader election and sync loop live in
+api/player_sync.py, the EssentialsX homes in api/essentials_homes.py.
+"""
 from __future__ import annotations
 
 import glob
 import json
 import logging
 import os
+import re
 import threading
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
 
-try:
-    import fcntl
-    _FCNTL_AVAILABLE = True
-except ImportError:
-    _FCNTL_AVAILABLE = False  # Windows (dev only)
-
 import nbtlib
-try:
-    import yaml as _yaml
-    _YAML_AVAILABLE = True
-except ImportError:
-    _YAML_AVAILABLE = False
-    import logging as _startup_log
-    _startup_log.getLogger(__name__).warning(
-        "PyYAML is not installed — EssentialsX homes will be unavailable. "
-        "Run: pip install pyyaml"
-    )
 
-from .skin_resolver import get_skin_url, _url_resolution_cache, _url_resolved_at
-from .firestore_sync import sync_players
+from .advancements import count_completed
+from .skin_resolver import clear_skin_caches, get_skin_url
 
 logger = logging.getLogger(__name__)
 
@@ -42,36 +35,26 @@ _STATS_DIR = os.path.join(_MC_DIR, "world", "stats")
 _USERCACHE_FILE = os.path.join(_MC_DIR, "usercache.json")
 _OPS_FILE = os.path.join(_MC_DIR, "ops.json")
 _SR_PLAYERS_DIR = os.path.join(_MC_DIR, "plugins", "SkinsRestorer", "players")  # watched for skin changes
-# EssentialsX stores per-player YAML as plugins/Essentials/userdata/<uuid>.yml
-_ESSENTIALS_USERDATA_DIR = os.path.join(_MC_DIR, "plugins", "Essentials", "userdata")
-_CACHE_TTL = 60  # seconds — also controls Firestore sync frequency
+_CACHE_TTL = 60  # seconds a worker serves its player list before refreshing it
+# Real player files only: Minecraft saves through a temp "<uuid>-<random>.dat"
+# in the same directory, which must never be parsed as a player.
+_PLAYER_FILE = re.compile(
+    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\.dat"
+)
 
+# The sync leader's flock file (api/player_sync.py) and the marker next to it
+# that invalidate_caches() touches. They live here, not in player_sync,
+# because every worker touches the marker and player_sync imports this module.
 import tempfile as _tempfile
 _SYNC_LOCK_PATH = os.environ.get(
     "SYNC_LOCK_PATH",
     os.path.join(_tempfile.gettempdir(), "minecraft-api-bg-sync.lock"),
 )
-_sync_lock_fd = None
-# Serializes the cache rebuild so a burst of concurrent requests on a cold cache
-# does N-way full rescans + N sync threads (thundering herd).
+# Touched by invalidate_caches() in any worker; watched by the sync leader.
+_RESYNC_REQUEST_PATH = _SYNC_LOCK_PATH + ".resync"
+# Held by whoever rebuilds _cache: the one background refresh, the sync
+# leader, invalidate_caches(), or the very first (blocking) load.
 _refresh_lock = threading.Lock()
-
-
-def _acquire_sync_lock() -> bool:
-    """Try to acquire an exclusive file lock so only one Gunicorn worker
-    runs the background sync thread (avoids duplicate Firestore writes)."""
-    global _sync_lock_fd
-    if not _FCNTL_AVAILABLE:
-        return True  # single-process dev env, always run
-    try:
-        # 0600 so another local user cannot pre-create/hold the lock to
-        # suppress the sync leader.
-        fd = os.open(_SYNC_LOCK_PATH, os.O_WRONLY | os.O_CREAT, 0o600)
-        _sync_lock_fd = os.fdopen(fd, "w")
-        fcntl.flock(_sync_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return True  # lock held for lifetime of this process
-    except OSError:
-        return False  # another worker already holds the lock
 
 
 _DIMENSIONS: dict[str, str] = {
@@ -83,8 +66,14 @@ _DIMENSIONS: dict[str, str] = {
 
 @dataclass
 class _Cache:
+    """This worker's player list.
+
+    Writers hold _refresh_lock. Readers only take the current ``data``
+    reference, which is replaced wholesale (never mutated) on refresh.
+    """
     data: list[dict[str, Any]] = field(default_factory=list)
     last_updated: float = 0.0
+    loaded: bool = False
 
     def is_stale(self) -> bool:
         return time.time() - self.last_updated > _CACHE_TTL
@@ -92,6 +81,11 @@ class _Cache:
     def refresh(self, data: list[dict[str, Any]]) -> None:
         self.data = data
         self.last_updated = time.time()
+        self.loaded = True
+
+    def invalidate(self) -> None:
+        """Mark stale; the current list is still served until a refresh lands."""
+        self.last_updated = 0.0
 
 
 _cache = _Cache()
@@ -105,7 +99,7 @@ def _load_op_uuids() -> set[str]:
         with open(_OPS_FILE, "r") as f:
             return {entry["uuid"].lower() for entry in json.load(f) if "uuid" in entry}
     except Exception:
-        logger.warning("Failed to parse %s", _OPS_FILE)
+        logger.warning("Failed to parse %s", _OPS_FILE, exc_info=True)
         return set()
 
 
@@ -117,6 +111,7 @@ def get_op_names() -> list[str]:
         with open(_OPS_FILE, "r") as f:
             return [entry["name"] for entry in json.load(f) if "name" in entry]
     except Exception:
+        logger.warning("Failed to read OP names from %s", _OPS_FILE, exc_info=True)
         return []
 
 
@@ -154,232 +149,21 @@ def _read_stats(uuid: str) -> dict[str, Any]:
             data = json.load(f)
         return data.get("stats", {}).get("minecraft:custom", {})
     except Exception:
+        # Minecraft rewrites stats while the player is online; a torn read
+        # just means play time is refreshed on the next scan.
+        logger.debug("Failed to read stats for %s", uuid, exc_info=True)
         return {}
-
-
-_ADVANCEMENTS_DIR = os.path.join(_MC_DIR, "world", "advancements")
-
-
-def _count_advancements(uuid: str) -> int:
-    """Quick count of completed non-recipe advancements for the given UUID."""
-    adv_file = os.path.join(_ADVANCEMENTS_DIR, f"{uuid}.json")
-    if not os.path.exists(adv_file):
-        return 0
-    try:
-        with open(adv_file, "r") as f:
-            data = json.load(f)
-        return sum(
-            1 for k, v in data.items()
-            if k != "DataVersion" and "recipe" not in k
-            and isinstance(v, dict) and v.get("done", False)
-        )
-    except Exception:
-        return 0
-
-
-def read_essentials_homes(uuid: str) -> list[dict[str, Any]]:
-    """Read in-game homes set with /sethome from the EssentialsX userdata YAML.
-
-    EssentialsX stores player data at::
-
-        plugins/Essentials/userdata/<uuid>.yml
-
-    The ``homes`` section looks like::
-
-        homes:
-          home:
-            world: world
-            x: 100.5
-            y: 64.0
-            z: -200.3
-          base:
-            world: world_nether
-            x: 50.0
-            y: 100.0
-            z: 75.0
-
-    Returns a list of dicts with keys: name, world, x, y, z.
-    Returns an empty list when PyYAML is unavailable, the file is missing,
-    or the player has no homes defined.
-    """
-    if not _YAML_AVAILABLE:
-        return []
-    yml_path = os.path.join(_ESSENTIALS_USERDATA_DIR, f"{uuid}.yml")
-    if not os.path.exists(yml_path):
-        return []
-    try:
-        with open(yml_path, "r", encoding="utf-8") as fh:
-            data = _yaml.safe_load(fh)
-        if not isinstance(data, dict):
-            return []
-        homes_raw = data.get("homes")
-        if not isinstance(homes_raw, dict):
-            return []
-        homes: list[dict[str, Any]] = []
-        for name, meta in homes_raw.items():
-            if not isinstance(meta, dict):
-                continue
-            homes.append({
-                "name": str(name),
-                "world": str(meta.get("world-name") or meta.get("world", "world")),
-                "x": float(meta.get("x", 0.0)),
-                "y": float(meta.get("y", 64.0)),
-                "z": float(meta.get("z", 0.0)),
-            })
-        return homes
-    except Exception:
-        logger.warning("Failed to read EssentialsX userdata for %s", uuid)
-        return []
-
-
-def _write_essentials_yaml_atomic(yml_path: str, data: dict) -> None:
-    """Write a YAML file atomically using a temp file + os.replace."""
-    import tempfile
-    dir_name = os.path.dirname(yml_path) or "."
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=dir_name, suffix=".tmp", delete=False
-    ) as tmp:
-        _yaml.dump(data, tmp, allow_unicode=True, default_flow_style=False)
-        tmp_name = tmp.name
-    os.replace(tmp_name, yml_path)
-
-
-def create_essentials_home(
-    uuid: str,
-    home_name: str,
-    x: float,
-    y: float,
-    z: float,
-    world: str,
-) -> bool:
-    """Create a new home in the EssentialsX userdata YAML for the given player.
-
-    Returns True on success, False if the home already exists (use PUT to update),
-    or if the YAML backend is unavailable.
-    Creates the userdata file when the player has no YAML yet.
-    """
-    if not _YAML_AVAILABLE:
-        return False
-    yml_path = os.path.join(_ESSENTIALS_USERDATA_DIR, f"{uuid}.yml")
-    try:
-        if os.path.exists(yml_path):
-            with open(yml_path, "r", encoding="utf-8") as fh:
-                data = _yaml.safe_load(fh)
-            if not isinstance(data, dict):
-                data = {}
-        else:
-            data = {}
-        homes = data.get("homes")
-        if not isinstance(homes, dict):
-            homes = {}
-        if home_name in homes:
-            return False  # already exists — caller should use PUT
-        # Write the canonical EssentialsX schema: `world-name` (the key
-        # read_essentials_homes and the plugin prefer) plus yaw/pitch, which
-        # EssentialsX expects and would otherwise treat as 0/absent.
-        homes[home_name] = {
-            "world-name": world,
-            "x": x,
-            "y": y,
-            "z": z,
-            "yaw": 0.0,
-            "pitch": 0.0,
-        }
-        data["homes"] = homes
-        dir_name = os.path.dirname(yml_path)
-        if dir_name:
-            os.makedirs(dir_name, exist_ok=True)
-        _write_essentials_yaml_atomic(yml_path, data)
-        logger.info("Created EssentialsX home '%s' for %s", home_name, uuid)
-        return True
-    except (OSError, _yaml.YAMLError):
-        # Genuine I/O or serialization failure — log loudly and report failure.
-        # Programming errors (e.g. bad types) are left to surface as a 500 so
-        # they are not silently masked as "already exists".
-        logger.error("Failed to create EssentialsX home '%s' for %s", home_name, uuid, exc_info=True)
-        return False
-
-
-def update_essentials_home(
-    uuid: str,
-    home_name: str,
-    x: float,
-    y: float,
-    z: float,
-    world: str,
-    new_name: Optional[str] = None,
-) -> bool:
-    """Update coordinates (and optionally rename) a home in EssentialsX userdata YAML.
-
-    Returns True on success, False if the home or file was not found.
-    """
-    if not _YAML_AVAILABLE:
-        return False
-    yml_path = os.path.join(_ESSENTIALS_USERDATA_DIR, f"{uuid}.yml")
-    if not os.path.exists(yml_path):
-        return False
-    try:
-        with open(yml_path, "r", encoding="utf-8") as fh:
-            data = _yaml.safe_load(fh)
-        if not isinstance(data, dict):
-            return False
-        homes = data.get("homes")
-        if not isinstance(homes, dict) or home_name not in homes:
-            return False
-        entry = dict(homes[home_name]) if isinstance(homes[home_name], dict) else {}
-        # Preserve whichever world key EssentialsX wrote originally
-        if "world-name" in entry:
-            entry["world-name"] = world
-        else:
-            entry["world"] = world
-        entry["x"] = x
-        entry["y"] = y
-        entry["z"] = z
-        target_name = new_name if (new_name and new_name != home_name) else home_name
-        if target_name != home_name:
-            del homes[home_name]
-        homes[target_name] = entry
-        data["homes"] = homes
-        _write_essentials_yaml_atomic(yml_path, data)
-        logger.info("Updated EssentialsX home '%s' for %s", home_name, uuid)
-        return True
-    except (OSError, _yaml.YAMLError):
-        logger.error("Failed to update EssentialsX home '%s' for %s", home_name, uuid, exc_info=True)
-        return False
-
-
-def delete_essentials_home(uuid: str, home_name: str) -> bool:
-    """Delete a home from EssentialsX userdata YAML.
-
-    Returns True on success, False if the home or file was not found.
-    """
-    if not _YAML_AVAILABLE:
-        return False
-    yml_path = os.path.join(_ESSENTIALS_USERDATA_DIR, f"{uuid}.yml")
-    if not os.path.exists(yml_path):
-        return False
-    try:
-        with open(yml_path, "r", encoding="utf-8") as fh:
-            data = _yaml.safe_load(fh)
-        if not isinstance(data, dict):
-            return False
-        homes = data.get("homes")
-        if not isinstance(homes, dict) or home_name not in homes:
-            return False
-        del homes[home_name]
-        data["homes"] = homes
-        _write_essentials_yaml_atomic(yml_path, data)
-        logger.info("Deleted EssentialsX home '%s' for %s", home_name, uuid)
-        return True
-    except (OSError, _yaml.YAMLError):
-        logger.error("Failed to delete EssentialsX home '%s' for %s", home_name, uuid, exc_info=True)
-        return False
 
 
 def _parse_player(filepath: str, uuid_to_name: dict[str, str]) -> Optional[dict[str, Any]]:
     uuid = os.path.basename(filepath).replace(".dat", "")
     name = uuid_to_name.get(uuid, "Unknown")
-    last_seen = datetime.fromtimestamp(os.path.getmtime(filepath)).strftime("%Y-%m-%d %H:%M")
+    try:
+        last_seen = datetime.fromtimestamp(os.path.getmtime(filepath)).strftime("%Y-%m-%d %H:%M")
+    except OSError:
+        # Minecraft briefly renames the file away while saving it.
+        logger.debug("Player file %s vanished mid-save; skipped this scan.", filepath)
+        return None
     try:
         nbt_data = nbtlib.load(filepath)
         custom_stats = _read_stats(uuid)
@@ -397,11 +181,10 @@ def _parse_player(filepath: str, uuid_to_name: dict[str, str]) -> Optional[dict[
             "skin_url": get_skin_url(name, uuid),
             "is_raw_skin": True,
             "play_hours": play_hours,
-            "advancement_count": _count_advancements(uuid),
-            "homes": read_essentials_homes(uuid),
+            "advancement_count": count_completed(uuid),
         }
     except Exception:
-        logger.warning("Failed to parse NBT for %s (%s)", name, filepath)
+        logger.warning("Failed to parse NBT for %s (%s)", name, filepath, exc_info=True)
         return None
 
 
@@ -413,7 +196,8 @@ def _fetch_live() -> list[dict[str, Any]]:
     players = [
         player
         for filepath in glob.glob(os.path.join(_PLAYERDATA_DIR, "*.dat"))
-        if (player := _parse_player(filepath, uuid_to_name)) is not None
+        if _PLAYER_FILE.fullmatch(os.path.basename(filepath))
+        and (player := _parse_player(filepath, uuid_to_name)) is not None
     ]
     for p in players:
         p["is_op"] = p["uuid"].lower() in op_uuids
@@ -421,118 +205,72 @@ def _fetch_live() -> list[dict[str, Any]]:
     return players
 
 
+def _refresh_cache() -> list[dict[str, Any]]:
+    """Rescan disk into _cache and return the new list. Caller holds _refresh_lock."""
+    fresh = _fetch_live()
+    _cache.refresh(fresh)
+    return fresh
+
+
+def _refresh_in_background() -> None:
+    """Body of the single background refresh; releases the lock get_players took."""
+    try:
+        _refresh_cache()
+    except Exception:
+        logger.warning("Background player refresh failed; serving the previous list.", exc_info=True)
+    finally:
+        _refresh_lock.release()
+
+
 def get_players() -> list[dict[str, Any]]:
-    if _cache.is_stale():
+    """Return this worker's player list without making requests wait on a rescan.
+
+    Stale-while-revalidate: once loaded, a stale list is returned immediately
+    and at most one background thread per worker rescans disk (the lock is
+    taken non-blocking, so concurrent requests never queue behind it). Only the
+    very first load, when there is nothing to serve yet, blocks.
+
+    Never writes to Firestore; only the sync leader does (player_sync._background_sync_loop).
+    The returned list and its dicts are shared across threads: do not mutate.
+    """
+    if not _cache.loaded:
         with _refresh_lock:
-            # Double-checked: another thread may have refreshed while we waited
-            # on the lock, so only one full rescan + sync runs per TTL window.
-            if _cache.is_stale():
-                fresh = _fetch_live()
-                _cache.refresh(fresh)
-                threading.Thread(target=sync_players, args=(fresh,), daemon=True).start()
+            if not _cache.loaded:
+                _refresh_cache()
+        return _cache.data
+    if _cache.is_stale() and _refresh_lock.acquire(blocking=False):
+        if not _cache.is_stale():
+            _refresh_lock.release()  # refreshed between the check and the acquire
+            return _cache.data
+        try:
+            threading.Thread(
+                target=_refresh_in_background, daemon=True, name="player-cache-refresh"
+            ).start()
+        except RuntimeError:
+            _refresh_lock.release()
+            logger.warning("Could not start the background player refresh.", exc_info=True)
     return _cache.data
 
 
-class _FileWatcher:
-    """Watches a directory for file mtime changes."""
+def invalidate_caches() -> None:
+    """Forget this worker's player and skin caches and ask the sync leader to do the same.
 
-    def __init__(self, directory: str, pattern: str = "*.dat") -> None:
-        self.directory = directory
-        self.pattern = pattern
-        self._mtimes: dict[str, float] = {}
-
-    def has_changes(self) -> bool:
-        changed = False
-        for filepath in glob.glob(os.path.join(self.directory, self.pattern)):
-            mtime = os.path.getmtime(filepath)
-            if self._mtimes.get(filepath) != mtime:
-                self._mtimes[filepath] = mtime
-                changed = True
-        return changed
-
-
-def _background_sync_loop() -> None:
-    """Event-driven Firestore sync: fires when player .dat files change.
-
-    Behaviour:
-    - Performs an immediate sync on first startup so Firestore is current
-      after every API restart/deploy.
-    - Polls for file changes every 5 s (cheap mtime check, no I/O)
-    - Debounce: waits 10 s of quiet before syncing (absorbs burst saves)
-    - Rate-limit: minimum 60 s between consecutive Firestore writes
-    - Backoff: on error, increases wait up to 5 min before retrying
-    - Also watches SkinsRestorer player files; evicts the URL cache when they
-      change so the next sync fetches the updated skin URL from disk.
+    For the force-resync endpoints. Waits for an in-flight rescan (so it cannot
+    land after, and undo, the invalidation), then marks the list stale: the next
+    get_players() still answers at once and refreshes in the background. The
+    leader clears its caches within ~5 s, and its next regular sync (<= ~1 min)
+    writes every player doc whose content (e.g. skin URL) changed.
     """
-    playerdata_watcher = _FileWatcher(_PLAYERDATA_DIR)
-    sr_watcher = _FileWatcher(_SR_PLAYERS_DIR, pattern="*")
-    last_sync: float = 0.0
-    backoff: float = 0.0
-    _DEBOUNCE  = 10.0   # seconds of quiet before syncing
-    _MIN_INTERVAL = 60.0  # minimum seconds between syncs
-
-    # Trigger an immediate sync on startup so Firestore reflects the current
-    # code (e.g. newly added EssentialsX homes) without waiting for a .dat change.
-    last_change = time.time() - _DEBOUNCE
-    next_sync_after: float = 0.0  # 0 = fire immediately on first iteration
-
-    while True:
-        time.sleep(5)
-
-        if playerdata_watcher.has_changes():
-            last_change = time.time()
-
-        if sr_watcher.has_changes():
-            _url_resolution_cache.clear()
-            _url_resolved_at.clear()
-            _cache.last_updated = 0.0
-            last_change = time.time()
-            logger.info("SkinsRestorer player files changed — skin URL cache cleared.")
-
-        now = time.time()
-        quiet_for = now - last_change
-
-        if quiet_for >= _DEBOUNCE and now >= next_sync_after:
-            try:
-                # Always force a fresh fetch so _fetch_live() is called even
-                # if the 60-second player cache has not expired yet.
-                _cache.last_updated = 0.0
-                get_players()
-                last_sync = time.time()
-                backoff = 0.0
-                next_sync_after = last_sync + _MIN_INTERVAL
-                logger.debug("Event-driven sync completed.")
-            except Exception:
-                backoff = min(backoff + 60.0, 300.0)
-                next_sync_after = now + _MIN_INTERVAL + backoff
-                logger.warning("Background player sync failed (next retry in %.0fs)", _MIN_INTERVAL + backoff, exc_info=True)
+    with _refresh_lock:
+        clear_skin_caches()
+        _cache.invalidate()
+    _request_leader_resync()
 
 
-_bg_sync_thread: threading.Thread | None = None
-
-
-def start_background_sync() -> None:
-    """Start the single background sync thread if this process wins the file lock.
-
-    Idempotent (safe to call once per worker). Under gunicorn, call this from a
-    ``post_fork`` hook with ``preload_app = False`` (see gunicorn.conf.py) so the
-    file-lock leader election runs per worker rather than in the pre-fork master,
-    where the thread would not survive the fork.
-    """
-    global _bg_sync_thread
-    if _bg_sync_thread is not None:
-        return
-    if _acquire_sync_lock():
-        _bg_sync_thread = threading.Thread(
-            target=_background_sync_loop, daemon=True, name="player-bg-sync"
-        )
-        _bg_sync_thread.start()
-        logger.info("Background sync thread started (this worker is the sync leader).")
-    else:
-        logger.info("Background sync lock not acquired — another worker is the sync leader.")
-
-
-# Auto-start on import preserves the dev (run.py) and non-preload gunicorn
-# behaviour. Set AUTO_START_BG_SYNC=0 when a gunicorn post_fork hook starts it.
-if os.environ.get("AUTO_START_BG_SYNC", "1") != "0":
-    start_background_sync()
+def _request_leader_resync() -> None:
+    """Touch the marker file the sync leader's loop watches (works across workers)."""
+    try:
+        os.close(os.open(_RESYNC_REQUEST_PATH, os.O_WRONLY | os.O_CREAT, 0o600))
+        os.utime(_RESYNC_REQUEST_PATH)
+    except OSError:
+        logger.warning("Could not signal the sync leader via %s", _RESYNC_REQUEST_PATH, exc_info=True)

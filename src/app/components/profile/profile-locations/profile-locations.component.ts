@@ -8,9 +8,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import type { SavedLocation } from '../../../services/user-profile/user-profile.service';
-import { UserProfileService } from '../../../services/user-profile/user-profile.service';
-import { normaliseMapHash } from '../../../utils/map-hash.util';
+import type { SavedLocation } from '../../../services/user-profile/user-profile.models';
+import { SavedLocationsService } from '../../../services/user-profile/saved-locations.service';
+import { MAP_BASE_URL, joinMapUrl, normaliseMapHash } from '../../../utils/map-hash.util';
 import { LucideMap, LucideExternalLink, LucidePencil, LucideTrash2 } from '@lucide/angular';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { IconButtonComponent } from '../../shared/icon-button/icon-button.component';
@@ -22,7 +22,6 @@ import { DimensionTagComponent } from '../../shared/dimension-tag/dimension-tag.
 import { UiToggleComponent } from '../../shared/ui-toggle/ui-toggle.component';
 import { ActionButtonComponent } from '../../shared/action-button/action-button.component';
 import { UiInputComponent } from '../../shared/ui-input/ui-input.component';
-import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-profile-locations',
@@ -38,10 +37,9 @@ export class ProfileLocationsComponent {
   protected readonly LucidePencil      = LucidePencil;
   protected readonly LucideTrash2      = LucideTrash2;
 
-  protected readonly profileService = inject(UserProfileService);
+  protected readonly locationsService = inject(SavedLocationsService);
 
-  protected readonly mapBaseUrl =
-    environment.mapBaseUrl ?? '/map/';
+  protected readonly mapBaseUrl = MAP_BASE_URL;
 
   /** Pre-fill the add form with a captured map hash */
   @Input()
@@ -101,7 +99,7 @@ export class ProfileLocationsComponent {
     this.addError.set(null);
     this.saving.set(true);
     try {
-      await this.profileService.addLocation({
+      await this.locationsService.addLocation({
         name,
         mapHash: this.normaliseHash(mapHash),
         description: this.newLocDesc().trim(),
@@ -126,7 +124,7 @@ export class ProfileLocationsComponent {
   protected async saveEdit(id: string): Promise<void> {
     this.saving.set(true);
     try {
-      await this.profileService.updateLocation(id, {
+      await this.locationsService.updateLocation(id, {
         name: this.editName().trim(),
         mapHash: this.normaliseHash(this.editHash().trim()),
         description: this.editDesc().trim(),
@@ -140,12 +138,11 @@ export class ProfileLocationsComponent {
 
   protected async deleteLocation(id: string): Promise<void> {
     if (!confirm('Delete this location?')) return;
-    await this.profileService.deleteLocation(id);
+    await this.locationsService.deleteLocation(id);
   }
 
   protected mapUrl(hash: string): string {
-    const base = this.mapBaseUrl.endsWith('/') ? this.mapBaseUrl : this.mapBaseUrl + '/';
-    return base + (hash.startsWith('#') ? hash : '#' + hash);
+    return joinMapUrl(this.mapBaseUrl, hash.startsWith('#') ? hash : '#' + hash);
   }
 
   /** Extracts the world ID from a BlueMap hash: '#world:-1:75:84' → 'world' */

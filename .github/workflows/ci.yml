@@ -3,6 +3,8 @@ name: CI
 # Pull-request gate. Each job is a separate required status check so branch
 # protection on master can require lint + unit + e2e (+ build) to pass before a
 # PR can merge. Also runs on push to master as a post-merge safety net.
+# The audit/lockfile jobs at the bottom are informational: they are NOT required
+# checks, so a new upstream advisory never blocks an unrelated PR.
 on:
   pull_request:
     branches: [master]
@@ -23,6 +25,8 @@ env:
   # Match production (Oracle VM runs Python 3.9); keeps 3.9-only breaks out of
   # main — see tests/test_python39_compat.py and .python-version.
   PYTHON_VERSION: "3.9"
+  # Pinned so the lockfile check regenerates byte-identical output.
+  UV_VERSION: "0.12.19"
 
 jobs:
   lint:
@@ -50,15 +54,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: api/requirements*.txt
       - run: npm ci
       - name: Install backend deps
+        # The lock pins the transitive tree; a stale lock fails here loudly.
         run: |
           python -m pip install --upgrade pip
-          pip install -r api/requirements.txt -r api/requirements-dev.txt
-      - name: Frontend unit tests (vitest)
-        run: npm test
-      - name: Backend unit tests (pytest)
-        run: pytest tests/
+          pip install -r api/requirements.txt -r api/requirements-dev.txt -c api/requirements-lock.txt
+      - name: Frontend unit tests + coverage (vitest)
+        # Thresholds live in vitest.config.mts; plain `npm test` skips coverage.
+        run: npx vitest run --coverage
+      - name: Backend unit tests + coverage (pytest)
+        run: pytest tests/ --cov=api --cov-report=term-missing --cov-fail-under=95
 
   e2e:
     name: E2E Tests
@@ -72,13 +80,31 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: api/requirements*.txt
       - run: npm ci
       - name: Install backend deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r api/requirements.txt -r api/requirements-dev.txt
+          pip install -r api/requirements.txt -r api/requirements-dev.txt -c api/requirements-lock.txt
+      # Browsers are tied to the Playwright release, so key the cache on the
+      # locked @playwright/test version. OS packages are not cached and must
+      # be installed on every run.
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
       - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+      - name: Install Playwright system deps (browser restored from cache)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - name: Run e2e (Angular dev server + local Flask backend)
         env:
           CI: "1"
@@ -118,3 +144,75 @@ jobs:
           path: dist/minecraft-server-dashboard/browser
           if-no-files-found: error
           retention-days: 7
+
+  npm-audit:
+    name: npm Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Reads package-lock.json only, so no `npm ci` needed. Shipped (non-dev)
+      # packages only; high/critical fail the job.
+      - run: npm audit --omit=dev --audit-level=high
+
+  pip-audit:
+    name: Python Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pip-audit resolves the runtime tree with the interpreter it runs on, so
+      # use production's 3.9 to audit what the server actually installs (dev-only
+      # tools such as pytest never reach the server and are not audited here).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: api/requirements*.txt
+      - run: pip install pip-audit
+      # Known advisories whose fixes only ship for Python >= 3.10 (prod runs the
+      # EOL 3.9). Each was reviewed against how the API uses the package; none is
+      # reachable. They are ignored by ID, so any NEW advisory still fails the
+      # job. Delete this list when production moves to Python >= 3.10.
+      #   PYSEC-2026-2275      requests extract_zipped_paths (local; never called)
+      #   PYSEC-2026-3628      h2 duplicate Host header (server-side; we are an HTTP/2 client only)
+      #   GHSA-8v8h-hg4w-mvq2  hpack malformed-int DoS (peers are Google APIs)
+      #   PYSEC-2026-142       urllib3 partial-read decompression (no streamed partial reads)
+      #   PYSEC-2026-141       urllib3 ProxyManager cross-origin redirect (ProxyManager unused)
+      #   PYSEC-2026-3625      msgpack Unpacker reuse after error (only cachecontrol's own cache)
+      #   PYSEC-2026-2132      click.edit() injection (local CLI helper; never called)
+      #   GHSA-82r6-8w77-94w6  anyio TLSStream IDNA 2003 (all hosts are ASCII)
+      #   GHSA-5p39-cfhj-2xmp  anyio process-pool stderr (process pools unused)
+      - run: >-
+          pip-audit -r api/requirements.txt --progress-spinner off
+          --ignore-vuln PYSEC-2026-2275
+          --ignore-vuln PYSEC-2026-3628
+          --ignore-vuln GHSA-8v8h-hg4w-mvq2
+          --ignore-vuln PYSEC-2026-142
+          --ignore-vuln PYSEC-2026-141
+          --ignore-vuln PYSEC-2026-3625
+          --ignore-vuln PYSEC-2026-2132
+          --ignore-vuln GHSA-82r6-8w77-94w6
+          --ignore-vuln GHSA-5p39-cfhj-2xmp
+
+  lockfile:
+    name: Python Lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Fails when requirements*.txt changed without regenerating the lock.
+      # uv keeps the pins already in the output file, so an up-to-date lock
+      # regenerates unchanged.
+      - name: Regenerate api/requirements-lock.txt
+        run: >-
+          pipx run --spec "uv==${UV_VERSION}" uv pip compile
+          api/requirements.txt api/requirements-dev.txt
+          --python-version 3.9.2 --python-platform linux
+          -o api/requirements-lock.txt
+      - name: Check the lock is up to date
+        run: |
+          git diff --exit-code api/requirements-lock.txt || {
+            echo "::error file=api/requirements-lock.txt::Lock is stale. Re-run the command in its header and commit the result."
+            exit 1
+          }

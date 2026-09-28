@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
+import type { HttpErrorResponse } from '@angular/common/http';
 
 import type { BackupFile } from './backup.service';
 import { BackupService } from './backup.service';
@@ -69,16 +70,21 @@ describe('BackupService', () => {
     expect(result).toEqual(MOCK_BACKUPS);
   });
 
-  it('returns an empty array when the HTTP request fails', () => {
+  it('propagates HTTP errors instead of masking them as an empty folder', () => {
     let result: BackupFile[] | undefined;
-    service.getBackups(null).subscribe(files => (result = files));
+    let error: HttpErrorResponse | undefined;
+    service.getBackups(null).subscribe({
+      next: files => (result = files),
+      error: (err: HttpErrorResponse) => (error = err),
+    });
 
     httpMock.expectOne('/api/backups').flush(
       { message: 'Server Error' },
       { status: 500, statusText: 'Internal Server Error' }
     );
 
-    expect(result).toEqual([]);
+    expect(result).toBeUndefined();
+    expect(error?.status).toBe(500);
   });
 });
 

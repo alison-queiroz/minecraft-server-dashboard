@@ -3,6 +3,7 @@ import { LucideWifi, LucideGlobe, LucideServer, LucideHash } from '@lucide/angul
 import { IconComponent } from '../../shared/icon/icon.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { ServerService } from '../../../services/server/server.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-server-connection-card',
@@ -20,4 +21,6 @@ export class ServerConnectionCardComponent {
   protected readonly LucideHash   = LucideHash;
 
   protected readonly serverService = inject(ServerService);
+  /** Shown until /api/status reports the server's own hostname. */
+  protected readonly serverAddress = environment.serverAddress;
 }

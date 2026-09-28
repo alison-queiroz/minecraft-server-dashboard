@@ -24,7 +24,7 @@
 
 @layer components {
   .card-label {
-    @apply text-[10px] uppercase font-black tracking-widest text-zinc-500 dark:text-zinc-500;
+    @apply text-[10px] uppercase font-black tracking-widest text-zinc-500 dark:text-zinc-400;
   }
 
   .ui-panel {
@@ -84,7 +84,7 @@
   }
 
   .ui-badge--emerald {
-    @apply border-emerald-500/20 bg-emerald-500/10 text-emerald-500;
+    @apply border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400;
   }
 
   .ui-toggle {
@@ -154,7 +154,7 @@
 
   /** Card header and title — shared across all server info cards */
   .server-card-title {
-    @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500;
+    @apply flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400;
   }
 
   .server-card-header {
@@ -178,3 +178,9 @@
 .swipe-spring        { transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1); }
 .slide-in-from-right { animation: slide-in-right 0.3s cubic-bezier(0.2, 0, 0, 1) forwards; }
 .slide-in-from-left  { animation: slide-in-left  0.3s cubic-bezier(0.2, 0, 0, 1) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-spring { transition: none; }
+  .slide-in-from-right,
+  .slide-in-from-left { animation: none; }
+}

@@ -1,8 +1,39 @@
 import { DOCUMENT } from '@angular/common';
 import type { OnDestroy } from '@angular/core';
-import { Directive, ElementRef, HostListener, Input, inject } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, HostListener, Injectable, Input, inject } from '@angular/core';
 
 const LONG_PRESS_DELAY_MS = 500;
+
+interface OutsidePressTarget {
+  onDocumentPointerDown(event: PointerEvent): void;
+}
+
+/**
+ * One shared document `pointerdown` listener for every tooltip (instead of one
+ * per directive instance — three per player row), attached only while at
+ * least one tooltip is visible.
+ */
+@Injectable({ providedIn: 'root' })
+export class TooltipOutsidePressRegistry {
+  private readonly document = inject(DOCUMENT);
+  private readonly visible = new Set<OutsidePressTarget>();
+  private readonly dispatch = (event: PointerEvent): void => {
+    // Copy first: a handler may hide its tooltip, which unregisters it.
+    [...this.visible].forEach(tooltip => tooltip.onDocumentPointerDown(event));
+  };
+
+  register(tooltip: OutsidePressTarget): void {
+    if (this.visible.size === 0) {
+      this.document.addEventListener('pointerdown', this.dispatch, { passive: true });
+    }
+    this.visible.add(tooltip);
+  }
+
+  unregister(tooltip: OutsidePressTarget): void {
+    if (!this.visible.delete(tooltip) || this.visible.size > 0) return;
+    this.document.removeEventListener('pointerdown', this.dispatch);
+  }
+}
 
 @Directive({
   selector: '[appTooltip]',
@@ -31,11 +62,22 @@ export class TooltipDirective implements OnDestroy {
 
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly document = inject(DOCUMENT);
+  private readonly outsidePress = inject(TooltipOutsidePressRegistry);
   private tooltipEl: HTMLDivElement | null = null;
   private tooltipText = '';
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
   private startX = 0;
   private startY = 0;
+
+  constructor() {
+    // Passive: these rows sit inside scroll containers and never preventDefault,
+    // so the browser must not wait for them before scrolling.
+    const listeners = new AbortController();
+    const options: AddEventListenerOptions = { passive: true, signal: listeners.signal };
+    this.el.nativeElement.addEventListener('touchstart', e => this.onTouchStart(e), options);
+    this.el.nativeElement.addEventListener('touchmove', e => this.onTouchMove(e), options);
+    inject(DestroyRef).onDestroy(() => listeners.abort());
+  }
 
   // ── Desktop hover + keyboard focus ───────────────────────────────────────
   @HostListener('mouseenter') onMouseEnter(): void {
@@ -54,7 +96,8 @@ export class TooltipDirective implements OnDestroy {
     this.hide();
   }
 
-  @HostListener('document:pointerdown', ['$event']) onDocumentPointerDown(event: PointerEvent): void {
+  /** Called by the shared document listener while this tooltip is visible. */
+  onDocumentPointerDown(event: PointerEvent): void {
     if (!this.tooltipEl) {
       return;
     }
@@ -73,7 +116,7 @@ export class TooltipDirective implements OnDestroy {
   }
 
   // ── Mobile long press ─────────────────────────────────────────────────────
-  @HostListener('touchstart', ['$event']) onTouchStart(e: TouchEvent): void {
+  onTouchStart(e: TouchEvent): void {
     const touch = e.touches[0];
     if (!touch) return;
     this.startX = touch.clientX;
@@ -84,7 +127,7 @@ export class TooltipDirective implements OnDestroy {
     }, LONG_PRESS_DELAY_MS);
   }
 
-  @HostListener('touchmove', ['$event']) onTouchMove(e: TouchEvent): void {
+  onTouchMove(e: TouchEvent): void {
     const touch = e.touches[0];
     if (!touch) return;
     const dx = Math.abs(touch.clientX - this.startX);
@@ -119,6 +162,7 @@ export class TooltipDirective implements OnDestroy {
     tooltip.textContent = this.tooltipText;
     this.document.body.appendChild(tooltip);
     this.tooltipEl = tooltip;
+    this.outsidePress.register(this);
 
     const rect = this.el.nativeElement.getBoundingClientRect();
     const gap = 6;
@@ -143,6 +187,7 @@ export class TooltipDirective implements OnDestroy {
   private hide(): void {
     this.tooltipEl?.remove();
     this.tooltipEl = null;
+    this.outsidePress.unregister(this);
   }
 
   ngOnDestroy(): void {

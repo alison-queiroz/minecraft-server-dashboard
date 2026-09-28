@@ -3,8 +3,12 @@
       class="player-row-avatar">
     </app-player-face>
     <div class="flex min-w-0 flex-col">
-      <span class="truncate font-bold text-zinc-900 transition-colors group-hover:text-emerald-400 dark:text-zinc-100" [appTooltip]="player.name">{{ player.name }}</span>
-      <span class="max-w-[120px] truncate text-[10px] font-mono text-zinc-500 dark:text-zinc-600" [appTooltip]="player.uuid">{{ player.uuid }}</span>
+      <!-- Keyboard entry point for the row: Enter/Space fire a native click that
+           bubbles to the host (click) handler, like a mouse click anywhere on the row. -->
+      <button type="button" class="player-row-name group-hover:text-emerald-400"
+        [attr.aria-current]="isSelected ? 'true' : null"
+        [appTooltip]="player.name">{{ player.name }}</button>
+      <span class="player-row-uuid" [appTooltip]="player.uuid">{{ player.uuid }}</span>
     </div>
   </div>
 
@@ -18,7 +22,7 @@
     @if ((player.play_hours ?? 0) > 0) {
       <span class="text-xs text-zinc-600 dark:text-zinc-400">{{ player.play_hours | number:'1.0-0' }}h</span>
     } @else {
-      <span class="text-xs text-zinc-400 dark:text-zinc-700">&mdash;</span>
+      <span class="player-row-empty">&mdash;</span>
     }
   </div>
 
@@ -34,10 +38,10 @@
     @if ((player.advancement_count ?? 0) > 0) {
       <span class="player-row-adv">{{ player.advancement_count }}</span>
     } @else {
-      <span class="text-xs text-zinc-400 dark:text-zinc-700">&mdash;</span>
+      <span class="player-row-empty">&mdash;</span>
     }
   </div>
 
   <div class="col-mobile-hidden sm:block col-span-2 text-right">
-    <span class="text-[10px] font-mono text-zinc-500 dark:text-zinc-500">{{ player.last_seen }}</span>
+    <span class="player-row-seen">{{ player.last_seen }}</span>
   </div>

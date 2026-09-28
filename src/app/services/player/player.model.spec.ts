@@ -1,6 +1,7 @@
 import { Player } from './player.model';
+import type { PlayerDto } from './player.model';
 
-const BASE: Partial<Player> = {
+const BASE: PlayerDto = {
   name: 'Steve',
   uuid: 'aaaaaaaa-0000-0000-0000-000000000001',
   level: 10,
@@ -121,6 +122,61 @@ describe('Player model', () => {
 
     it('should be case-insensitive', () => {
       expect(player.matchesSearch('STEVE')).toBe(true);
+    });
+  });
+
+  describe('sameDataAs()', () => {
+    it('is true for separately built players with identical data', () => {
+      expect(new Player({ ...BASE }).sameDataAs(new Player(structuredClone(BASE)))).toBe(true);
+    });
+
+    it('is false when a scalar, a nested array or an optional field differs', () => {
+      expect(player.sameDataAs(new Player({ ...BASE, health: 13 }))).toBe(false);
+      expect(player.sameDataAs(new Player({ ...BASE, pos: [100, 64, 201] }))).toBe(false);
+      expect(player.sameDataAs(new Player({ ...BASE, houseUrl: 'https://maps/x' }))).toBe(false);
+    });
+  });
+
+  describe('DTO mapping with missing fields', () => {
+    it('gives every always-read field a safe default when the DTO is empty', () => {
+      const empty = new Player({});
+      expect(empty).toMatchObject({
+        name: '', uuid: '', level: 0, health: 0, dimension: '', pos: [], last_seen: '', skin_url: '',
+      });
+      expect(empty.play_hours).toBeUndefined();
+      expect(empty.advancement_count).toBeUndefined();
+      expect(empty.homes).toBeUndefined();
+      expect(empty.houseUrl).toBeUndefined();
+    });
+
+    it('treats null exactly like a missing field', () => {
+      const nulls = new Player({
+        name: 'Steve', uuid: null, level: null, health: null, dimension: null, pos: null,
+        last_seen: null, skin_url: null, is_raw_skin: null, play_hours: null,
+        advancement_count: null, is_op: null, homes: null,
+      });
+      expect(nulls).toMatchObject({ uuid: '', level: 0, dimension: '', pos: [], last_seen: '' });
+      expect(nulls.is_raw_skin).toBeUndefined();
+      expect(nulls.play_hours).toBeUndefined();
+    });
+
+    it('matchesSearch does not throw for a live-API row without dimension/uuid', () => {
+      const liveRow = new Player({ name: 'Steve' });
+      expect(liveRow.matchesSearch('nether')).toBe(false);
+      expect(liveRow.matchesSearch('ste')).toBe(true);
+    });
+
+    it('supports localeCompare-based sorting when string fields are missing', () => {
+      const players = [new Player({ name: 'b', last_seen: '2026-01-02' }), new Player({})];
+      expect(() => players.sort((a, b) => a.last_seen.localeCompare(b.last_seen))).not.toThrow();
+      expect(() => players.sort((a, b) => a.dimension.localeCompare(b.dimension))).not.toThrow();
+      expect(players.map(p => p.name)).toEqual(['', 'b']);
+    });
+
+    it('avatarUrl/isRawAvatar tolerate a missing skin_url', () => {
+      const noSkin = new Player({ name: 'Steve' });
+      expect(noSkin.avatarUrl(40)).toBe('');
+      expect(noSkin.isRawAvatar()).toBe(false);
     });
   });
 });

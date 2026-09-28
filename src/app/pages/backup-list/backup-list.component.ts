@@ -10,6 +10,7 @@ import {
   ElementRef,
   ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { LucideDatabase, LucideFolder, LucideFile } from '@lucide/angular';
@@ -18,8 +19,8 @@ import type {
 import {
   BackupService
 } from '../../services/backup/backup.service';
-import { of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { IconComponent } from 'src/app/components/shared/icon/icon.component';
 import { LoadingService } from '../../services/loading/loading.service';
 import { PageContainerComponent } from '../../components/shared/page-container/page-container.component';
@@ -46,6 +47,8 @@ export class BackupListComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly loadingService = inject(LoadingService);
   protected readonly backups = signal<BackupFile[]>([]);
+  /** True when the current folder failed to load (distinct from an empty folder). */
+  protected readonly loadError = signal(false);
   protected readonly currentPath = signal<NavigationPath[]>([
     { id: null, name: 'Root' },
   ]);
@@ -54,6 +57,25 @@ export class BackupListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private readonly backupService = inject(BackupService);
   private resizeObserver?: ResizeObserver;
+  private readonly folderRequests = new Subject<string | null>();
+
+  constructor() {
+    // switchMap cancels the previous folder's request, so fast breadcrumb/folder
+    // navigation can never let an older response overwrite the current listing.
+    this.folderRequests.pipe(
+      switchMap(folderId => this.backupService.getBackups(folderId).pipe(
+        map(files => ({ files, failed: false })),
+        catchError((err: Error) => {
+          console.error('Failed to load backups', err);
+          return of({ files: [] as BackupFile[], failed: true });
+        }),
+      )),
+      takeUntilDestroyed(),
+    ).subscribe(({ files, failed }) => {
+      this.backups.set(files);
+      this.loadError.set(failed);
+    });
+  }
 
   ngOnInit(): void {
     this.loadCurrentFolder();
@@ -87,18 +109,7 @@ export class BackupListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadCurrentFolder(): void {
-    const path = this.currentPath();
-    const currentFolderId = path.at(-1)?.id ?? null;
-
-    this.backupService.getBackups(currentFolderId).pipe(
-      tap(data => {
-        this.backups.set(data);
-      }),
-      catchError(err => {
-        console.error('Failed to parse backups', err);
-        return of([]);
-      }),
-    ).subscribe();
+    this.folderRequests.next(this.currentPath().at(-1)?.id ?? null);
   }
 
   protected isFolder(file: BackupFile) {

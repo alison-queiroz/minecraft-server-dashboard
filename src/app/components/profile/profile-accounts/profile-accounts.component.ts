@@ -10,7 +10,8 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { LucideX } from '@lucide/angular';
-import type { AccountType } from '../../../services/user-profile/user-profile.service';
+import type { AccountType } from '../../../services/user-profile/user-profile.models';
+import { AccountLinkError, LINK_ERROR_MESSAGES } from '../../../services/user-profile/user-profile.models';
 import { UserProfileService } from '../../../services/user-profile/user-profile.service';
 import { PlayerService } from '../../../services/player/player.service';
 import type { Player } from '../../../services/player/player.model';
@@ -19,7 +20,6 @@ import { IconButtonComponent } from '../../shared/icon-button/icon-button.compon
 import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
 import { ActionButtonComponent } from '../../shared/action-button/action-button.component';
 import { UiInputComponent } from '../../shared/ui-input/ui-input.component';
-import { MinecraftCredentialService } from '../../../services/minecraft-credential/minecraft-credential.service';
 
 @Component({
   selector: 'app-profile-accounts',
@@ -34,7 +34,6 @@ export class ProfileAccountsComponent implements OnInit {
   protected readonly profileService = inject(UserProfileService);
   private readonly playerService = inject(PlayerService);
   private readonly http = inject(HttpClient);
-  private readonly minecraftCredentialService = inject(MinecraftCredentialService);
 
   /** Drives the three near-identical account rows (Java / Bedrock / Admin). */
   protected readonly accountRows = [
@@ -127,28 +126,21 @@ export class ProfileAccountsComponent implements OnInit {
     const username = this.accountInputs()[type].trim();
     if (!username) { this.accountError.set('Please enter a username.'); return; }
 
+    const password = this.gamePasswords()[type];
+    if (!password) {
+      this.accountError.set('Please enter your in-game password to verify ownership.');
+      return;
+    }
+
     this.accountError.set(null);
     this.savingAccount.set(type);
     try {
-      const password = this.gamePasswords()[type];
-      if (!password) {
-        this.accountError.set('Please enter your in-game password to verify ownership.');
-        return;
-      }
-      const valid = await this.minecraftCredentialService.verify(username, password);
-      if (!valid) {
-        this.accountError.set('Incorrect in-game password. Please try again.');
-        return;
-      }
-
-      await this.profileService.linkAccount(type, username);
+      // The server verifies the AuthMe password and writes the link itself.
+      await this.profileService.linkAccount(type, username, password);
       this.accountInputs.update(v => ({ ...v, [type]: '' }));
       this.gamePasswords.update(v => ({ ...v, [type]: '' }));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.accountError.set(msg.includes('permission') || msg.includes('insufficient')
-        ? 'Permission denied. Check your Firestore rules or try again.'
-        : 'Failed to save. Please try again.');
+      this.accountError.set(err instanceof AccountLinkError ? LINK_ERROR_MESSAGES[err.code] : 'Failed to save. Please try again.');
     } finally {
       this.savingAccount.set(null);
     }
@@ -161,11 +153,8 @@ export class ProfileAccountsComponent implements OnInit {
       await this.profileService.unlinkAccount(type);
       this.accountInputs.update(v => ({ ...v, [type]: '' }));
       this.gamePasswords.update(v => ({ ...v, [type]: '' }));
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.accountError.set(msg.includes('permission') || msg.includes('insufficient')
-        ? 'Permission denied. Check your Firestore rules or try again.'
-        : 'Failed to unlink. Please try again.');
+    } catch {
+      this.accountError.set('Failed to unlink. Please try again.');
     } finally {
       this.savingAccount.set(null);
     }

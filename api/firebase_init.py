@@ -1,6 +1,6 @@
 """Single shared entry point for initializing the Firebase Admin SDK.
 
-Both the request layer (server_api) and the background sync thread
+Both the request layer (api.auth, formerly server_api) and the background sync thread
 (firestore_sync) used to carry near-identical copies of this logic with
 separate module globals that could drift. They now delegate here so there is
 one initialization path and one warn-once throttle.
@@ -55,10 +55,6 @@ def ensure_initialized() -> bool:
             else:
                 logger.debug("Firebase init still failing: %s", exc)
             return False
-
-
-def is_initialized() -> bool:
-    return _initialized
 
 
 def _reset_for_tests() -> None:

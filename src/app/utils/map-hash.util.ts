@@ -1,3 +1,5 @@
+import { environment } from '../../environments/environment';
+
 /**
  * Normalizes a BlueMap map reference into a `#world:x:y:z:...` hash fragment.
  *
@@ -12,4 +14,15 @@ export function normaliseMapHash(input: string): string {
   } catch {
     return input.startsWith('#') ? input : '#' + input;
   }
+}
+
+/** BlueMap base URL. Both environment files define it, so no per-component fallback. */
+export const MAP_BASE_URL: string = environment.mapBaseUrl;
+
+/**
+ * Appends a fragment (`#world:…`, `?query…`) to a BlueMap base URL, inserting
+ * the `/` between them when the base has none. The one place that rule lives.
+ */
+export function joinMapUrl(base: string, fragment: string): string {
+  return (base.endsWith('/') ? base : base + '/') + fragment;
 }

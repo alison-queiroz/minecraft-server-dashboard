@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// DRAFT, NOT DEPLOYED. Review against the rules currently live in the Firebase
+// console (Firestore > Rules) before `firebase deploy --only firestore:rules`;
+// anything the console allows that is not listed here will be denied.
+//
+// The Flask backend uses the Admin SDK, which bypasses these rules. They only
+// govern what the browser SDK may do, and the browser now only:
+//   - reads the live player list      (PlayerService: onSnapshot on players)
+//   - reads its own users/{uid} doc   (UserProfileService.loadProfile)
+//   - writes savedLocations on it     (UserProfileService: setDoc merge)
+// Account links, the usernames/* reverse lookup and home visibility are
+// written by the backend (/api/profile/accounts, /api/profile/homes/visibility),
+// so a client can never claim someone else's Minecraft account.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validLocations(locations) {
+      return locations is list && locations.size() <= 500;
+    }
+
+    // Player list mirrored by the backend sync; read-only for signed-in users.
+    match /players/{playerUuid} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // A user's profile. minecraftAccounts (trusted by the homes ownership
+    // check), publicHomes and the legacy savedHomes are backend-only; the owner
+    // may read the doc and change nothing but savedLocations. Other users'
+    // public locations are served by /api/players/<uuid>/public-profile.
+    match /users/{uid} {
+      allow read: if isSelf(uid);
+      allow create: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(['savedLocations'])
+        && validLocations(request.resource.data.savedLocations);
+      allow update: if isSelf(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['savedLocations'])
+        && validLocations(request.resource.data.savedLocations);
+      allow delete: if false;
+    }
+
+    // Minecraft name -> uid reverse lookup; backend-only.
+    match /usernames/{name} {
+      allow read, write: if false;
+    }
+
+    // Everything else (analytics snapshots, ...) is backend-only.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

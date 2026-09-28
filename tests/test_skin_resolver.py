@@ -1,4 +1,6 @@
 import pytest
+import requests
+import api.skin_resolver as sr
 from api.skin_resolver import (
     _proxy_url,
     _resolve_skinsrestorer,
@@ -6,6 +8,28 @@ from api.skin_resolver import (
     get_skin_url,
     _MCHEADS_STEVE
 )
+
+BEDROCK_UUID = "00000000-0000-0000-0009-000000000001"
+
+
+@pytest.fixture(autouse=True)
+def _clear_skin_caches():
+    """Skin caches are module-global; isolate every test from the others."""
+    sr.clear_skin_caches()
+    yield
+    sr.clear_skin_caches()
+
+
+def _response(mocker, status=200, payload=None, json_error=False):
+    """A requests.Response stand-in with the given status and JSON body."""
+    resp = mocker.MagicMock(status_code=status)
+    if json_error:
+        resp.json.side_effect = ValueError("not json")
+    else:
+        resp.json.return_value = payload
+    if status >= 400:
+        resp.raise_for_status.side_effect = requests.HTTPError(f"{status}")
+    return resp
 
 def test_proxy_url():
     """Ensure the proxy URL encodes the target URL correctly."""
@@ -45,35 +69,116 @@ def test_resolve_skinsrestorer_exception(mocker):
 
 def test_resolve_bedrock_skin_success(mocker):
     """Ensure Bedrock UUIDs are converted to XUIDs and fetch the texture correctly."""
-    class MockResponse:
-        def read(self):
-            return b'{"texture_id": "abc123texture"}'
-        def __enter__(self):
-            return self
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
-
-    mocker.patch("urllib.request.urlopen", return_value=MockResponse())
-    result = _resolve_bedrock_skin("00000000-0000-0000-0009-000000000001")
+    get = mocker.patch.object(sr._http, "get", return_value=_response(mocker, payload={"texture_id": "abc123texture"}))
+    result = _resolve_bedrock_skin(BEDROCK_UUID)
     assert "abc123texture" in result
+    assert get.call_args.args[0] == sr._GEYSER_API.format(int("0009000000000001", 16))
+    assert get.call_args.kwargs["timeout"] == sr._GEYSER_TIMEOUT
 
 def test_resolve_bedrock_skin_no_texture(mocker):
     """Ensure it returns Steve if the Bedrock API responds but has no texture_id."""
-    class MockResponse:
-        def read(self):
-            return b'{"texture_id": null}'
-        def __enter__(self):
-            return self
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
-
-    mocker.patch("urllib.request.urlopen", return_value=MockResponse())
-    assert _resolve_bedrock_skin("00000000-0000-0000-0009-000000000001") == _MCHEADS_STEVE
+    mocker.patch.object(sr._http, "get", return_value=_response(mocker, payload={"texture_id": None}))
+    assert _resolve_bedrock_skin(BEDROCK_UUID) == _MCHEADS_STEVE
 
 def test_resolve_bedrock_skin_exception(mocker):
     """Ensure it returns Steve if the Bedrock API fails or times out."""
-    mocker.patch("urllib.request.urlopen", side_effect=Exception("Timeout"))
-    assert _resolve_bedrock_skin("00000000-0000-0000-0009-000000000001") == _MCHEADS_STEVE
+    mocker.patch.object(sr._http, "get", side_effect=requests.Timeout("Timeout"))
+    assert _resolve_bedrock_skin(BEDROCK_UUID) == _MCHEADS_STEVE
+
+def test_resolve_bedrock_skin_http_error_falls_back_to_steve(mocker):
+    """A non-2xx Geyser response is treated as a miss rather than parsed."""
+    mocker.patch.object(sr._http, "get", return_value=_response(mocker, status=503))
+    assert _resolve_bedrock_skin(BEDROCK_UUID) == _MCHEADS_STEVE
+
+
+# ── Geyser TTL cache ──────────────────────────────────────────────────────────
+
+def test_resolve_bedrock_skin_caches_hits(mocker):
+    """A resolved Bedrock skin is served from cache on later refreshes (one HTTP call)."""
+    get = mocker.patch.object(sr._http, "get", return_value=_response(mocker, payload={"texture_id": "tex"}))
+    first = _resolve_bedrock_skin(BEDROCK_UUID)
+    second = _resolve_bedrock_skin(BEDROCK_UUID)
+    assert first == second and "tex" in first
+    get.assert_called_once()
+
+
+def test_resolve_bedrock_skin_caches_misses(mocker):
+    """A failed lookup is negatively cached, so an outage costs one timeout per window."""
+    get = mocker.patch.object(sr._http, "get", side_effect=requests.ConnectionError("down"))
+    assert _resolve_bedrock_skin(BEDROCK_UUID) == _MCHEADS_STEVE
+    assert _resolve_bedrock_skin(BEDROCK_UUID) == _MCHEADS_STEVE
+    get.assert_called_once()
+
+
+def test_geyser_cache_ttls_positive_longer_than_negative(mocker):
+    """Hits are kept for the positive TTL, misses only for the shorter negative TTL."""
+    now = [1000.0]
+    mocker.patch.object(sr, "_geyser_cache", sr._TTLCache(16, clock=lambda: now[0]))
+    get = mocker.patch.object(sr._http, "get", side_effect=requests.ConnectionError("down"))
+    _resolve_bedrock_skin(BEDROCK_UUID)
+    now[0] += sr._NEGATIVE_TTL + 1
+    get.side_effect = None
+    get.return_value = _response(mocker, payload={"texture_id": "tex"})
+    assert "tex" in _resolve_bedrock_skin(BEDROCK_UUID)  # miss expired → re-fetched
+    now[0] += sr._NEGATIVE_TTL + 1
+    assert "tex" in _resolve_bedrock_skin(BEDROCK_UUID)  # hit still valid
+    assert get.call_count == 2
+    assert sr._POSITIVE_TTL > sr._NEGATIVE_TTL
+    now[0] += sr._POSITIVE_TTL
+    _resolve_bedrock_skin(BEDROCK_UUID)
+    assert get.call_count == 3  # hit expired → re-fetched
+
+
+# ── _TTLCache ─────────────────────────────────────────────────────────────────
+
+def test_ttl_cache_distinguishes_cached_miss_from_absent():
+    """A stored None is a hit (cached miss); an unknown key is not."""
+    cache = sr._TTLCache(4)
+    cache.set("miss", None, 60)
+    assert cache.get("miss") == (True, None)
+    assert cache.get("unknown") == (False, None)
+
+
+def test_ttl_cache_is_bounded_lru():
+    """Beyond max_entries the least recently used entry is evicted (no unbounded growth)."""
+    cache = sr._TTLCache(2)
+    cache.set("a", "1", 60)
+    cache.set("b", "2", 60)
+    cache.get("a")  # touch → "b" is now least recently used
+    cache.set("c", "3", 60)
+    assert len(cache) == 2
+    assert cache.get("b") == (False, None)
+    assert cache.get("a") == (True, "1")
+
+
+def test_ttl_cache_expires_and_clears():
+    """Expired entries are dropped on read, and clear() empties the cache."""
+    now = [0.0]
+    cache = sr._TTLCache(4, clock=lambda: now[0])
+    cache.set("k", "v", 10)
+    now[0] = 10.0
+    assert cache.get("k") == (False, None)
+    assert len(cache) == 0
+    cache.set("k", "v", 10)
+    cache.clear()
+    assert len(cache) == 0
+
+
+def test_clear_skin_caches_empties_url_and_geyser_caches():
+    """clear_skin_caches() forgets URL resolutions and Bedrock lookups alike."""
+    sr._url_resolution_cache.set("http://x", "tex", 60)
+    sr._geyser_cache.set(BEDROCK_UUID, "url", 60)
+    sr.clear_skin_caches()
+    assert len(sr._url_resolution_cache) == 0
+    assert len(sr._geyser_cache) == 0
+
+
+def test_legacy_url_cache_names_still_clearable():
+    """server_api's force-resync handlers clear both legacy names; both must keep working."""
+    sr._url_resolution_cache.set("http://x", "tex", 60)
+    sr._url_resolution_cache.clear()
+    sr._url_resolved_at.clear()
+    assert len(sr._url_resolution_cache) == 0
 
 def test_get_skin_url_from_url(mocker):
     """Ensure a direct HTTP identifier is proxied."""
@@ -140,32 +245,6 @@ def test_sr_filename_candidates_url_with_path():
     assert any("abc123" in r for r in results)
 
 
-# ── _read_skin_value_from_file ────────────────────────────────────────────────
-
-def test_read_skin_value_from_file_value_key(mocker, tmp_path):
-    """Reads the 'value' key from a skin JSON file."""
-    import json as _json
-    f = tmp_path / "skin.json"
-    f.write_text(_json.dumps({"value": "base64datahere"}))
-    from api.skin_resolver import _read_skin_value_from_file
-    assert _read_skin_value_from_file(str(f)) == "base64datahere"
-
-
-def test_read_skin_value_from_file_nested_texture(mocker, tmp_path):
-    """Reads the nested texture.value key."""
-    import json as _json
-    f = tmp_path / "skin.json"
-    f.write_text(_json.dumps({"texture": {"value": "nestedvalue"}}))
-    from api.skin_resolver import _read_skin_value_from_file
-    assert _read_skin_value_from_file(str(f)) == "nestedvalue"
-
-
-def test_read_skin_value_from_file_exception(mocker):
-    """Returns None when the file cannot be read."""
-    from api.skin_resolver import _read_skin_value_from_file
-    assert _read_skin_value_from_file("/nonexistent/path.json") is None
-
-
 # ── _find_texture_from_sr_skins ───────────────────────────────────────────────
 
 def test_find_texture_from_sr_skins_no_directory(mocker):
@@ -200,7 +279,7 @@ def test_find_texture_from_sr_skins_no_valid_texture(mocker, tmp_path):
     import api.skin_resolver as sr
 
     stem = hashlib.sha256("Steve".encode()).hexdigest()
-    # Write a file with no recognisable value keys → _read_skin_value_from_file returns None
+    # Write a file with no recognisable value keys → no texture can be extracted
     skin_file = tmp_path / (stem + ".json")
     skin_file.write_text("{}")
 
@@ -252,7 +331,6 @@ def test_format_uuid_passthrough_if_not_32_chars():
 
 def test_resolve_mineskin_texture_v2_url_path(mocker):
     """Resolves a direct URL from the v2 API response."""
-    import json as _json
     resp_data = {
         "skin": {
             "texture": {
@@ -261,16 +339,10 @@ def test_resolve_mineskin_texture_v2_url_path(mocker):
             }
         }
     }
-
-    class MockResp:
-        def read(self): return _json.dumps(resp_data).encode()
-        def __enter__(self): return self
-        def __exit__(self, *_): pass
-
-    mocker.patch("urllib.request.urlopen", return_value=MockResp())
-    from api.skin_resolver import _resolve_mineskin_texture
-    result = _resolve_mineskin_texture("abc123")
+    get = mocker.patch.object(sr._http, "get", return_value=_response(mocker, payload=resp_data))
+    result = sr._resolve_mineskin_texture("abc123")
     assert result == "https://textures.minecraft.net/texture/mineskin123"
+    assert get.call_args.kwargs["timeout"] == sr._MINESKIN_TIMEOUT
 
 
 def test_resolve_mineskin_texture_v2_base64_path(mocker):
@@ -278,64 +350,56 @@ def test_resolve_mineskin_texture_v2_base64_path(mocker):
     import base64, json as _json
     payload = {"textures": {"SKIN": {"url": "https://textures.minecraft.net/texture/frombase64"}}}
     b64 = base64.b64encode(_json.dumps(payload).encode()).decode()
-
     resp_data = {"skin": {"texture": {"data": {"value": b64}}}}
-
-    class MockResp:
-        def read(self): return _json.dumps(resp_data).encode()
-        def __enter__(self): return self
-        def __exit__(self, *_): pass
-
-    mocker.patch("urllib.request.urlopen", return_value=MockResp())
-    from api.skin_resolver import _resolve_mineskin_texture
-    result = _resolve_mineskin_texture("abc123")
-    assert result == "https://textures.minecraft.net/texture/frombase64"
+    mocker.patch.object(sr._http, "get", return_value=_response(mocker, payload=resp_data))
+    assert sr._resolve_mineskin_texture("abc123") == "https://textures.minecraft.net/texture/frombase64"
 
 
-def test_resolve_mineskin_texture_returns_none_on_failure(mocker):
-    """Returns None when all API calls fail."""
-    mocker.patch("urllib.request.urlopen", side_effect=Exception("network error"))
-    from api.skin_resolver import _resolve_mineskin_texture
-    assert _resolve_mineskin_texture("bad-id") is None
+def test_resolve_mineskin_texture_stops_when_unreachable(mocker):
+    """A connection error/timeout aborts at once instead of stacking four timeouts."""
+    get = mocker.patch.object(sr._http, "get", side_effect=requests.ConnectionError("network error"))
+    assert sr._resolve_mineskin_texture("069a79f444e947261a5befca90e38aaf") is None
+    get.assert_called_once()
+
+
+def test_resolve_mineskin_texture_tries_next_variant_after_http_error(mocker):
+    """A 404 or a non-JSON body moves on to the next endpoint/ID form."""
+    ok = {"data": {"texture": {"url": "https://textures.minecraft.net/texture/v1"}}}
+    get = mocker.patch.object(sr._http, "get", side_effect=[
+        _response(mocker, status=404),
+        _response(mocker, json_error=True),
+        _response(mocker, payload=ok),
+    ])
+    assert sr._resolve_mineskin_texture("069a79f444e947261a5befca90e38aaf") == "https://textures.minecraft.net/texture/v1"
+    assert get.call_count == 3
 
 
 def test_resolve_mineskin_texture_returns_none_when_no_url_in_response(mocker):
     """Returns None when the API responds but contains no recognisable URL."""
-    import json as _json
+    get = mocker.patch.object(sr._http, "get", return_value=_response(mocker, payload={"unexpected": "shape"}))
+    assert sr._resolve_mineskin_texture("abc123") is None
+    # Non-32-hex IDs have a single form → v2 + v1 only.
+    assert get.call_count == 2
 
-    class MockResp:
-        def read(self): return _json.dumps({"unexpected": "shape"}).encode()
-        def __enter__(self): return self
-        def __exit__(self, *_): pass
 
-    mocker.patch("urllib.request.urlopen", return_value=MockResp())
-    from api.skin_resolver import _resolve_mineskin_texture
-    assert _resolve_mineskin_texture("abc123") is None
+def test_resolve_mineskin_texture_non_dict_body_is_a_miss(mocker):
+    """A JSON body that is not an object is treated as 'no URL found'."""
+    mocker.patch.object(sr._http, "get", return_value=_response(mocker, payload=["not", "a", "dict"]))
+    assert sr._resolve_mineskin_texture("abc123") is None
 
 
 # ── _resolve_url_skin ─────────────────────────────────────────────────────────
 
 def test_resolve_url_skin_uses_cache(mocker):
     """Returns the cached result without hitting the network."""
-    import time
-    import api.skin_resolver as sr
-    sr._url_resolution_cache["http://cached.com/skin"] = "https://textures.minecraft.net/texture/cached"
-    sr._url_resolved_at["http://cached.com/skin"] = time.time()
-
+    sr._url_resolution_cache.set("http://cached.com/skin", "https://textures.minecraft.net/texture/cached", 60)
     mocker.patch.object(sr, "_find_texture_from_sr_skins", side_effect=AssertionError("should not be called"))
     result = sr._resolve_url_skin("http://cached.com/skin")
     assert result == "https://textures.minecraft.net/texture/cached"
 
-    # cleanup
-    del sr._url_resolution_cache["http://cached.com/skin"]
-    del sr._url_resolved_at["http://cached.com/skin"]
-
 
 def test_resolve_url_skin_calls_mineskin_for_mineskin_urls(mocker):
     """Triggers MineSkin resolution for minesk.in / mineskin.org URLs."""
-    import api.skin_resolver as sr
-    sr._url_resolution_cache.pop("https://minesk.in/abc", None)
-
     mocker.patch.object(sr, "_find_texture_from_sr_skins", return_value=None)
     mock_mineskin = mocker.patch.object(
         sr, "_resolve_mineskin_texture",
@@ -348,10 +412,40 @@ def test_resolve_url_skin_calls_mineskin_for_mineskin_urls(mocker):
 
 def test_resolve_url_skin_falls_back_to_raw_identifier(mocker):
     """Returns the raw identifier when resolution fails."""
-    import api.skin_resolver as sr
     mocker.patch.object(sr, "_find_texture_from_sr_skins", return_value=None)
     result = sr._resolve_url_skin("http://unknown.com/skin.png")
     assert result == "http://unknown.com/skin.png"
+
+
+def test_resolve_url_skin_caches_hits(mocker):
+    """A resolved URL skin is not re-scanned or re-queried on the next refresh."""
+    scan = mocker.patch.object(sr, "_find_texture_from_sr_skins", return_value="https://textures.minecraft.net/texture/hit")
+    assert sr._resolve_url_skin("http://a/skin") == "https://textures.minecraft.net/texture/hit"
+    assert sr._resolve_url_skin("http://a/skin") == "https://textures.minecraft.net/texture/hit"
+    scan.assert_called_once()
+
+
+def test_resolve_url_skin_caches_misses(mocker):
+    """An unresolvable MineSkin URL costs one scan + one API round per negative TTL, not per refresh."""
+    scan = mocker.patch.object(sr, "_find_texture_from_sr_skins", return_value=None)
+    mineskin = mocker.patch.object(sr, "_resolve_mineskin_texture", return_value=None)
+    assert sr._resolve_url_skin("https://minesk.in/bad") == "https://minesk.in/bad"
+    assert sr._resolve_url_skin("https://minesk.in/bad") == "https://minesk.in/bad"
+    scan.assert_called_once()
+    mineskin.assert_called_once()
+
+
+def test_resolve_skinsrestorer_url_identifier_scans_skins_dir_once(mocker):
+    """URL identifiers consult the cache first and scan the skins dir once (it used to scan twice)."""
+    import json as _json
+    player_json = _json.dumps({"skinIdentifier": {"identifier": "https://minesk.in/abc"}})
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data=player_json))
+    scan = mocker.patch.object(sr, "_find_texture_from_sr_skins", return_value=None)
+    mocker.patch.object(sr, "_resolve_mineskin_texture", return_value="https://textures.minecraft.net/texture/m")
+    assert _resolve_skinsrestorer("uuid-1", "fallback") == "https://textures.minecraft.net/texture/m"
+    assert _resolve_skinsrestorer("uuid-1", "fallback") == "https://textures.minecraft.net/texture/m"
+    scan.assert_called_once()
 
 
 # ── _is_non_image_url ─────────────────────────────────────────────────────────

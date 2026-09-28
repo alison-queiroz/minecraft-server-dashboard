@@ -4,8 +4,9 @@ import { Injectable } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { PlayerService } from './player.service';
 import { Player } from './player.model';
+import type { PlayerDto } from './player.model';
 
-const MOCK_PLAYERS: Partial<Player>[] = [
+const MOCK_PLAYERS: PlayerDto[] = [
   {
     name: 'Steve',
     uuid: 'aaaaaaaa-0000-0000-0000-000000000001',
@@ -51,9 +52,9 @@ class PlayerServiceHarness extends PlayerService {
   // Bypass the constructor's initial HTTP roster load so tests drive state manually.
   protected override loadInitialPlayers(): void { return; }
 
-  pushPlayers(players: Partial<Player>[] = MOCK_PLAYERS): void {
+  pushPlayers(players: PlayerDto[] = MOCK_PLAYERS): void {
     const sorted = players
-      .map((p: Partial<Player>) => new Player(p))
+      .map((p: PlayerDto) => new Player(p))
       .sort((a: Player, b: Player) => b.level - a.level);
     this.rawPlayers.set(sorted);
   }
@@ -191,38 +192,6 @@ describe('PlayerService', () => {
     });
   });
 
-  describe('fetchAvatarIfNeeded', () => {
-    const avatarUrl = 'https://mc-heads.net/avatar/Steve/64';
-
-    it('should return the original URL when cache is empty', () => {
-      expect(service.getAvatarUrl(avatarUrl)).toBe(avatarUrl);
-    });
-
-    it('should make an HTTP request on first call', () => {
-      service.fetchAvatarIfNeeded(avatarUrl);
-      const req = httpMock.expectOne(avatarUrl);
-      expect(req.request.responseType).toBe('blob');
-      req.flush(new Blob(['img'], { type: 'image/png' }));
-    });
-
-    it('should not repeat the HTTP request on subsequent calls', async () => {
-      service.fetchAvatarIfNeeded(avatarUrl);
-      httpMock.expectOne(avatarUrl).flush(new Blob(['img'], { type: 'image/png' }));
-
-      // Wait one microtask for the tap operator to update the cache
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      service.fetchAvatarIfNeeded(avatarUrl);
-      httpMock.expectNone(avatarUrl);
-    });
-
-    it('should silently ignore HTTP errors', () => {
-      service.fetchAvatarIfNeeded(avatarUrl);
-      httpMock.expectOne(avatarUrl).error(new ProgressEvent('error'));
-      expect(service.getAvatarUrl(avatarUrl)).toBe(avatarUrl);
-    });
-  });
-
   describe('fetchPlayersFromApi', () => {
     it('sets players when the API returns a non-empty list', () => {
       service.callFetchPlayersFromApi();
@@ -244,6 +213,37 @@ describe('PlayerService', () => {
       httpMock.expectOne('/api/players').error(new ProgressEvent('error'));
       expect(service.players()).toBeDefined();
     });
+
+    it('keeps every instance (incl. house-decorated ones) when a refresh returns identical data', () => {
+      service.callFetchPlayersFromApi();
+      httpMock.expectOne('/api/players').flush(structuredClone(MOCK_PLAYERS));
+      const before = service.players();
+      const steveBefore = before.find(p => p.name === 'Steve');
+      expect(steveBefore?.houseUrl).toBe('https://maps.example.com/steve-house');
+
+      service.callFetchPlayersFromApi();
+      httpMock.expectOne('/api/players').flush(structuredClone(MOCK_PLAYERS));
+
+      expect(service.players()).toBe(before);
+      expect(service.players().find(p => p.name === 'Steve')).toBe(steveBefore);
+    });
+
+    it('replaces only the players whose data changed', () => {
+      service.callFetchPlayersFromApi();
+      httpMock.expectOne('/api/players').flush(structuredClone(MOCK_PLAYERS));
+      const before = service.players();
+
+      service.callFetchPlayersFromApi();
+      httpMock.expectOne('/api/players').flush(
+        MOCK_PLAYERS.map(p => (p.name === 'Alex' ? { ...p, health: 3 } : { ...p })),
+      );
+      const after = service.players();
+
+      expect(after.find(p => p.name === 'Steve')).toBe(before.find(p => p.name === 'Steve'));
+      expect(after.find(p => p.name === 'BedrockUser')).toBe(before.find(p => p.name === 'BedrockUser'));
+      expect(after.find(p => p.name === 'Alex')).not.toBe(before.find(p => p.name === 'Alex'));
+      expect(after.find(p => p.name === 'Alex')?.health).toBe(3);
+    });
   });
 
   describe('enrichFromApi', () => {
@@ -251,7 +251,7 @@ describe('PlayerService', () => {
 
     it('merges live API data into existing Firestore players', () => {
       service.callEnrichFromApi();
-      const enrichedData = MOCK_PLAYERS.map((p: Partial<Player>) => ({ ...p, level: 99 }));
+      const enrichedData = MOCK_PLAYERS.map((p: PlayerDto) => ({ ...p, level: 99 }));
       httpMock.expectOne('/api/players').flush(enrichedData);
       const steve = service.players().find((p: Player) => p.name === 'Steve');
       expect(steve?.level).toBe(99);

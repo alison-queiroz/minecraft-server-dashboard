@@ -31,6 +31,10 @@
         <div class="empty-state animate-pulse">
           Loading contents...
         </div>
+      } @else if (loadError()) {
+        <div class="empty-state" role="alert" data-testid="backups-error">
+          Couldn&rsquo;t load this folder &mdash; please try again shortly.
+        </div>
       } @else {
         <cdk-virtual-scroll-viewport itemSize="88" class="list-viewport custom-scrollbar">
           <div class="list-item" *cdkVirtualFor="let backup of backups(); trackBy: trackByBackupId">

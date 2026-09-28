@@ -93,7 +93,7 @@ Key rules to keep in every `eslint.config.js` for Angular+TypeScript projects:
 - When testing web frameworks (like Flask or FastAPI), always use the framework's native test client
 - Mock auth and Firebase before calling any protected endpoint:
   ```python
-  mocker.patch("api.server_api._FIREBASE_INITIALIZED", True)
+  mocker.patch("api.auth._FIREBASE_INITIALIZED", True)
   mocker.patch("firebase_admin.auth.verify_id_token", return_value={"uid": "mocked_user_id"})
   ```
 

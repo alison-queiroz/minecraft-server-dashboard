@@ -59,6 +59,9 @@ jobs:
       vars.ENABLE_GH_DEPLOY == 'true' &&
       (github.event_name == 'push' ||
        (github.event_name == 'workflow_dispatch' && inputs.deploy))
+    env:
+      # Deploy inbox, relative to the SSH user's home (same as deploy.bat).
+      REMOTE_INBOX: .dashboard-deploy
     steps:
       - uses: actions/checkout@v4
       - name: Download artifact
@@ -81,39 +84,34 @@ jobs:
           else
             ssh-keyscan -H "$ORACLE_HOST" >> ~/.ssh/known_hosts 2>/dev/null
           fi
-      - name: Upload backend + provisioning scripts
+      # The server-side steps live in config/remote-deploy.sh, shared with
+      # deploy.bat: both pipelines upload the same bundle into the same inbox
+      # and run the same phases, so they cannot drift apart.
+      - name: Pack backend (api/ + run.py + gunicorn.conf.py)
+        run: tar -czf deploy_api.tar.gz --exclude=__pycache__ --exclude='*.pyc' api run.py gunicorn.conf.py
+      - name: Upload deploy bundle
         env:
           ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
           ORACLE_USER: ${{ secrets.ORACLE_USER }}
         run: |
-          scp -r api "$ORACLE_USER@$ORACLE_HOST:/home/opc/minecraft/"
-          scp run.py "$ORACLE_USER@$ORACLE_HOST:/home/opc/minecraft/run.py"
-          scp config/setup-nginx-map.sh "$ORACLE_USER@$ORACLE_HOST:/tmp/setup-nginx-map.sh"
-          scp config/setup-nginx-compression.sh "$ORACLE_USER@$ORACLE_HOST:/tmp/setup-nginx-compression.sh"
-      - name: Deploy backend, provision nginx, restart services
+          ssh "$ORACLE_USER@$ORACLE_HOST" "mkdir -p $REMOTE_INBOX && chmod 700 $REMOTE_INBOX"
+          scp config/remote-deploy.sh config/setup-nginx-map.sh config/setup-nginx-compression.sh \
+            deploy_api.tar.gz deploy_build.tar.gz "$ORACLE_USER@$ORACLE_HOST:$REMOTE_INBOX/"
+      - name: Deploy backend, provision nginx, force Firestore resync
         env:
           ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
           ORACLE_USER: ${{ secrets.ORACLE_USER }}
         run: |
-          ssh "$ORACLE_USER@$ORACLE_HOST" "
-            sudo rm -rf /var/www/dashboard/* &&
-            pip install -q -r /home/opc/minecraft/api/requirements.txt &&
-            find /home/opc/minecraft/api -name '*.pyc' -delete &&
-            find /home/opc/minecraft/api -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null;
-            sudo systemctl restart minecraft-api.service &&
-            sed -i '1s/^\xEF\xBB\xBF//;s/\r$//' /tmp/setup-nginx-map.sh /tmp/setup-nginx-compression.sh &&
-            chmod +x /tmp/setup-nginx-map.sh /tmp/setup-nginx-compression.sh &&
-            sudo bash /tmp/setup-nginx-map.sh &&
-            sudo bash /tmp/setup-nginx-compression.sh &&
-            rm /tmp/setup-nginx-map.sh /tmp/setup-nginx-compression.sh
-          "
-      - name: Upload & extract frontend
+          # Staged swap + /api/healthz poll: if the new API does not come up the
+          # script restores the previous release and this step fails. The
+          # frontend below is then never published.
+          ssh "$ORACLE_USER@$ORACLE_HOST" \
+            "sed -i '1s/^\xEF\xBB\xBF//;s/\r$//' $REMOTE_INBOX/remote-deploy.sh && bash $REMOTE_INBOX/remote-deploy.sh backend nginx resync"
+      - name: Publish frontend
         env:
           ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
           ORACLE_USER: ${{ secrets.ORACLE_USER }}
         run: |
-          scp deploy_build.tar.gz "$ORACLE_USER@$ORACLE_HOST:/tmp/deploy_build.tar.gz"
-          ssh "$ORACLE_USER@$ORACLE_HOST" "
-            sudo tar -xzf /tmp/deploy_build.tar.gz -C /var/www/dashboard &&
-            rm /tmp/deploy_build.tar.gz
-          "
+          # Staged and verified against ngsw.json, then published in place with
+          # index.html / ngsw.json last; the live docroot is never wiped.
+          ssh "$ORACLE_USER@$ORACLE_HOST" "bash $REMOTE_INBOX/remote-deploy.sh frontend"

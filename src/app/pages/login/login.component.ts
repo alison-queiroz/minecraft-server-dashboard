@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component, type OnInit, inject, signal } from 
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
 import { ServerService } from '../../services/server/server.service';
+import { AccountLinkError, LINK_ERROR_MESSAGES } from '../../services/user-profile/user-profile.models';
+import { LinkedAccessService } from '../../services/user-profile/linked-access.service';
 import { UserProfileService } from '../../services/user-profile/user-profile.service';
-import { MinecraftCredentialService } from '../../services/minecraft-credential/minecraft-credential.service';
 import { ServerIconComponent } from '../../components/shared/server-icon/server-icon.component';
 import { InlineErrorComponent } from '../../components/shared/inline-error/inline-error.component';
 import { UiInputComponent } from '../../components/shared/ui-input/ui-input.component';
@@ -22,7 +23,7 @@ export class LoginComponent implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly server = inject(ServerService);
   private readonly profileService = inject(UserProfileService);
-  private readonly minecraftCredentialService = inject(MinecraftCredentialService);
+  private readonly access = inject(LinkedAccessService);
 
   protected readonly error = signal<string | null>(null);
   protected readonly signing = signal(false);
@@ -41,13 +42,11 @@ export class LoginComponent implements OnInit {
     // If the user is already Firebase-authenticated and has already linked a
     // Minecraft account, skip the login page entirely.
     if (this.auth.currentUser()) {
-      await this.profileService.loadProfile();
-      if (this.profileService.minecraftAccounts().java) {
-        void this.router.navigate(['/']);
-      } else {
-        // Firebase authed but Minecraft not yet linked → skip to step 2.
-        this.step.set('minecraft');
-      }
+      await this.continueByLinkStatus();
+    } else {
+      // About to show the Google button: get the popup machinery ready so
+      // Safari/iOS don't block the popup on the first tap.
+      this.auth.warmUpSignIn();
     }
   }
 
@@ -56,12 +55,7 @@ export class LoginComponent implements OnInit {
     this.signing.set(true);
     try {
       await this.auth.signInWithGoogle();
-      await this.profileService.loadProfile();
-      if (this.profileService.minecraftAccounts().java) {
-        void this.router.navigate(['/']);
-      } else {
-        this.step.set('minecraft');
-      }
+      await this.continueByLinkStatus();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sign-in failed. Please try again.';
       this.error.set(msg);
@@ -80,17 +74,26 @@ export class LoginComponent implements OnInit {
     this.error.set(null);
     this.signing.set(true);
     try {
-      const valid = await this.minecraftCredentialService.verify(name, pwd);
-      if (!valid) {
-        this.error.set('Incorrect in-game credentials. Please try again.');
-        return;
-      }
-      await this.profileService.linkAccount('java', name);
+      // The server verifies the AuthMe password and writes the link itself.
+      await this.profileService.linkAccount('java', name, pwd);
       void this.router.navigate(['/']);
-    } catch {
-      this.error.set('Verification failed. Please try again.');
+    } catch (err) {
+      this.error.set(err instanceof AccountLinkError ? LINK_ERROR_MESSAGES[err.code] : LINK_ERROR_MESSAGES.failed);
     } finally {
       this.signing.set(false);
+    }
+  }
+
+  /**
+   * Same rule as the route guard (GET /api/profile, no Firestore SDK): any
+   * linked account — java, bedrock or admin — goes straight in; otherwise
+   * continue to the Minecraft step.
+   */
+  private async continueByLinkStatus(): Promise<void> {
+    if (await this.access.fetchLinkedStatus()) {
+      void this.router.navigate(['/']);
+    } else {
+      this.step.set('minecraft');
     }
   }
 }

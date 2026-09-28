@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
@@ -7,13 +7,16 @@ import { signal } from '@angular/core';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../services/auth/auth.service';
 import { ServerService } from '../../services/server/server.service';
+import type { LinkErrorCode } from '../../services/user-profile/user-profile.models';
+import { AccountLinkError } from '../../services/user-profile/user-profile.models';
+import { LinkedAccessService } from '../../services/user-profile/linked-access.service';
 import { UserProfileService } from '../../services/user-profile/user-profile.service';
-import { MinecraftCredentialService } from '../../services/minecraft-credential/minecraft-credential.service';
 
 const makeAuthStub = () => ({
   currentUser: signal(null),
   isLoading: signal(false),
   signInWithGoogle: jest.fn().mockResolvedValue(undefined),
+  warmUpSignIn: jest.fn(),
   signOut: jest.fn().mockResolvedValue(undefined),
   getIdToken: jest.fn().mockResolvedValue(null),
 });
@@ -37,16 +40,16 @@ const makeServerStub = () => ({
 });
 
 const makeProfileStub = () => ({
-  minecraftAccounts: signal({ java: null as string | null, bedrock: null, admin: null }),
-  isLoading: signal(false),
-  isLoaded: signal(false),
   loadProfile: jest.fn().mockResolvedValue(undefined),
   linkAccount: jest.fn().mockResolvedValue(undefined),
 });
 
-const makeMinecraftStub = () => ({
-  verify: jest.fn().mockResolvedValue(true),
+const makeAccessStub = () => ({
+  fetchLinkedStatus: jest.fn().mockResolvedValue(false),
 });
+
+type ProfileStub = ReturnType<typeof makeProfileStub>;
+type AccessStub = ReturnType<typeof makeAccessStub>;
 
 const flushMicrotasks = (): Promise<void> => new Promise<void>((resolve) => queueMicrotask(resolve));
 
@@ -66,7 +69,7 @@ describe('LoginComponent', () => {
         { provide: AuthService, useValue: authStub },
         { provide: ServerService, useValue: makeServerStub() },
         { provide: UserProfileService, useValue: makeProfileStub() },
-        { provide: MinecraftCredentialService, useValue: makeMinecraftStub() },
+        { provide: LinkedAccessService, useValue: makeAccessStub() },
       ],
     }).compileComponents();
 
@@ -96,6 +99,19 @@ describe('LoginComponent', () => {
     const button = (fixture.nativeElement as HTMLElement).querySelector('.login-button');
     expect(button).toBeTruthy();
     expect(button?.textContent).toContain('Sign in with Google');
+  });
+
+  it('warms up the sign-in popup when showing the Google step', () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    fixture.detectChanges();
+    expect(authStub.warmUpSignIn).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not warm up the popup for an already signed-in user', () => {
+    authStub.currentUser.set({ uid: 'u1' } as never);
+    const fixture = TestBed.createComponent(LoginComponent);
+    fixture.detectChanges();
+    expect(authStub.warmUpSignIn).not.toHaveBeenCalled();
   });
 
   it('calls signInWithGoogle on button click', async () => {
@@ -185,52 +201,92 @@ describe('LoginComponent', () => {
     expect(errorEl?.textContent).toContain('Please enter your in-game name and password.');
   });
 
-  it('shows an error when the Minecraft credentials are invalid', async () => {
-    const mcStub = TestBed.inject(MinecraftCredentialService) as unknown as { verify: ReturnType<typeof jest.fn> };
-    mcStub.verify.mockResolvedValueOnce(false);
+  interface McComp {
+    step: ReturnType<typeof signal<string>> & { set(v: string): void };
+    mcName: ReturnType<typeof signal<string>> & { set(v: string): void };
+    mcPassword: ReturnType<typeof signal<string>> & { set(v: string): void };
+    submitMinecraft(): Promise<void>;
+  }
 
+  const minecraftStep = (name = 'Steve', password = 'secret') => {
     const fixture = TestBed.createComponent(LoginComponent);
-    const comp = fixture.componentInstance as unknown as {
-      step: ReturnType<typeof signal<string>> & { set(v: string): void };
-      mcName: ReturnType<typeof signal<string>> & { set(v: string): void };
-      mcPassword: ReturnType<typeof signal<string>> & { set(v: string): void };
-      submitMinecraft(): Promise<void>;
-    };
+    const comp = fixture.componentInstance as unknown as McComp;
     comp.step.set('minecraft');
-    comp.mcName.set('Steve');
-    comp.mcPassword.set('wrongpassword');
+    comp.mcName.set(name);
+    comp.mcPassword.set(password);
     fixture.detectChanges();
+    return { fixture, comp };
+  };
+
+  const alertText = (fixture: { nativeElement: HTMLElement }): string | null | undefined =>
+    fixture.nativeElement.querySelector('[role="alert"]')?.textContent;
+
+  it.each<[LinkErrorCode, string]>([
+    ['invalid_credentials', 'Incorrect in-game credentials'],
+    ['rate_limited', 'Too many attempts'],
+    ['unavailable', 'temporarily unavailable'],
+  ])('shows the %s message when linking is refused', async (code: LinkErrorCode, message: string) => {
+    const profileStub = TestBed.inject(UserProfileService) as unknown as ProfileStub;
+    profileStub.linkAccount.mockRejectedValueOnce(new AccountLinkError(code));
+    const { fixture, comp } = minecraftStep('Steve', 'wrongpassword');
 
     await comp.submitMinecraft();
     fixture.detectChanges();
 
-    const errorEl = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
-    expect(errorEl?.textContent).toContain('Incorrect in-game credentials');
+    expect(alertText(fixture)).toContain(message);
   });
 
-  it('links the account and navigates to / when credentials are valid', async () => {
-    const profileStub = TestBed.inject(UserProfileService) as unknown as {
-      linkAccount: ReturnType<typeof jest.fn>;
-    };
+  it('shows a generic message for unexpected link errors', async () => {
+    const profileStub = TestBed.inject(UserProfileService) as unknown as ProfileStub;
+    profileStub.linkAccount.mockRejectedValueOnce(new Error('boom'));
+    const { fixture, comp } = minecraftStep();
 
-    const fixture = TestBed.createComponent(LoginComponent);
-    const comp = fixture.componentInstance as unknown as {
-      step: ReturnType<typeof signal<string>> & { set(v: string): void };
-      mcName: ReturnType<typeof signal<string>> & { set(v: string): void };
-      mcPassword: ReturnType<typeof signal<string>> & { set(v: string): void };
-      submitMinecraft(): Promise<void>;
-    };
-    comp.step.set('minecraft');
-    comp.mcName.set('Steve');
-    comp.mcPassword.set('correct');
+    await comp.submitMinecraft();
     fixture.detectChanges();
+
+    expect(alertText(fixture)).toContain('Verification failed. Please try again.');
+  });
+
+  it('links through the server in one call and navigates to / on success', async () => {
+    const profileStub = TestBed.inject(UserProfileService) as unknown as ProfileStub;
+    const navigate = jest.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const { comp } = minecraftStep(' Steve ', 'correct');
 
     await comp.submitMinecraft();
 
-    expect(profileStub.linkAccount).toHaveBeenCalledWith('java', 'Steve');
+    expect(profileStub.linkAccount).toHaveBeenCalledWith('java', 'Steve', 'correct');
+    expect(navigate).toHaveBeenCalledWith(['/']);
+  });
+
+  it('lets an already-linked user straight in after Google sign-in (any account type, no Firestore)', async () => {
+    const profileStub = TestBed.inject(UserProfileService) as unknown as ProfileStub;
+    const accessStub = TestBed.inject(LinkedAccessService) as unknown as AccessStub;
+    accessStub.fetchLinkedStatus.mockResolvedValue(true);
+    const navigate = jest.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(LoginComponent);
+    fixture.detectChanges();
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.login-button')!.click();
+    await fixture.whenStable();
+
+    expect(navigate).toHaveBeenCalledWith(['/']);
+    expect(profileStub.loadProfile).not.toHaveBeenCalled();
+  });
+
+  it('on init, routes a signed-in user by linked status', async () => {
+    const profileStub = TestBed.inject(UserProfileService) as unknown as ProfileStub;
+    const accessStub = TestBed.inject(LinkedAccessService) as unknown as AccessStub;
+    const navigate = jest.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    (authStub.currentUser as unknown as { set(v: object): void }).set({ uid: 'u' });
+
+    accessStub.fetchLinkedStatus.mockResolvedValueOnce(true);
+    await TestBed.createComponent(LoginComponent).componentInstance.ngOnInit();
+    expect(navigate).toHaveBeenCalledWith(['/']);
+
+    accessStub.fetchLinkedStatus.mockResolvedValueOnce(false);
+    const fixture = TestBed.createComponent(LoginComponent);
+    await fixture.componentInstance.ngOnInit();
+    expect((fixture.componentInstance as unknown as McComp).step()).toBe('minecraft');
+    expect(profileStub.loadProfile).not.toHaveBeenCalled();
   });
 });
-
-
-
-

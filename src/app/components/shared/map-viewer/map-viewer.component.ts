@@ -17,8 +17,7 @@ import type { SafeResourceUrl } from '@angular/platform-browser';
 import { DomSanitizer } from '@angular/platform-browser';
 import { LucideMapPin } from '@lucide/angular';
 import { IconComponent } from '../icon/icon.component';
-import { environment } from '../../../../environments/environment';
-import { normaliseMapHash } from '../../../utils/map-hash.util';
+import { MAP_BASE_URL, joinMapUrl, normaliseMapHash } from '../../../utils/map-hash.util';
 
 interface MapMessagePayload {
   type?: string;
@@ -49,8 +48,7 @@ export class MapViewerComponent implements OnInit, OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
   protected readonly LucideMapPin = LucideMapPin;
 
-  protected readonly mapBaseUrl =
-    environment.mapBaseUrl ?? '/map/';
+  protected readonly mapBaseUrl = MAP_BASE_URL;
 
   /** A per-instance cache-bust nonce appended as ?_r=<timestamp> so Android Chrome
    *  bypasses any BlueMap service-worker cache on every dashboard load. */
@@ -112,8 +110,7 @@ export class MapViewerComponent implements OnInit, OnDestroy {
         return;
       }
 
-      const base = this.mapBaseUrl.endsWith('/') ? this.mapBaseUrl : this.mapBaseUrl + '/';
-      const url = base + this.cacheBust + (hash.startsWith('#') ? hash : '#' + hash);
+      const url = joinMapUrl(this.mapBaseUrl, this.cacheBust + (hash.startsWith('#') ? hash : '#' + hash));
       this.mapSrc.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
     });
   }
