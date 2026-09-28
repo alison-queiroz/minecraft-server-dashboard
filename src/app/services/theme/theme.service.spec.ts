@@ -1,8 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ThemeService } from './theme.service';
-
-const STORAGE_KEY = 'minecraft-dashboard-theme';
+import { THEME_COLORS, THEME_STORAGE_KEY as STORAGE_KEY, ThemeService } from './theme.service';
 
 function flush(): void {
   TestBed.inject(ApplicationRef).tick();
@@ -146,5 +146,103 @@ describe('ThemeService', () => {
       service.setTheme('light');
       flush();
     }).not.toThrow();
+  });
+});
+
+interface AppliedTheme {
+  dark: boolean;
+  colorScheme: string;
+  themeColors: string[];
+}
+
+function stubPrefersDark(matches: boolean): void {
+  const matchMedia = (media: string): Partial<MediaQueryList> => ({ matches, media });
+  // The inline script runs in the jsdom window, which is not the test globalThis.
+  for (const target of [globalThis, document.defaultView ?? globalThis]) {
+    Object.defineProperty(target, 'matchMedia', { configurable: true, writable: true, value: matchMedia });
+  }
+}
+
+function resetDocumentTheme(): void {
+  const root = document.documentElement;
+  root.classList.remove('dark');
+  root.style.colorScheme = '';
+  document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute('content', ''));
+}
+
+function readAppliedTheme(): AppliedTheme {
+  const root = document.documentElement;
+  return {
+    dark: root.classList.contains('dark'),
+    colorScheme: root.style.colorScheme,
+    themeColors: Array.from(
+      document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'),
+      (meta) => meta.content,
+    ),
+  };
+}
+
+/** Executes the pre-paint `#theme-init` script exactly as shipped in src/index.html. */
+function runIndexHtmlThemeScript(): void {
+  const indexHtml = readFileSync(resolve(process.cwd(), 'src/index.html'), 'utf8');
+  const source = /<script id="theme-init">([\s\S]*?)<\/script>/.exec(indexHtml)?.[1] ?? '';
+  expect(source).toContain(STORAGE_KEY);
+  const script = document.createElement('script');
+  script.textContent = source;
+  document.head.appendChild(script);
+  script.remove();
+}
+
+describe('ThemeService document side effects', () => {
+  const metas: HTMLMetaElement[] = [];
+
+  beforeEach(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    for (const media of ['(prefers-color-scheme: light)', '(prefers-color-scheme: dark)']) {
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      meta.media = media;
+      document.head.appendChild(meta);
+      metas.push(meta);
+    }
+    TestBed.configureTestingModule({ providers: [ThemeService] });
+  });
+
+  afterEach(() => {
+    metas.splice(0).forEach((meta) => meta.remove());
+    localStorage.removeItem(STORAGE_KEY);
+    resetDocumentTheme();
+  });
+
+  it('syncs every theme-color meta with the active theme', () => {
+    const service = TestBed.inject(ThemeService);
+    service.setTheme('dark');
+    flush();
+    expect(readAppliedTheme().themeColors).toEqual([THEME_COLORS.dark, THEME_COLORS.dark]);
+
+    service.setTheme('light');
+    flush();
+    expect(readAppliedTheme().themeColors).toEqual([THEME_COLORS.light, THEME_COLORS.light]);
+  });
+
+  it.each([
+    { saved: 'light', prefersDark: true },
+    { saved: 'dark', prefersDark: false },
+    { saved: null, prefersDark: true },
+    { saved: null, prefersDark: false },
+    { saved: 'sepia', prefersDark: true },
+  ])('index.html pre-paint script matches the service (saved=$saved, prefersDark=$prefersDark)', ({ saved, prefersDark }) => {
+    if (saved) localStorage.setItem(STORAGE_KEY, saved);
+    stubPrefersDark(prefersDark);
+
+    runIndexHtmlThemeScript();
+    const fromInlineScript = readAppliedTheme();
+
+    resetDocumentTheme();
+    TestBed.inject(ThemeService);
+    flush();
+
+    expect(fromInlineScript).toEqual(readAppliedTheme());
+    expect(fromInlineScript.dark).toBe(saved === 'dark' || (saved !== 'light' && prefersDark));
   });
 });

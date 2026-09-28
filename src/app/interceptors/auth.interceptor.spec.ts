@@ -1,17 +1,23 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, HttpContext, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import type { TestRequest } from '@angular/common/http/testing';
+import type { WritableSignal } from '@angular/core';
 import { signal } from '@angular/core';
+import type { Mock } from 'vitest';
 
-import { authInterceptor } from './auth.interceptor';
+import { authInterceptor, SKIP_AUTH } from './auth.interceptor';
 import { AuthService } from '../services/auth/auth.service';
 
 describe('authInterceptor', () => {
   let http: HttpClient;
   let httpMock: HttpTestingController;
+  let isLoading: WritableSignal<boolean>;
+  let getIdToken: Mock;
 
-  function setup(token: string | null): void {
+  function setup(token: string | null, loading = false): void {
+    isLoading = signal(loading);
+    getIdToken = jest.fn().mockResolvedValue(token);
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
@@ -19,9 +25,9 @@ describe('authInterceptor', () => {
         {
           provide: AuthService,
           useValue: {
-            isLoading: signal(false),
+            isLoading,
             currentUser: signal(null),
-            getIdToken: jest.fn().mockResolvedValue(token),
+            getIdToken,
           },
         },
       ],
@@ -81,7 +87,33 @@ describe('authInterceptor', () => {
       throw e;
     }
   });
+
+  it('holds /api/ requests until Firebase has restored the session', async () => {
+    setup('late-token', true);
+
+    http.get('/api/players').subscribe();
+    await new Promise(resolve => setTimeout(resolve, 10));
+    httpMock.expectNone('/api/players');
+    expect(getIdToken).not.toHaveBeenCalled();
+
+    isLoading.set(false);
+    TestBed.tick();
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const req = httpMock.expectOne('/api/players');
+    expect(req.request.headers.get('Authorization')).toBe('Bearer late-token');
+    req.flush([]);
+  });
+
+  it('sends SKIP_AUTH requests immediately and anonymously, even while the session is restoring', () => {
+    setup('my-id-token', true);
+
+    http.get('/api/status', { context: new HttpContext().set(SKIP_AUTH, true) }).subscribe();
+
+    // Synchronous: the request must not be queued behind the auth restore.
+    const req = httpMock.expectOne('/api/status');
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    expect(getIdToken).not.toHaveBeenCalled();
+    req.flush({});
+  });
 });
-
-
-

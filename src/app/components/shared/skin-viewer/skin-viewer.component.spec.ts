@@ -1,26 +1,33 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { ApplicationRef } from '@angular/core';
+import { vi } from 'vitest';
 import { SkinViewerComponent } from './skin-viewer.component';
 import { SkinService } from '../../../services/skin/skin.service';
 
 // ---------------------------------------------------------------------------
-// skinview3d mock
+// skinview3d mock — hoisted with vi.mock so EVERY dynamic import() gets it (a
+// runtime jest.mock() alias is not hoisted and let some imports resolve the
+// real WebGL-backed module).
 // ---------------------------------------------------------------------------
-const mockSkinViewerInstance = {
-  canvas: document.createElement('canvas'),
-  controls: { enablePan: false },
-  animation: null as object | null,
-  width: 200,
-  height: 192,
-  loadSkin: jest.fn(),
-  dispose: jest.fn(),
-};
+const { mockSkinViewerInstance, MockSkinViewerCtor, MockIdleAnimationCtor } = vi.hoisted(() => {
+  const instance = {
+    canvas: document.createElement('canvas'),
+    controls: { enablePan: false },
+    animation: null as object | null,
+    width: 200,
+    height: 192,
+    loadSkin: vi.fn(),
+    dispose: vi.fn(),
+  };
+  return {
+    mockSkinViewerInstance: instance,
+    MockSkinViewerCtor: vi.fn().mockImplementation(function() { return instance; }),
+    MockIdleAnimationCtor: vi.fn().mockImplementation(function() { return {}; }),
+  };
+});
 
-const MockSkinViewerCtor = jest.fn().mockImplementation(function() { return mockSkinViewerInstance; });
-const MockIdleAnimationCtor = jest.fn().mockImplementation(function() { return {}; });
-
-jest.mock('skinview3d', () => ({
+vi.mock('skinview3d', () => ({
   SkinViewer: MockSkinViewerCtor,
   IdleAnimation: MockIdleAnimationCtor,
 }));
@@ -379,6 +386,75 @@ describe('SkinViewerComponent', () => {
     capturedResizeCallback?.([{ contentRect: { width: 0, height: 0 } } as ResizeObserverEntry], {} as ResizeObserver);
     expect(controlLessViewer.width).toBe(prevW);
     expect(controlLessViewer.height).toBe(prevH);
+  });
+
+  // ── WebGL leak guards ─────────────────────────────────────────────────────
+
+  function mockContainer(): void {
+    (component as unknown as { skinContainer: unknown }).skinContainer = {
+      nativeElement: { clientWidth: 240, clientHeight: 200, innerHTML: '', appendChild: jest.fn() },
+    };
+  }
+
+  function render3D(blobUrl: string, originalUrl: string): Promise<void> {
+    return (component as unknown as { render3D(blobUrl: string, originalUrl: string): Promise<void> })
+      .render3D(blobUrl, originalUrl);
+  }
+
+  it('does not create a viewer when destroyed while skinview3d is still importing', async () => {
+    mockContainer();
+    const pending = render3D('blob:late', 'https://example.com/late.png');
+    // The ViewChild ref survives destroy, so only the destroyed flag can stop this.
+    fixture.destroy();
+    await pending;
+
+    expect(MockSkinViewerCtor).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['in order', [0, 1]],
+    ['out of order', [1, 0]],
+  ])('creates exactly one viewer (the latest skin) when two first renders overlap (imports resolve %s)',
+    async (_label, resolveOrder) => {
+      // Control the lazy import so both renders are provably pending at once.
+      const pendingImports: (() => void)[] = [];
+      const skinview3d = { SkinViewer: MockSkinViewerCtor, IdleAnimation: MockIdleAnimationCtor };
+      jest.spyOn(component as unknown as { loadSkinview3d(): Promise<typeof skinview3d> }, 'loadSkinview3d')
+        .mockImplementation(() => new Promise(resolve => pendingImports.push(() => resolve(skinview3d))));
+      mockContainer();
+
+      const first = render3D('blob:first', 'https://example.com/first.png');
+      const second = render3D('blob:second', 'https://example.com/second.png');
+      resolveOrder.forEach(i => pendingImports[i]?.());
+      await Promise.all([first, second]);
+
+      expect(MockSkinViewerCtor).toHaveBeenCalledTimes(1);
+      expect(MockSkinViewerCtor).toHaveBeenCalledWith(expect.objectContaining({ skin: 'blob:second' }));
+    });
+
+  it('does not create a viewer when disposed (isRaw -> false) during the import', async () => {
+    mockContainer();
+    const pending = render3D('blob:x', 'https://example.com/x.png');
+    (component as unknown as { disposeSkinViewer(): void }).disposeSkinViewer();
+    await pending;
+
+    expect(MockSkinViewerCtor).not.toHaveBeenCalled();
+  });
+
+  it('ignores renders requested after destroy', async () => {
+    mockContainer();
+    fixture.destroy();
+    await render3D('blob:after', 'https://example.com/after.png');
+
+    expect(MockSkinViewerCtor).not.toHaveBeenCalled();
+  });
+
+  it('disposes the created viewer on destroy', async () => {
+    mockContainer();
+    await render3D('blob:ok', 'https://example.com/ok.png');
+    fixture.destroy();
+
+    expect(mockSkinViewerInstance.dispose).toHaveBeenCalledTimes(1);
   });
 
   // ── ngOnDestroy ───────────────────────────────────────────────────────────

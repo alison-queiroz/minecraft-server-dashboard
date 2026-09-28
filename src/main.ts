@@ -9,6 +9,8 @@ import { authInterceptor } from './app/interceptors/auth.interceptor';
 import { loadingInterceptor } from './app/interceptors/loading.interceptor';
 import { ngswBypassInterceptor } from './app/interceptors/ngsw-bypass.interceptor';
 
+const pageTitle = (page: string): string => `${page} · EV Minecraft Server`;
+
 bootstrapApplication(AppComponent, {
   providers: [
     provideZonelessChangeDetection(),
@@ -16,6 +18,7 @@ bootstrapApplication(AppComponent, {
     provideRouter([
       {
         path: 'login',
+        title: pageTitle('Sign in'),
         loadComponent: () =>
           import('./app/pages/login/login.component').then(
             (m) => m.LoginComponent,
@@ -23,6 +26,7 @@ bootstrapApplication(AppComponent, {
       },
       {
         path: '',
+        title: pageTitle('Home'),
         loadComponent: () =>
           import('./app/pages/home/home.component').then(
             (m) => m.HomeComponent,
@@ -31,6 +35,7 @@ bootstrapApplication(AppComponent, {
       },
       {
         path: 'players',
+        title: pageTitle('Players'),
         loadComponent: () =>
           import('./app/pages/players/players.component').then(
             (m) => m.PlayersComponent,
@@ -39,6 +44,7 @@ bootstrapApplication(AppComponent, {
       },
       {
         path: 'profile',
+        title: pageTitle('Profile'),
         loadComponent: () =>
           import('./app/pages/profile/profile.component').then(
             (m) => m.ProfileComponent,
@@ -47,6 +53,7 @@ bootstrapApplication(AppComponent, {
       },
       {
         path: 'map',
+        title: pageTitle('World Map'),
         loadComponent: () =>
           import('./app/pages/map/map.component').then(
             (m) => m.MapComponent,
@@ -55,6 +62,7 @@ bootstrapApplication(AppComponent, {
       },
       {
         path: 'backups',
+        title: pageTitle('Backups'),
         loadComponent: () =>
           import('./app/pages/backup-list/backup-list.component').then(
             (m) => m.BackupListComponent,
@@ -63,6 +71,7 @@ bootstrapApplication(AppComponent, {
       },
       {
         path: 'analytics',
+        title: pageTitle('Analytics'),
         loadComponent: () =>
           import('./app/pages/analytics/analytics.component').then(
             (m) => m.AnalyticsComponent,
@@ -71,6 +80,7 @@ bootstrapApplication(AppComponent, {
       },
       {
         path: 'services',
+        title: pageTitle('Services'),
         loadComponent: () =>
           import('./app/pages/services/services.component').then(
             (m) => m.ServicesComponent,

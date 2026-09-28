@@ -11,7 +11,6 @@ import {
 import { UserProfileService } from '../../services/user-profile/user-profile.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { PlayerService } from '../../services/player/player.service';
-import type { Player } from '../../services/player/player.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProfileAccountsComponent } from '../../components/profile/profile-accounts/profile-accounts.component';
 import { MapViewerComponent } from '../../components/shared/map-viewer/map-viewer.component';
@@ -86,14 +85,6 @@ export class ProfileComponent implements OnInit {
     const javaName = this.profileService.minecraftAccounts().java;
     if (!javaName) return null;
     return this.playerService.players().find(p => p.name === javaName && !p.isBedrock()) ?? null;
-  });
-
-  /** All linked Java + Admin players for the Homes tab. Bedrock excluded (EssentialsX is Java-only). */
-  protected readonly linkedPlayers = computed(() => {
-    const { java, admin } = this.profileService.minecraftAccounts();
-    const all = this.playerService.players();
-    const names = [java, admin].filter((n): n is string => !!n);
-    return names.map(name => all.find(p => p.name === name && !p.isBedrock())).filter((p): p is Player => !!p);
   });
 
   constructor() {

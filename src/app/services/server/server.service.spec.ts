@@ -1,9 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { ServerService, SERVER_STATUS } from './server.service';
 import { environment } from '../../../environments/environment';
 import { SKIP_LOADING } from '../../interceptors/loading.interceptor';
+import { authInterceptor, SKIP_AUTH } from '../../interceptors/auth.interceptor';
+import { AuthService } from '../auth/auth.service';
 
 const JAVA_URL = environment.statusApiUrl;
 const BEDROCK_URL = environment.bedrockStatusApiUrl;
@@ -216,6 +219,37 @@ describe('ServerService', () => {
 
     javaReq.flush(ONLINE_RESPONSE);
     bedrockReq.flush(OFFLINE_RESPONSE);
+  });
+
+  it('marks the public status requests to bypass the auth wait', () => {
+    createService();
+    const httpMock = TestBed.inject(HttpTestingController);
+
+    const javaReq = httpMock.expectOne(JAVA_URL);
+    const bedrockReq = httpMock.expectOne(BEDROCK_URL);
+
+    expect(javaReq.request.context.get(SKIP_AUTH)).toBe(true);
+    expect(bedrockReq.request.context.get(SKIP_AUTH)).toBe(true);
+
+    javaReq.flush(ONLINE_RESPONSE);
+    bedrockReq.flush(OFFLINE_RESPONSE);
+  });
+
+  it('fetches both statuses before Firebase restores the session when the auth interceptor is active', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: { isLoading: signal(true), getIdToken: jest.fn() } },
+      ],
+    });
+    const { service, httpMock } = createService();
+
+    httpMock.expectOne(JAVA_URL).flush(ONLINE_RESPONSE);
+    httpMock.expectOne(BEDROCK_URL).flush(OFFLINE_RESPONSE);
+
+    expect(service.status()).toBe(SERVER_STATUS.ONLINE);
   });
 });
 

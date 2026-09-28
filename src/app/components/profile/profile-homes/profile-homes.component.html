@@ -1,11 +1,11 @@
-﻿<section class="homes-card ui-panel ui-panel--padded">
+<section class="homes-card ui-panel ui-panel--padded">
   <div class="homes-header">
     <h2 class="homes-title">
       <app-icon [icon]="LucideHouse" [size]="16" class="homes-title-icon"></app-icon>
       Homes
     </h2>
     <div class="homes-header-actions">
-      @if (players().length) {
+      @if (accounts().length) {
         <button (click)="refreshFromServer()" [disabled]="syncing()"
           class="homes-pill-btn"
           title="Re-sync coordinates from the server">
@@ -13,7 +13,7 @@
           {{ syncing() ? 'Syncing...' : 'Sync from server' }}
         </button>
       }
-      @if (homes().length > 0) {
+      @if (rows().length > 0) {
         <button
           (click)="setAllVisible(!allPublic())"
           class="homes-pill-btn"
@@ -22,21 +22,25 @@
           {{ allPublic() ? 'Deselect All' : 'Select All' }}
         </button>
       }
-      <app-action-button
-        [label]="showAddForm() ? 'Cancel' : 'Add home'"
-        [variant]="showAddForm() ? 'secondary' : 'primary'"
-        [compact]="true"
-        testId="homes-add-toggle"
-        (pressed)="toggleAddForm()" />
+      @if (accounts().length) {
+        <app-action-button
+          [label]="showAddForm() ? 'Cancel' : 'Add home'"
+          [variant]="showAddForm() ? 'secondary' : 'primary'"
+          [compact]="true"
+          testId="homes-add-toggle"
+          (pressed)="toggleAddForm()" />
+      }
     </div>
   </div>
 
-  @if (!players().length) {
+  <app-inline-error variant="banner" testId="homes-error" [message]="actionError()" />
+
+  @if (syncing()) {
+    <p class="homes-syncing">Importing homes from server...</p>
+  } @else if (loaded() && !accounts().length && !actionError()) {
     <app-empty-state testId="homes-empty-unlinked">
       Link your Java account in the <strong>Account</strong> tab to automatically import your in-game homes.
     </app-empty-state>
-  } @else if (syncing()) {
-    <p class="homes-syncing">Importing homes from server...</p>
   }
 
   @if (showAddForm()) {
@@ -48,6 +52,14 @@
           (positionCaptured)="onMapCapture($event)">
         </app-map-viewer>
       </div>
+      @if (accounts().length > 1) {
+        <select (change)="newAccount.set($any($event.target).value)" aria-label="Account for the new home"
+          class="ui-input home-world-select">
+          @for (account of accounts(); track account.uuid) {
+            <option [value]="account.uuid" [selected]="newAccount() === account.uuid">{{ account.name }}</option>
+          }
+        </select>
+      }
       <app-ui-input [value]="newName()" (valueChange)="newName.set($event)"
         placeholder="Home name (e.g. home, base, farm)" [maxlength]="64">
       </app-ui-input>
@@ -83,32 +95,28 @@
     </div>
   }
 
-  @if (homes().length === 0 && !showAddForm() && !syncing()) {
+  @if (accounts().length && rows().length === 0 && !showAddForm() && !syncing()) {
     <app-empty-state testId="homes-empty">
-      @if (players().length) {
-        No homes found. Use <code class="homes-cmd">/sethome &lt;name&gt;</code> in-game, then come back here.
-      } @else {
-        No homes saved yet.
-      }
+      No homes found. Use <code class="homes-cmd">/sethome &lt;name&gt;</code> in-game, then come back here.
     </app-empty-state>
   }
 
   <div class="homes-list">
-    @for (group of groupedHomes(); track group.playerName) {
-      @if (group.playerName) {
+    @for (group of groups(); track group.uuid) {
+      @if (group.label) {
         <app-collapsible-section
-          [label]="group.playerName"
+          [label]="group.label"
           [count]="group.homes.length"
           [chevronSize]="12"
-          [expanded]="!isGroupCollapsed(group.playerName)"
-          (expandedChange)="toggleGroup(group.playerName)" />
+          [expanded]="!isGroupCollapsed(group.uuid)"
+          (expandedChange)="toggleGroup(group.uuid)" />
       }
-      @if (!group.playerName || !isGroupCollapsed(group.playerName)) {
-        @for (home of group.homes; track home.id) {
-        @if (editingId() === home.id) {
+      @if (!group.label || !isGroupCollapsed(group.uuid)) {
+        @for (home of group.homes; track home.key) {
+        @if (editingKey() === home.key) {
           <div class="ui-item-card">
             <!-- Visibility-only edit form: coords/name are managed on the server -->
-            <p class="home-edit-name">{{ homeDisplayName(home.name) }}</p>
+            <p class="home-edit-name">{{ home.name }}</p>
             <p class="home-coords">
               <app-dimension-tag [world]="home.world"></app-dimension-tag>
               {{ home.x | number:'1.0-1' }},&nbsp;{{ home.y | number:'1.0-1' }},&nbsp;{{ home.z | number:'1.0-1' }}
@@ -124,11 +132,11 @@
                 [label]="saving() ? 'Saving...' : 'Save'"
                 [disabled]="saving()"
                 [compact]="true"
-                (pressed)="saveEdit(home.id)"></app-action-button>
+                (pressed)="saveEdit(home)"></app-action-button>
             </div>
           </div>
         } @else {
-          <app-profile-item-card [name]="homeDisplayName(home.name)" [isPublic]="home.isPublic">
+          <app-profile-item-card [name]="home.name" [isPublic]="home.isPublic">
             <app-icon appItemLeading [icon]="LucideHouse" [size]="13" class="home-name-icon"></app-icon>
             <p appItemMeta class="home-coords">
               <app-dimension-tag [world]="home.world"></app-dimension-tag>

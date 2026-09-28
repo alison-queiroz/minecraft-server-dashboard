@@ -32,7 +32,7 @@
 }
 
 .nav-link.is-active {
-  @apply border-emerald-500/30 bg-emerald-500/10 text-emerald-400;
+  @apply border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400;
 }
 
 .nav-dropdown {
@@ -48,7 +48,7 @@
 }
 
 .dropdown-link.is-active {
-  @apply bg-emerald-500/10 text-emerald-400;
+  @apply bg-emerald-500/10 text-emerald-700 dark:text-emerald-400;
 }
 
 .nav-actions {
@@ -60,7 +60,7 @@
 }
 
 .player-count-current {
-  @apply font-mono text-emerald-400;
+  @apply font-mono text-emerald-700 dark:text-emerald-400;
 }
 
 .player-count-divider {
@@ -100,11 +100,11 @@
 }
 
 .mobile-link.is-active {
-  @apply bg-emerald-500/10 text-emerald-400;
+  @apply bg-emerald-500/10 text-emerald-700 dark:text-emerald-400;
 }
 
 .mobile-player-count {
-  @apply ml-auto rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-400;
+  @apply ml-auto rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-700 dark:text-emerald-400;
 }
 
 .mobile-user-row {

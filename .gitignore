@@ -46,7 +46,7 @@ Thumbs.db
 
 .coverage
 coverage.xml
-*/__pycache__/*
+__pycache__/
 
 # Playwright e2e output
 /test-results
@@ -54,4 +54,5 @@ coverage.xml
 
 # Runtime-generated data files
 analytics_snapshots.jsonl
+verify_rate_limit.sqlite3*
 

@@ -1,15 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { PlayerFaceComponent } from './player-face.component';
-import { PlayerService } from '../../../services/player/player.service';
 import { Player } from '../../../services/player/player.model';
-
-// ---------------------------------------------------------------------------
-// Mock PlayerService — avoids Firestore / HTTP setup
-// ---------------------------------------------------------------------------
-const mockPlayerService = {
-  getAvatarUrl: (url: string) => url,
-};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -44,10 +36,15 @@ describe('PlayerFaceComponent', () => {
     return (component as unknown as { useRawSkin: () => boolean }).useRawSkin();
   }
 
+  function avatarImg(): HTMLImageElement | null {
+    return (fixture.nativeElement as HTMLElement).querySelector('img');
+  }
+
   beforeEach(async () => {
+    // No PlayerService (or HttpClient) provider: the face is a pure
+    // presentational component and must not fetch avatars itself.
     await TestBed.configureTestingModule({
       imports: [PlayerFaceComponent],
-      providers: [{ provide: PlayerService, useValue: mockPlayerService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(PlayerFaceComponent);
@@ -98,14 +95,43 @@ describe('PlayerFaceComponent', () => {
     expect(getUseRawSkin()).toBe(false);
   });
 
-  // ── avatarSrc computed ────────────────────────────────────────────────────
+  // ── avatar <img> ──────────────────────────────────────────────────────────
 
-  it('passes the player avatar URL to playerService.getAvatarUrl', () => {
-    const getSpy = jest.spyOn(mockPlayerService, 'getAvatarUrl');
-    const p = makePlayer({ skin_url: 'https://mc-heads.net/avatar/Steve/40' });
-    fixture.componentRef.setInput('player', p);
+  it('requests the avatar at exactly the rendered size (default 40)', () => {
+    fixture.componentRef.setInput('player', makePlayer({ skin_url: 'https://mc-heads.net/skin/Steve' }));
     fixture.detectChanges();
-    expect(getSpy).toHaveBeenCalled();
+
+    const img = avatarImg();
+    expect(img?.getAttribute('src')).toBe('https://mc-heads.net/avatar/Steve/40');
+    expect(img?.getAttribute('width')).toBe('40');
+    expect(img?.getAttribute('height')).toBe('40');
+  });
+
+  it('follows the size input for both the URL and the intrinsic dimensions', () => {
+    fixture.componentRef.setInput('player', makePlayer({ skin_url: 'https://mc-heads.net/avatar/Steve/64' }));
+    fixture.componentRef.setInput('size', 28);
+    fixture.detectChanges();
+
+    const img = avatarImg();
+    expect(img?.getAttribute('src')).toBe('https://mc-heads.net/avatar/Steve/28');
+    expect(img?.getAttribute('width')).toBe('28');
+  });
+
+  it('lets the browser load the avatar lazily and decode it off the main thread', () => {
+    fixture.componentRef.setInput('player', makePlayer({ skin_url: 'https://mc-heads.net/skin/Steve' }));
+    fixture.detectChanges();
+
+    expect(avatarImg()?.getAttribute('loading')).toBe('lazy');
+    expect(avatarImg()?.getAttribute('decoding')).toBe('async');
+  });
+
+  it('renders raw skins as a CSS background instead of an <img>', () => {
+    fixture.componentRef.setInput('player', makePlayer({
+      skin_url: 'https://textures.minecraft.net/texture/raw', is_raw_skin: true,
+    }));
+    fixture.detectChanges();
+
+    expect(avatarImg()).toBeNull();
   });
 
   it('falls back to avatarUrl() when skin_url is empty', () => {

@@ -10,6 +10,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
+import type * as Skinview3d from 'skinview3d';
 import { SkinService } from '../../../services/skin/skin.service';
 import { RAW_SKIN_RENDER_DELAY_MS } from '../../../constants/ui.constants';
 
@@ -52,7 +53,7 @@ export class SkinViewerComponent implements OnDestroy {
   }
 
   @ViewChild('skinContainer', { static: false })
-  private skinContainer!: ElementRef<HTMLDivElement>;
+  private skinContainer?: ElementRef<HTMLDivElement>;
 
   private skinViewer: SkinViewerLike | null = null;
   private currentSkinUrl: string | null = null;
@@ -61,6 +62,10 @@ export class SkinViewerComponent implements OnDestroy {
   private readonly skinUrlInput = signal('');
   private readonly isRawInput = signal(false);
   private pendingRenderTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Set on destroy; the ViewChild ref is NOT cleared then, so it can't serve as the guard. */
+  private destroyed = false;
+  /** Bumped by every viewer creation and dispose, so a creation left waiting on the import can tell it was superseded. */
+  private viewerGeneration = 0;
 
   constructor() {
     effect(() => {
@@ -83,6 +88,7 @@ export class SkinViewerComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     if (this.pendingRenderTimer != null) {
       clearTimeout(this.pendingRenderTimer);
       this.pendingRenderTimer = null;
@@ -98,60 +104,80 @@ export class SkinViewerComponent implements OnDestroy {
   }
 
   private async render3D(blobUrl: string, originalUrl: string): Promise<void> {
-    if (!this.skinContainer) return;
+    if (this.destroyed || !this.skinContainer) return;
     if (originalUrl === this.currentSkinUrl) return;
     const doc = globalThis.document;
     if (!doc?.createElement) return;
     this.currentSkinUrl = originalUrl;
 
-    const containerEl = this.skinContainer.nativeElement;
-
-    if (!this.skinViewer) {
-      try {
-        const { SkinViewer, IdleAnimation } = await import('skinview3d');
-
-        // Guard: component may have been destroyed while awaiting the import
-        if (!this.skinContainer) return;
-
-        const initW = Math.max(containerEl.clientWidth  || 220, 60);
-        const initH = Math.max(containerEl.clientHeight || 192, 60);
-
-        this.skinViewer = new SkinViewer({
-          canvas: doc.createElement('canvas'),
-          width: initW,
-          height: initH,
-          zoom: 0.85,
-          skin: blobUrl,
-        });
-        this.skinViewer.animation = new IdleAnimation();
-        if (this.skinViewer.controls) {
-          this.skinViewer.controls.enablePan = true;
-        }
-        containerEl.innerHTML = '';
-        containerEl.appendChild(this.skinViewer.canvas);
-
-        // Keep canvas in sync with container dimensions
-        this.resizeObserver?.disconnect();
-        this.resizeObserver = new ResizeObserver((entries) => {
-          const entry = entries[0];
-          if (!this.skinViewer) return;
-          if (!entry) return;
-          const { width, height } = entry.contentRect;
-          if (width > 0 && height > 0) {
-            this.skinViewer.width  = width;
-            this.skinViewer.height = height;
-          }
-        });
-        this.resizeObserver.observe(containerEl);
-      } catch {
-        this.currentSkinUrl = null;
-      }
-    } else {
+    if (this.skinViewer) {
       this.skinViewer.loadSkin(blobUrl);
+      return;
+    }
+
+    const generation = ++this.viewerGeneration;
+    try {
+      const skinview3d = await this.loadSkinview3d();
+
+      // Destroyed, disposed or superseded by a newer first render while the
+      // import was pending: a viewer created now would own a WebGL context
+      // that nothing ever disposes.
+      if (this.destroyed || generation !== this.viewerGeneration) return;
+      const containerEl = this.skinContainer?.nativeElement;
+      if (!containerEl) {
+        this.currentSkinUrl = null;
+        return;
+      }
+
+      this.mountViewer(skinview3d, doc, containerEl, blobUrl);
+    } catch {
+      this.currentSkinUrl = null;
     }
   }
 
+  /** Lazy-loads the WebGL viewer bundle on first use. */
+  private loadSkinview3d(): Promise<typeof Skinview3d> {
+    return import('skinview3d');
+  }
+
+  private mountViewer(
+    { SkinViewer, IdleAnimation }: typeof Skinview3d,
+    doc: Document,
+    containerEl: HTMLDivElement,
+    blobUrl: string,
+  ): void {
+    const viewer: SkinViewerLike = new SkinViewer({
+      canvas: doc.createElement('canvas'),
+      width: Math.max(containerEl.clientWidth  || 220, 60),
+      height: Math.max(containerEl.clientHeight || 192, 60),
+      zoom: 0.85,
+      skin: blobUrl,
+    });
+    viewer.animation = new IdleAnimation();
+    this.skinViewer = viewer;
+    if (viewer.controls) {
+      viewer.controls.enablePan = true;
+    }
+    containerEl.innerHTML = '';
+    containerEl.appendChild(viewer.canvas);
+
+    // Keep canvas in sync with container dimensions
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!this.skinViewer) return;
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) {
+        this.skinViewer.width  = width;
+        this.skinViewer.height = height;
+      }
+    });
+    this.resizeObserver.observe(containerEl);
+  }
+
   private disposeSkinViewer(): void {
+    this.viewerGeneration++;
     this.pendingSkinUrl = null;
     this.currentSkinUrl = null;
     this.resizeObserver?.disconnect();

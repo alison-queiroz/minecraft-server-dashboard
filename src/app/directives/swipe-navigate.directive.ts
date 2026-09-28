@@ -1,4 +1,4 @@
-import { Directive, EventEmitter, HostListener, Input, Output, inject } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, EventEmitter, Input, Output, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { SWIPE_COMMIT_RATIO, SWIPE_START_THRESHOLD_PX } from '../constants/ui.constants';
 
@@ -24,7 +24,18 @@ export class SwipeNavigateDirective {
   private isDraggingHorizontal = false;
   private skipGesture = false;
 
-  @HostListener('touchstart', ['$event'])
+  constructor() {
+    // Passive (never preventDefault): this wraps the scrollable <main>, so a
+    // non-passive touchstart/touchmove would make every scroll wait for JS.
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const listeners = new AbortController();
+    const options: AddEventListenerOptions = { passive: true, signal: listeners.signal };
+    host.addEventListener('touchstart', event => this.onTouchStart(event), options);
+    host.addEventListener('touchmove', event => this.onTouchMove(event), options);
+    host.addEventListener('touchend', event => this.onTouchEnd(event), options);
+    inject(DestroyRef).onDestroy(() => listeners.abort());
+  }
+
   onTouchStart(event: TouchEvent): void {
     this.skipGesture = this.startedOnEditableElement(event.target);
     if (this.skipGesture) {
@@ -41,7 +52,6 @@ export class SwipeNavigateDirective {
     this.isDraggingHorizontal = false;
   }
 
-  @HostListener('touchmove', ['$event'])
   onTouchMove(event: TouchEvent): void {
     if (this.skipGesture) {
       return;
@@ -65,7 +75,6 @@ export class SwipeNavigateDirective {
     this.dragXChange.emit(delta.dx);
   }
 
-  @HostListener('touchend', ['$event'])
   onTouchEnd(event: TouchEvent): void {
     if (this.skipGesture) {
       this.skipGesture = false;

@@ -1,17 +1,20 @@
 <div class="player-search-bar">
   <div class="search-field">
-    <span class="search-icon">
+    <label for="player-search-input" class="sr-only">Search players</label>
+    <span class="search-icon" aria-hidden="true">
       <app-icon [icon]="LucideSearch" [size]="18"></app-icon>
     </span>
     <input
+      id="player-search-input"
       type="text"
+      autocomplete="off"
       [value]="service.searchTerm()"
       (input)="service.searchTerm.set($any($event.target).value)"
       placeholder="Search by name, UUID or dimension..."
       class="search-input"
     />
   </div>
-  <div class="search-summary">
+  <div class="search-summary" aria-live="polite">
     <span>Showing {{ service.filteredPlayers().length }} of {{ service.players().length }}</span>
   </div>
 </div>

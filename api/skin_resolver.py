@@ -9,7 +9,10 @@ import re
 import threading
 import time
 import urllib.parse
-import urllib.request
+from collections import OrderedDict
+from typing import Any, Callable, Optional, Tuple
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +30,75 @@ _MCHEADS_STEVE = "https://mc-heads.net/skin/MHF_Steve"
 _MINESKIN_API_V2 = "https://api.mineskin.org/v2/skins/{}"
 _MINESKIN_API_V1 = "https://api.mineskin.org/get/uuid/{}"
 
-# Cache resolved URLs so repeated 15-second refreshes avoid network round-trips.
-# Only successful resolutions are stored; failures are retried next cycle.
-_url_resolution_cache: dict[str, str] = {}
-_url_resolved_at: dict[str, float] = {}
-_url_cache_lock = threading.Lock()
-_URL_CACHE_TTL = 300  # 5 minutes
+# Explicit (connect, read) timeouts so a slow third-party API cannot pin a
+# player rescan for long.
+_GEYSER_TIMEOUT = (3.05, 4.0)
+_MINESKIN_TIMEOUT = (3.05, 5.0)
+
+# A resolved texture URL never changes for a given identifier, so hits are kept
+# for hours; misses (API down, unknown skin) are retried after a few minutes.
+_POSITIVE_TTL = 6 * 3600.0
+_NEGATIVE_TTL = 15 * 60.0
+_CACHE_MAX_ENTRIES = 1024
+
+# One pooled session: keep-alive to the few API hosts. urllib3's connection
+# pool is thread-safe for these plain GETs.
+_http = requests.Session()
+
+
+class _TTLCache:
+    """Thread-safe, size-bounded (LRU) map whose entries expire after a per-entry TTL.
+
+    A stored value of None is a cached miss, distinct from "not cached".
+    """
+
+    def __init__(self, max_entries: int, clock: Callable[[], float] = time.monotonic) -> None:
+        self._max_entries = max_entries
+        self._clock = clock
+        self._entries: OrderedDict[str, Tuple[float, Optional[str]]] = OrderedDict()
+        self._lock = threading.Lock()
+
+    def get(self, key: str) -> Tuple[bool, Optional[str]]:
+        """Return (hit, value); an expired entry is dropped and counts as a miss."""
+        with self._lock:
+            entry = self._entries.get(key)
+            if entry is None:
+                return False, None
+            if entry[0] <= self._clock():
+                del self._entries[key]
+                return False, None
+            self._entries.move_to_end(key)
+            return True, entry[1]
+
+    def set(self, key: str, value: Optional[str], ttl: float) -> None:
+        with self._lock:
+            self._entries[key] = (self._clock() + ttl, value)
+            self._entries.move_to_end(key)
+            while len(self._entries) > self._max_entries:
+                self._entries.popitem(last=False)
+
+    def clear(self) -> None:
+        with self._lock:
+            self._entries.clear()
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._entries)
+
+
+# SkinsRestorer URL identifier -> textures.minecraft.net URL (None = unresolved).
+_url_resolution_cache = _TTLCache(_CACHE_MAX_ENTRIES)
+# Legacy alias: server_api's force-resync handlers still clear both names.
+# Drop it once they call player_data.invalidate_caches() instead.
+_url_resolved_at = _url_resolution_cache
+# Bedrock player UUID -> proxied skin URL (None = Steve until the miss expires).
+_geyser_cache = _TTLCache(_CACHE_MAX_ENTRIES)
+
+
+def clear_skin_caches() -> None:
+    """Forget every resolved skin so the next lookup re-reads disk and re-queries the APIs."""
+    _url_resolution_cache.clear()
+    _geyser_cache.clear()
 
 
 def _proxy_url(raw_url: str) -> str:
@@ -63,20 +129,6 @@ def _sr_filename_candidates(identifier: str) -> list[str]:
         last = identifier.rstrip("/").split("/")[-1]
         candidates += [last.lower(), last]
     return candidates
-
-
-def _read_skin_value_from_file(path: str) -> str | None:
-    try:
-        with open(path) as fh:
-            data = json.load(fh)
-        return (
-            data.get("value")
-            or (data.get("texture") or {}).get("value")
-            or (data.get("skinData") or {}).get("value")
-            or (data.get("skinProps") or {}).get("value")
-        )
-    except Exception:
-        return None
 
 
 def _find_texture_from_sr_skins(identifier: str) -> str | None:
@@ -140,8 +192,49 @@ def _format_uuid(raw: str) -> str:
     return raw
 
 
+# v2: skin.texture.url.skin / skin.texture.data.value
+# v1: data.texture.url / data.texture.value
+_MINESKIN_URL_PATHS = (
+    ("skin", "texture", "url", "skin"),   # v2 nested URL dict
+    ("data", "texture", "url"),           # v1 direct string
+)
+_MINESKIN_VALUE_PATHS = (
+    ("skin", "texture", "data", "value"),  # v2 base64 property
+    ("data", "texture", "value"),          # v1 base64 property
+)
+
+
+def _dig(data: Any, path: Tuple[str, ...]) -> Any:
+    """Follow a key path through nested dicts; None when any step is missing."""
+    for key in path:
+        if not isinstance(data, dict):
+            return None
+        data = data.get(key)
+    return data
+
+
+def _texture_from_mineskin(data: Any) -> str | None:
+    """Extract a textures.minecraft.net URL from a MineSkin v1/v2 response body."""
+    for path in _MINESKIN_URL_PATHS:
+        obj = _dig(data, path)
+        if isinstance(obj, str) and "textures.minecraft.net" in obj:
+            return obj
+    for path in _MINESKIN_VALUE_PATHS:
+        obj = _dig(data, path)
+        if isinstance(obj, str) and len(obj) > 100:
+            decoded = _extract_texture_url(obj)
+            if decoded:
+                return decoded
+    return None
+
+
 def _resolve_mineskin_texture(short_id: str) -> str | None:
-    """Calls the MineSkin API to resolve a skin ID to a textures.minecraft.net URL."""
+    """Calls the MineSkin API to resolve a skin ID to a textures.minecraft.net URL.
+
+    Tries the v2 and v1 endpoints for the dashed and raw ID forms, but stops as
+    soon as MineSkin is unreachable: every remaining attempt would hit the same
+    host and only stack more timeouts onto the rescan.
+    """
     raw_id = short_id.replace("-", "")
     uuid_id = _format_uuid(raw_id)
     tried: set[str] = set()
@@ -151,79 +244,55 @@ def _resolve_mineskin_texture(short_id: str) -> str | None:
                 continue
             tried.add(api_url)
             try:
-                req = urllib.request.Request(
+                resp = _http.get(
                     api_url,
                     headers={"User-Agent": "MinecraftDashboard/1.0"},
+                    timeout=_MINESKIN_TIMEOUT,
                 )
-                with urllib.request.urlopen(req, timeout=8) as resp:
-                    data = json.loads(resp.read().decode())
-                # v2: skin.texture.url.skin / skin.texture.data.value
-                # v1: data.texture.url / data.texture.value
-                URL_PATHS = [
-                    ["skin", "texture", "url", "skin"],   # v2 nested URL dict
-                    ["data", "texture", "url"],           # v1 direct string
-                ]
-                VALUE_PATHS = [
-                    ["skin", "texture", "data", "value"],  # v2 base64 property
-                    ["data", "texture", "value"],          # v1 base64 property
-                ]
-                for path in URL_PATHS:
-                    try:
-                        obj = data
-                        for key in path:
-                            obj = obj[key]  # type: ignore[index]
-                        if isinstance(obj, str) and "textures.minecraft.net" in obj:
-                            return obj
-                    except (KeyError, TypeError):
-                        pass
-                for path in VALUE_PATHS:
-                    try:
-                        obj = data
-                        for key in path:
-                            obj = obj[key]  # type: ignore[index]
-                        if isinstance(obj, str) and len(obj) > 100:
-                            decoded = _extract_texture_url(obj)
-                            if decoded:
-                                return decoded
-                    except (KeyError, TypeError):
-                        pass
-                logger.debug("MineSkin API responded but no URL found. Keys: %s", list(data.keys()))
-            except Exception as exc:
-                logger.debug("MineSkin API call failed for %s: %s", api_url, exc)
+            except requests.RequestException as exc:
+                logger.debug("MineSkin API unreachable (%s): %s", api_url, exc)
+                return None
+            if resp.status_code != 200:
+                logger.debug("MineSkin API returned %s for %s", resp.status_code, api_url)
+                continue
+            try:
+                data = resp.json()
+            except ValueError:
+                logger.debug("MineSkin API returned non-JSON for %s", api_url)
+                continue
+            found = _texture_from_mineskin(data)
+            if found:
+                return found
+            logger.debug(
+                "MineSkin API responded but no URL found. Keys: %s",
+                list(data.keys()) if isinstance(data, dict) else type(data).__name__,
+            )
     return None
-
 
 
 def _resolve_url_skin(identifier: str) -> str:
     """
     Given a URL identifier from SkinsRestorer, resolves it to a
     textures.minecraft.net URL, going through:
-      1. In-memory cache
+      1. In-memory cache (hits and misses, so an unresolvable URL is not
+         re-scanned and re-queried on every refresh)
       2. SkinsRestorer skins-cache directory
       3. MineSkin API (for minesk.in / mineskin.org short URLs)
     Falls back to the raw identifier if nothing works.
     """
-    now = time.time()
-    with _url_cache_lock:
-        cached = _url_resolution_cache.get(identifier)
-        if cached is not None and now - _url_resolved_at.get(identifier, 0) < _URL_CACHE_TTL:
-            return cached
+    hit, cached = _url_resolution_cache.get(identifier)
+    if hit:
+        return cached or identifier
 
-    resolved: str | None = _find_texture_from_sr_skins(identifier)
-
+    resolved = _find_texture_from_sr_skins(identifier)
     if not resolved and (
         "minesk.in" in identifier or "mineskin.org" in identifier
     ):
         short_id = identifier.rstrip("/").split("/")[-1].split(".")[0]
         resolved = _resolve_mineskin_texture(short_id)
 
-    final = resolved if resolved else identifier
-    if resolved:  # only cache successes so failures are retried
-        with _url_cache_lock:
-            _url_resolution_cache[identifier] = final
-            _url_resolved_at[identifier] = now
-    return final
-
+    _url_resolution_cache.set(identifier, resolved, _POSITIVE_TTL if resolved else _NEGATIVE_TTL)
+    return resolved or identifier
 
 
 def _resolve_skinsrestorer(uuid: str, fallback: str) -> str:
@@ -246,34 +315,46 @@ def _resolve_skinsrestorer(uuid: str, fallback: str) -> str:
         identifier = data.get("skinIdentifier", {}).get("identifier", "")
         if not identifier:
             return fallback
+        if identifier.startswith("http"):
+            # Cache first: the skins-directory scan (and MineSkin) runs once per
+            # TTL inside _resolve_url_skin, not on every refresh.
+            return _resolve_url_skin(identifier)
         local_tex = _find_texture_from_sr_skins(identifier)
         if local_tex:
             return local_tex
-        if identifier.startswith("http"):
-            return _resolve_url_skin(identifier)
         match = _SR_RECOMMENDATION_PATTERN.match(identifier)
         return match.group(1) if match else identifier
     except Exception:
-        logger.warning("Failed to read SkinsRestorer file for UUID %s", uuid)
+        logger.warning("Failed to read SkinsRestorer file for UUID %s", uuid, exc_info=True)
         return fallback
 
 
 def _resolve_bedrock_skin(uuid: str) -> str:
+    """Skin for a Floodgate (Bedrock) player via the GeyserMC API, cached per player.
+
+    Hits are kept for _POSITIVE_TTL. Failures and players without a texture fall
+    back to Steve and are retried after _NEGATIVE_TTL, so a Geyser outage costs
+    one timeout per player per window instead of one per refresh.
+    """
+    hit, cached = _geyser_cache.get(uuid)
+    if hit:
+        return cached or _MCHEADS_STEVE
+    url: str | None = None
     try:
         xuid = int(uuid.replace("-", "")[16:], 16)
-        req = urllib.request.Request(
+        resp = _http.get(
             _GEYSER_API.format(xuid),
             headers={"User-Agent": "Mozilla/5.0"},
+            timeout=_GEYSER_TIMEOUT,
         )
-        with urllib.request.urlopen(req, timeout=4) as response:
-            data = json.loads(response.read().decode("utf-8"))
-        texture_id = data.get("texture_id")
+        resp.raise_for_status()
+        texture_id = resp.json().get("texture_id")
         if texture_id:
-            return _proxy_url(_MINECRAFT_TEXTURE_URL.format(texture_id))
-    except Exception:
-        logger.warning("Failed to fetch Bedrock skin for UUID %s", uuid)
-    return _MCHEADS_STEVE
-
+            url = _proxy_url(_MINECRAFT_TEXTURE_URL.format(texture_id))
+    except Exception as exc:
+        logger.warning("Failed to fetch Bedrock skin for UUID %s: %s", uuid, exc)
+    _geyser_cache.set(uuid, url, _POSITIVE_TTL if url else _NEGATIVE_TTL)
+    return url or _MCHEADS_STEVE
 
 
 _NON_IMAGE_HOSTS = (

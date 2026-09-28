@@ -1,3 +1,7 @@
-# This is a private server dashboard — do not index any page.
+# Private dashboard. Crawling is allowed on purpose: link-preview bots
+# (Twitterbot, WhatsApp, Discord, ...) must be able to fetch index.html to read
+# its Open Graph / Twitter tags, and search engines must fetch it to see the
+# `<meta name="robots" content="noindex, nofollow">` that keeps it out of their
+# index. A `Disallow: /` here would block both.
 User-agent: *
-Disallow: /
+Allow: /

@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { Player } from '../../../services/player/player.model';
-import { PlayerService } from '../../../services/player/player.service';
 
 @Component({
   selector: 'app-player-face',
@@ -12,15 +11,13 @@ import { PlayerService } from '../../../services/player/player.service';
   styleUrls: ['./player-face.component.scss'],
 })
 export class PlayerFaceComponent {
-  private readonly playerService = inject(PlayerService);
-
   readonly player    = input.required<Player>();
   readonly size      = input<number>(40);
   readonly showBadge = input<boolean>(false);
 
   protected readonly useRawSkin = computed(() => {
     const player = this.player();
-    if (player.skin_url?.includes('mc-heads.net/avatar/')) {
+    if (player.skin_url.includes('mc-heads.net/avatar/')) {
       return false;
     }
 
@@ -35,7 +32,9 @@ export class PlayerFaceComponent {
     return `-${x}px -${size}px`;
   });
 
-  protected readonly avatarSrc = computed(() =>
-    this.playerService.getAvatarUrl(this.player().avatarUrl(this.size()))
-  );
+  /**
+   * Requested at exactly the rendered size and loaded by the browser itself
+   * (lazily, HTTP-cached), so each face is downloaded once.
+   */
+  protected readonly avatarSrc = computed(() => this.player().avatarUrl(this.size()));
 }

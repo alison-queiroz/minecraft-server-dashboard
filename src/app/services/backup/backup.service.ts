@@ -1,8 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import type { Observable} from 'rxjs';
-import { of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import type { Observable } from 'rxjs';
 
 export interface BackupFile {
   readonly id: string;
@@ -20,16 +18,15 @@ export class BackupService {
   private readonly http = inject(HttpClient);
   private readonly backupEndpoint = '/api/backups';
 
+  /**
+   * Lists a Drive folder (root when `folderId` is null). Errors are propagated
+   * so callers can tell a failed request apart from a genuinely empty folder.
+   */
   getBackups(folderId: string | null): Observable<BackupFile[]> {
     const params = folderId
       ? new HttpParams().set('folderId', folderId)
       : new HttpParams();
 
-    return this.http.get<BackupFile[]>(this.backupEndpoint, { params }).pipe(
-      catchError((err) => {
-        console.error('Failed to fetch backups from server', err);
-        return of([]);
-      }),
-    );
+    return this.http.get<BackupFile[]>(this.backupEndpoint, { params });
   }
 }

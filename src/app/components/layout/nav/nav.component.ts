@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import type { ElementRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideMoon, LucideServer, LucideSun, LucideUsers, LucideUserRound,
@@ -20,6 +21,7 @@ import { ServerStatusBadgeComponent } from '../../shared/server-status-badge/ser
   imports: [RouterLink, RouterLinkActive, ServerIconComponent, UserAvatarComponent, ServerStatusBadgeComponent, IconComponent],
   templateUrl: './nav.component.html',
   styleUrls: ['./nav.component.scss'],
+  host: { '(document:keydown.escape)': 'closeOnEscape()' },
 })
 export class NavComponent {
   protected readonly LucideMoon     = LucideMoon;
@@ -41,6 +43,9 @@ export class NavComponent {
   protected readonly menuOpen = signal(false);
   protected readonly moreDropdownOpen = signal(false);
 
+  private readonly menuToggle = viewChild<ElementRef<HTMLButtonElement>>('menuToggle');
+  private readonly moreToggle = viewChild<ElementRef<HTMLButtonElement>>('moreToggle');
+
   toggleMenu(): void {
     this.menuOpen.update(v => !v);
   }
@@ -55,6 +60,18 @@ export class NavComponent {
 
   closeMoreDropdown(): void {
     this.moreDropdownOpen.set(false);
+  }
+
+  /** Esc closes whichever disclosure is open and hands focus back to its toggle. */
+  closeOnEscape(): void {
+    if (this.menuOpen()) {
+      this.closeMenu();
+      this.menuToggle()?.nativeElement.focus();
+    }
+    if (this.moreDropdownOpen()) {
+      this.closeMoreDropdown();
+      this.moreToggle()?.nativeElement.focus();
+    }
   }
 
   toggleTheme(): void {

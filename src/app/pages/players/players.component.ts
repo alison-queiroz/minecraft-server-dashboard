@@ -1,5 +1,5 @@
 import type { OnInit} from '@angular/core';
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PlayerService } from '../../services/player/player.service';
 import { PlayerListComponent } from '../../components/player/player-list/player-list.component';
@@ -21,6 +21,7 @@ export class PlayersComponent implements OnInit {
   protected readonly playerService = inject(PlayerService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly hasSelection = computed(() => !!this.playerService.selectedPlayerName());
 
   constructor() {
@@ -37,8 +38,9 @@ export class PlayersComponent implements OnInit {
   ngOnInit(): void {
     // The player list is where real-time updates matter, so this is where we pay
     // for the Firestore SDK (lazy-loaded). Lighter routes (home) stay on the
-    // cheap HTTP snapshot and never download it.
-    void this.playerService.enableLiveUpdates();
+    // cheap HTTP snapshot and never download it. The listener is released when
+    // this page is destroyed.
+    this.playerService.enableLiveUpdates(this.destroyRef);
 
     const name = this.route.snapshot.queryParamMap.get('player');
     if (name) {

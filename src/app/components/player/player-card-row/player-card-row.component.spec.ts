@@ -1,13 +1,7 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { PlayerCardRowComponent } from './player-card-row.component';
-import { PlayerService } from '../../../services/player/player.service';
 import { Player } from '../../../services/player/player.model';
-
-class MockPlayerService {
-  fetchAvatarIfNeeded(_url: string): void { return; }
-  getAvatarUrl(url: string): string { return url; }
-}
 
 describe('PlayerCardRowComponent', () => {
   let fixture: ComponentFixture<PlayerCardRowComponent>;
@@ -24,12 +18,22 @@ describe('PlayerCardRowComponent', () => {
     play_hours: 10,
   });
 
+  const mcHeadsPlayer = new Player({
+    name: 'Alex',
+    uuid: 'bbbbbbbb-0000-0000-0000-000000000002',
+    level: 5,
+    health: 20,
+    dimension: 'Overworld',
+    pos: [0, 64, 0],
+    last_seen: 'now',
+    skin_url: 'https://mc-heads.net/skin/Alex',
+    is_raw_skin: false,
+  });
+
   beforeEach(async () => {
+    // No PlayerService / HttpClient: the row must not prefetch avatars.
     await TestBed.configureTestingModule({
       imports: [PlayerCardRowComponent],
-      providers: [
-        { provide: PlayerService, useClass: MockPlayerService },
-      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(PlayerCardRowComponent);
@@ -45,95 +49,14 @@ describe('PlayerCardRowComponent', () => {
     expect(fixture.componentInstance.selected.emit).toHaveBeenCalledTimes(1);
   });
 
-  describe('IntersectionObserver for mc-heads players', () => {
-    const mcHeadsPlayer = new Player({
-      name: 'Alex',
-      uuid: 'bbbbbbbb-0000-0000-0000-000000000002',
-      level: 5,
-      health: 20,
-      dimension: 'Overworld',
-      pos: [0, 64, 0],
-      last_seen: 'now',
-      skin_url: 'https://mc-heads.net/skin/Alex',
-      is_raw_skin: false,
-    });
+  it('shows an mc-heads face as one lazy <img> at the 40px row size (no /64 prefetch)', () => {
+    const f = TestBed.createComponent(PlayerCardRowComponent);
+    f.componentRef.setInput('player', mcHeadsPlayer);
+    f.detectChanges();
 
-    function makeMockObserver(observeSpy: ReturnType<typeof jest.fn>, disconnectSpy: ReturnType<typeof jest.fn>) {
-      return class MockIO {
-        constructor() { /* callback ignored */ }
-        observe = observeSpy;
-        disconnect = disconnectSpy;
-      };
-    }
-
-    function makeMockObserverWithCallback(disconnectSpy: ReturnType<typeof jest.fn>) {
-      let cb: ((entries: Partial<IntersectionObserverEntry>[]) => void) | undefined;
-      const MockIO = class {
-        constructor(callback: (entries: Partial<IntersectionObserverEntry>[]) => void) {
-          cb = callback;
-        }
-        observe = jest.fn();
-        disconnect = disconnectSpy;
-      };
-      return { MockIO, getCallback: () => cb };
-    }
-
-    afterEach(() => {
-      delete (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'];
-    });
-
-    it('sets up IntersectionObserver for non-raw-avatar player', () => {
-      const observeSpy = jest.fn();
-      (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'] = makeMockObserver(observeSpy, jest.fn());
-
-      const f = TestBed.createComponent(PlayerCardRowComponent);
-      f.componentRef.setInput('player', mcHeadsPlayer);
-      f.detectChanges();
-
-      expect(observeSpy).toHaveBeenCalled();
-    });
-
-    it('calls fetchAvatarIfNeeded when the element intersects', () => {
-      const fetchSpy = jest.spyOn(TestBed.inject(PlayerService), 'fetchAvatarIfNeeded').mockImplementation(() => undefined);
-      const { MockIO, getCallback } = makeMockObserverWithCallback(jest.fn());
-      (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'] = MockIO;
-
-      const f = TestBed.createComponent(PlayerCardRowComponent);
-      f.componentRef.setInput('player', mcHeadsPlayer);
-      f.detectChanges();
-
-      getCallback()?.([{ isIntersecting: true }]);
-
-      expect(fetchSpy).toHaveBeenCalled();
-    });
-
-    it('does not call fetchAvatarIfNeeded when entry is not intersecting', () => {
-      const fetchSpy = jest.spyOn(TestBed.inject(PlayerService), 'fetchAvatarIfNeeded').mockImplementation(() => undefined);
-      const { MockIO, getCallback } = makeMockObserverWithCallback(jest.fn());
-      (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'] = MockIO;
-
-      const f = TestBed.createComponent(PlayerCardRowComponent);
-      f.componentRef.setInput('player', mcHeadsPlayer);
-      f.detectChanges();
-
-      getCallback()?.([{ isIntersecting: false }]);
-
-      expect(fetchSpy).not.toHaveBeenCalled();
-    });
-
-    it('disconnects observer on component destroy', () => {
-      const disconnectSpy = jest.fn();
-      (globalThis as unknown as Record<string, unknown>)['IntersectionObserver'] = makeMockObserver(jest.fn(), disconnectSpy);
-
-      const f = TestBed.createComponent(PlayerCardRowComponent);
-      f.componentRef.setInput('player', mcHeadsPlayer);
-      f.detectChanges();
-      f.destroy();
-
-      expect(disconnectSpy).toHaveBeenCalled();
-    });
+    const imgs = (f.nativeElement as HTMLElement).querySelectorAll('img');
+    expect(imgs.length).toBe(1);
+    expect(imgs[0]?.getAttribute('src')).toBe('https://mc-heads.net/avatar/Alex/40');
+    expect(imgs[0]?.getAttribute('loading')).toBe('lazy');
   });
 });
-
-
-

@@ -6,7 +6,15 @@
     [style.background-position]="bgPosition()"
   ></div>
 } @else {
-  <img [src]="avatarSrc()" class="w-full h-full object-cover" alt="" />
+  <img
+    loading="lazy"
+    decoding="async"
+    [src]="avatarSrc()"
+    [width]="size()"
+    [height]="size()"
+    class="w-full h-full object-cover"
+    alt=""
+  />
 }
 
 @if (player().isBedrock() && showBadge()) {

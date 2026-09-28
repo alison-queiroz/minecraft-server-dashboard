@@ -210,6 +210,13 @@ function createEmptyTouchList(): TouchList {
   return { length: 0, item: () => null } as unknown as TouchList;
 }
 
+/** A real dispatchable TouchEvent (jsdom's TouchEvent init lacks TouchList.item()). */
+function domTouchEvent(type: string, clientX: number, clientY: number): TouchEvent {
+  const event = new TouchEvent(type);
+  Object.defineProperty(event, 'touches', { value: createTouchList(clientX, clientY) });
+  return event;
+}
+
 @Component({
   standalone: true,
   imports: [SwipeNavigateDirective],
@@ -357,6 +364,46 @@ describe('SwipeNavigateDirective — coverage', () => {
     directive.onTouchMove({ touches: createTouchList(200, 50) } as unknown as TouchEvent);
 
     expect(draggingSpy).not.toHaveBeenCalledWith(true);
+  });
+
+  it('registers touchstart/touchmove as passive listeners so scrolling never waits for JS', () => {
+    const addSpy = jest.spyOn(HTMLElement.prototype, 'addEventListener');
+    const { el } = getHostEl();
+
+    const passiveOnHost = (type: string): boolean => addSpy.mock.calls.some(([name, , options], i) =>
+      addSpy.mock.contexts[i] === el && name === type && typeof options === 'object' && options.passive === true);
+    expect(passiveOnHost('touchstart')).toBe(true);
+    expect(passiveOnHost('touchmove')).toBe(true);
+    addSpy.mockRestore();
+  });
+
+  it('drives the gesture from real DOM touch events', async () => {
+    const router = TestBed.inject(Router);
+    await router.navigate(['/players']);
+    const { el, directive } = getHostEl();
+    const dragSpy = jest.fn();
+    directive.dragXChange.subscribe(dragSpy);
+
+    el.dispatchEvent(domTouchEvent('touchstart', 300, 50));
+    el.dispatchEvent(domTouchEvent('touchmove', 250, 52));
+
+    expect(dragSpy).toHaveBeenCalledWith(-50);
+  });
+
+  it('removes its touch listeners when destroyed', async () => {
+    const router = TestBed.inject(Router);
+    await router.navigate(['/players']);
+    const fixture = TestBed.createComponent(CoverageHostComponent);
+    fixture.detectChanges();
+    const debug = fixture.debugElement.query(By.directive(SwipeNavigateDirective));
+    const el = debug.nativeElement as HTMLElement;
+    const directive = debug.injector.get(SwipeNavigateDirective);
+    const startSpy = jest.spyOn(directive, 'onTouchStart');
+
+    fixture.destroy();
+    el.dispatchEvent(domTouchEvent('touchstart', 300, 50));
+
+    expect(startSpy).not.toHaveBeenCalled();
   });
 
   it('navigateToIndex: skips navigation when targetPath is undefined (pageOrder index out of bounds)', async () => {

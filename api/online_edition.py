@@ -17,9 +17,12 @@ Read-only; safe to run per worker.
 # evaluated at runtime and raises. Defer all annotations so modern syntax is safe.
 from __future__ import annotations
 
+import logging
 import os
 import re
 import threading
+
+logger = logging.getLogger(__name__)
 
 _MC_DIR = os.environ.get("MINECRAFT_DIR", ".")
 _LOG_PATH = os.path.join(_MC_DIR, "logs", "latest.log")
@@ -30,13 +33,15 @@ _LEAVE = re.compile(r"\]: (\S+) left the game")
 
 _lock = threading.Lock()
 _offset = 0
+_inode: int | None = None         # identity of the file _offset belongs to
 _online: dict[str, str] = {}      # player name -> "bedrock" | "java"
 _pending_bedrock: set[str] = set()  # saw a Floodgate line, awaiting the join line
 
 
 def _reset() -> None:
-    global _offset, _online, _pending_bedrock
+    global _offset, _inode, _online, _pending_bedrock
     _offset = 0
+    _inode = None
     _online = {}
     _pending_bedrock = set()
 
@@ -59,16 +64,18 @@ def _process_line(line: str) -> None:
 
 def _ingest() -> None:
     """Read any new lines appended since the last call (incremental tail)."""
-    global _offset
+    global _offset, _inode
     try:
-        size = os.path.getsize(_LOG_PATH)
+        st = os.stat(_LOG_PATH)
     except OSError:
         _reset()
         return
-    if size < _offset:
-        # File shrank → the server restarted and rotated latest.log. Start over
-        # so stale players from the previous session don't linger.
+    if st.st_size < _offset or (_inode is not None and st.st_ino != _inode):
+        # File shrank or was replaced → the server restarted and rotated
+        # latest.log (a new session can outgrow the old offset before we look).
+        # Start over so stale players from the previous session don't linger.
         _reset()
+    _inode = st.st_ino
     try:
         with open(_LOG_PATH, "r", encoding="utf-8", errors="replace") as fh:
             fh.seek(_offset)
@@ -76,7 +83,7 @@ def _ingest() -> None:
                 _process_line(line)
             _offset = fh.tell()
     except OSError:
-        pass
+        logger.debug("Could not tail %s", _LOG_PATH, exc_info=True)
 
 
 def bedrock_online_count() -> int | None:

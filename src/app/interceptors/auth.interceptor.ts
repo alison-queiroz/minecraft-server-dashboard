@@ -1,13 +1,24 @@
 import type { HttpInterceptorFn } from '@angular/common/http';
+import { HttpContextToken } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { from, switchMap } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { AuthService } from '../services/auth/auth.service';
 
+/**
+ * Attach this context token to requests for public endpoints (no `@require_auth`
+ * on the backend). They are sent immediately and anonymously instead of waiting
+ * for Firebase to restore the session and mint an ID token.
+ *
+ * @example
+ * this.http.get(url, { context: new HttpContext().set(SKIP_AUTH, true) })
+ */
+export const SKIP_AUTH = new HttpContextToken<boolean>(() => false);
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   // Only attach a token to calls going to our own Python API.
-  if (!req.url.startsWith('/api/')) return next(req);
+  if (!req.url.startsWith('/api/') || req.context.get(SKIP_AUTH)) return next(req);
 
   const auth = inject(AuthService);
 

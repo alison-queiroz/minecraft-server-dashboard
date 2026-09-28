@@ -4,7 +4,7 @@ import os
 import pytest
 
 import api.advancements as adv_module
-from api.advancements import _label, _description, get_advancements, get_description
+from api.advancements import _label, count_completed, get_advancements, get_description
 
 
 # ── _label ────────────────────────────────────────────────────────────────────
@@ -33,19 +33,6 @@ def test_label_falls_back_to_title_case_when_key_missing(mocker):
     # Expected fallback: adv_id.replace("_"," ").replace(":"," › ").title()
     result = _label("minecraft:story/mine_stone")
     assert "Mine Stone" in result
-
-
-# ── _description ──────────────────────────────────────────────────────────────
-
-def test_description_returns_empty_string_for_unknown():
-    assert _description("minecraft:story/nonexistent") == ""
-
-
-def test_description_returns_value_when_present(mocker):
-    mocker.patch.object(adv_module, "_DESCRIPTIONS", {
-        "minecraft:story/mine_stone": "Obtain any type of pickaxe."
-    })
-    assert _description("minecraft:story/mine_stone") == "Obtain any type of pickaxe."
 
 
 # ── get_description (public helper) ──────────────────────────────────────────
@@ -159,6 +146,46 @@ def test_get_advancements_no_namespace_category(mocker, tmp_path):
     result = get_advancements("069a79f4-44e9-4726-a5be-fca90e38aaf5")
     assert result["total"] == 1
     assert "Other" in result["by_category"]
+
+
+def test_get_advancements_non_dict_root_is_empty(mocker, tmp_path):
+    """Treats a JSON file whose root is not an object as having no advancements."""
+    (tmp_path / "069a79f4-44e9-4726-a5be-fca90e38aaf5.json").write_text("[1, 2]")
+    mocker.patch.object(adv_module, "_ADVANCEMENTS_DIR", str(tmp_path))
+    assert get_advancements("069a79f4-44e9-4726-a5be-fca90e38aaf5") == {
+        "completed": [], "total": 0, "by_category": {},
+    }
+
+
+# ── count_completed (shared with the player list) ────────────────────────────
+
+def test_count_completed_missing_file(mocker):
+    """Returns 0 when the advancements file does not exist."""
+    mocker.patch("os.path.exists", return_value=False)
+    assert count_completed("some-uuid") == 0
+
+
+def test_count_completed_counts_done_non_recipe(mocker):
+    """Counts only completed non-recipe advancements, with the same filter as get_advancements."""
+    adv = {
+        "DataVersion": 3955,
+        "minecraft:story/mine_stone": {"done": True, "criteria": {}},
+        "minecraft:story/upgrade_tools": {"done": False, "criteria": {}},
+        "minecraft:recipes/building_blocks/stone": {"done": True, "criteria": {}},
+        "minecraft:story/malformed": "not-a-dict",
+    }
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data=json.dumps(adv)))
+    assert count_completed("uuid") == 1
+
+
+def test_count_completed_corrupted_file_logs_debug(mocker):
+    """Returns 0 and logs the parse error at debug level when the file is torn or corrupt."""
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("builtins.open", mocker.mock_open(read_data="bad-json"))
+    debug = mocker.patch.object(adv_module.logger, "debug")
+    assert count_completed("uuid") == 0
+    assert debug.call_args.kwargs.get("exc_info") is True
 
 
 # ── Module-level labels file error handler ────────────────────────────────────

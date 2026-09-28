@@ -30,16 +30,18 @@
 
       <!-- More dropdown -->
       <div class="nav-dropdown">
-        <button (click)="toggleMoreDropdown()"
+        <button #moreToggle (click)="toggleMoreDropdown()"
           [class.is-active]="moreDropdownOpen()"
           class="nav-link more-button"
           type="button"
-          aria-label="More navigation options">
+          aria-label="More navigation options"
+          aria-controls="nav-more-menu"
+          [attr.aria-expanded]="moreDropdownOpen()">
           <app-icon [icon]="LucideMoreVertical" [size]="14"></app-icon>
           More
         </button>
         @if (moreDropdownOpen()) {
-          <div class="dropdown-menu">
+          <div id="nav-more-menu" class="dropdown-menu">
             <a routerLink="/map" routerLinkActive="is-active"
               (click)="closeMoreDropdown()"
               class="dropdown-link">
@@ -101,8 +103,10 @@
       }
 
       <!-- Hamburger button (mobile only) -->
-      <button (click)="toggleMenu()" class="menu-toggle"
-        aria-label="Toggle menu">
+      <button #menuToggle type="button" (click)="toggleMenu()" class="menu-toggle"
+        aria-label="Toggle menu"
+        aria-controls="nav-mobile-menu"
+        [attr.aria-expanded]="menuOpen()">
         @if (menuOpen()) {
           <app-icon [icon]="LucideX" [size]="20"></app-icon>
         } @else {
@@ -114,7 +118,7 @@
 
   <!-- Mobile dropdown menu -->
   @if (menuOpen()) {
-    <div class="mobile-menu">
+    <div id="nav-mobile-menu" class="mobile-menu">
       <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }"
         (click)="closeMenu()"
         class="mobile-link">

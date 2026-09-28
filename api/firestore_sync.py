@@ -1,40 +1,28 @@
-"""Helpers to sync player data to Firestore in the background."""
+"""Helpers to sync player data to Firestore in the background.
+
+sync_players (called only by the sync leader) writes the minute's analytics
+snapshot and the player docs that changed; the local JSONL snapshot store it
+appends to lives in api/snapshot_store.py.
+"""
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
 import threading
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional, Tuple
 
 from .firebase_init import ensure_initialized
+from .snapshot_store import _write_local_snapshot
 
 logger = logging.getLogger(__name__)
-
-# Local fallback file for analytics snapshots (one JSON object per line).
-# Written on every sync so analytics works even when Firestore is unavailable.
-_LOCAL_SNAPSHOTS_PATH = os.environ.get(
-    "LOCAL_SNAPSHOTS_PATH",
-    os.path.join(os.path.dirname(__file__), "..", "analytics_snapshots.jsonl"),
-)
-_LOCAL_SNAPSHOTS_MAX_DAYS = 365
-
-# Retained for backward-compat / tests; the real init state lives in firebase_init.
-_firebase_initialized = False
-
-# Serializes appends so concurrent sync threads can't interleave and corrupt
-# the JSONL file (the old full read-rewrite had no lock).
-_snapshot_write_lock = threading.Lock()
-_writes_since_prune = 0
-_PRUNE_EVERY = 1440  # prune stale lines once per ~day of minute snapshots
 
 
 def _ensure_firebase() -> bool:
     """Initialize Firebase Admin SDK if not already done. Returns True on success."""
-    global _firebase_initialized
-    _firebase_initialized = ensure_initialized()
-    return _firebase_initialized
+    return ensure_initialized()
 
 
 def _to_native(value: Any) -> Any:
@@ -55,79 +43,10 @@ def _to_native(value: Any) -> Any:
     return str(value)
 
 
-def _prune_local_snapshots(now_ts: int) -> None:
-    """Drop snapshot lines older than the retention window (single rewrite).
-
-    Called from _write_local_snapshot on a schedule (not every write) while the
-    snapshot write lock is held.
-    """
-    path = os.path.abspath(_LOCAL_SNAPSHOTS_PATH)
-    if not os.path.exists(path):
-        return
-    cutoff = now_ts - _LOCAL_SNAPSHOTS_MAX_DAYS * 86_400
-    kept: list[str] = []
-    with open(path, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                if json.loads(line).get("ts", 0) >= cutoff:
-                    kept.append(line)
-            except json.JSONDecodeError:
-                pass
-    tmp = path + ".tmp"
-    with open(tmp, "w") as f:
-        f.write("\n".join(kept) + ("\n" if kept else ""))
-    os.replace(tmp, path)
-
-
-def _write_local_snapshot(ts: int, count: int) -> None:
-    """Append one analytics snapshot line to the local JSONL file.
-
-    O(1) append under a lock (concurrent writers previously could interleave a
-    full read-rewrite and truncate/duplicate the file). Stale entries are pruned
-    on a schedule via _prune_local_snapshots rather than on every write. Only
-    {ts, count} is stored: the online-name roster is never read back and was
-    pure storage/wire waste.
-    """
-    global _writes_since_prune
-    try:
-        path = os.path.abspath(_LOCAL_SNAPSHOTS_PATH)
-        entry = json.dumps({"ts": ts, "count": count})
-        with _snapshot_write_lock:
-            with open(path, "a") as f:
-                f.write(entry + "\n")
-            _writes_since_prune += 1
-            if _writes_since_prune >= _PRUNE_EVERY:
-                _writes_since_prune = 0
-                _prune_local_snapshots(ts)
-    except Exception as exc:
-        logger.debug("Could not write local snapshot: %s", exc)
-
-
-def read_local_snapshots(since: int) -> list[dict[str, Any]]:
-    """Read snapshots from the local JSONL fallback file."""
-    path = os.path.abspath(_LOCAL_SNAPSHOTS_PATH)
-    if not os.path.exists(path):
-        return []
-    results = []
-    try:
-        with open(path, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    snap = json.loads(line)
-                    if snap.get("ts", 0) >= since:
-                        results.append(snap)
-                except json.JSONDecodeError:
-                    pass
-    except Exception as exc:
-        logger.debug("Could not read local snapshots: %s", exc)
-    return sorted(results, key=lambda s: s.get("ts", 0))
-
+# Leader-only sync state (see sync_players), guarded by _sync_lock.
+_written_hashes: dict[str, str] = {}  # uuid -> hash of the last committed doc
+_last_snapshot_minute: Optional[str] = None
+_sync_lock = threading.Lock()
 
 _MC_HOST = os.environ.get("MC_HOST", "localhost")
 _MC_PORT = int(os.environ.get("MC_PORT", "25565"))
@@ -156,37 +75,64 @@ def _get_online_from_server() -> tuple[list[str], int]:
         return [], 0
 
 
+def _doc_hash(doc: dict[str, Any]) -> str:
+    """Stable content hash of a Firestore-ready player doc."""
+    canonical = json.dumps(doc, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def sync_players(players: list[dict[str, Any]]) -> None:
-    """Upsert all players into Firestore and write an analytics snapshot.
-    Also writes the snapshot locally as a fallback for when Firestore is unavailable."""
-    now = datetime.now(timezone.utc)
-    ts = int(now.timestamp())
-    _, online_count = _get_online_from_server()
+    """Write this minute's analytics snapshot and the player docs that changed.
 
-    # Always write to local file regardless of Firestore availability
-    _write_local_snapshot(ts, online_count)
+    Only the sync leader calls this (player_sync._background_sync_loop), so a
+    snapshot line / player doc is written by one process, not once per worker.
 
-    if not _ensure_firebase():
-        return
-    try:
-        from firebase_admin import firestore as fb_firestore  # lazy import
+    - Analytics: at most one {ts, count} snapshot per UTC minute, appended to
+      the local JSONL (always, even without Firestore) and upserted to
+      Firestore ``snapshots/<YYYY-MM-DDTHH:MM>``.
+    - Players: ``players/<uuid>`` is written only when the doc's content hash
+      differs from the last successful commit by this process, so a quiet
+      server costs one write per minute instead of N+1. The first sync after
+      start (empty hash map) writes every player; a failed commit leaves the
+      hashes untouched so those docs are retried on the next sync.
+    - Players that disappear from disk are never deleted: their last doc stays
+      in Firestore (unchanged upsert-only behaviour).
+    """
+    global _last_snapshot_minute
+    with _sync_lock:
+        now = datetime.now(timezone.utc)
+        minute = now.strftime("%Y-%m-%dT%H:%M")
+        snapshot: Optional[dict[str, int]] = None
+        if minute != _last_snapshot_minute:
+            ts = int(now.timestamp())
+            _, online_count = _get_online_from_server()
+            _write_local_snapshot(ts, online_count)
+            _last_snapshot_minute = minute
+            snapshot = {"ts": ts, "count": online_count}
 
-        db = fb_firestore.client()
-        batch = db.batch()
+        if not _ensure_firebase():
+            return
+        changed: list[Tuple[str, dict[str, Any], str]] = []
         for player in players:
-            ref = db.collection("players").document(player["uuid"])
-            batch.set(ref, _to_native(player))
+            doc = _to_native(player)
+            digest = _doc_hash(doc)
+            if _written_hashes.get(player["uuid"]) != digest:
+                changed.append((player["uuid"], doc, digest))
+        if not changed and snapshot is None:
+            return
+        try:
+            from firebase_admin import firestore as fb_firestore  # lazy import
 
-        # Write analytics snapshot (minute-level granularity). Only {ts, count}
-        # is stored — the online-name roster is never read back by any consumer.
-        snapshot_id = now.strftime("%Y-%m-%dT%H:%M")
-        snapshot_ref = db.collection("snapshots").document(snapshot_id)
-        batch.set(snapshot_ref, {
-            "ts": ts,
-            "count": online_count,
-        }, merge=True)
-
-        batch.commit()
-        logger.debug("Synced %d player(s) to Firestore.", len(players))
-    except Exception as exc:  # pylint: disable=broad-except
-        logger.warning("Firestore player sync failed: %s", exc)
+            db = fb_firestore.client()
+            batch = db.batch()
+            for uuid, doc, _ in changed:
+                batch.set(db.collection("players").document(uuid), doc)
+            if snapshot is not None:
+                batch.set(db.collection("snapshots").document(minute), snapshot, merge=True)
+            batch.commit()
+        except Exception:  # pylint: disable=broad-except
+            logger.warning("Firestore player sync failed", exc_info=True)
+            return
+        for uuid, _, digest in changed:
+            _written_hashes[uuid] = digest
+        logger.debug("Synced %d of %d player doc(s) to Firestore.", len(changed), len(players))
