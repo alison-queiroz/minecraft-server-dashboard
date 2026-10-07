@@ -1,4 +1,5 @@
-"""Read Minecraft advancement data from world/advancements/{uuid}.json."""
+"""Read Minecraft advancement data from world/players/advancements/{uuid}.json (26.1+)
+or world/advancements/{uuid}.json (older worlds)."""
 from __future__ import annotations
 
 import json
@@ -6,9 +7,11 @@ import logging
 import os
 from typing import Any, Iterator
 
+from .world_paths import player_files_dir
+
 logger = logging.getLogger(__name__)
 
-_ADVANCEMENTS_DIR = os.path.join(os.environ.get("MINECRAFT_DIR", "."), "world", "advancements")
+_ADVANCEMENTS_DIR = player_files_dir(os.environ.get("MINECRAFT_DIR", "."), "advancements", "advancements")
 
 _LABELS_FILE = os.path.join(os.path.dirname(__file__), "advancement_labels.json")
 try:
