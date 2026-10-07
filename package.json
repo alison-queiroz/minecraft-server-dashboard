@@ -37,14 +37,14 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/cdk": "^22.1.5",
-    "@angular/common": "^22.1.5",
-    "@angular/compiler": "^22.1.5",
-    "@angular/core": "^22.1.5",
-    "@angular/forms": "^22.1.5",
-    "@angular/platform-browser": "^22.1.5",
-    "@angular/router": "^22.1.5",
-    "@angular/service-worker": "^22.1.5",
+    "@angular/cdk": "^22.2.1",
+    "@angular/common": "^22.2.1",
+    "@angular/compiler": "^22.2.1",
+    "@angular/core": "^22.2.1",
+    "@angular/forms": "^22.2.1",
+    "@angular/platform-browser": "^22.2.1",
+    "@angular/router": "^22.2.1",
+    "@angular/service-worker": "^22.2.1",
     "@lucide/angular": "^1.7.0",
     "chart.js": "^4.5.1",
     "firebase": "^12.11.0",
@@ -53,12 +53,12 @@
     "tslib": "^2.6.0"
   },
   "devDependencies": {
-    "@analogjs/vite-plugin-angular": "^2.4.0",
-    "@analogjs/vitest-angular": "^2.4.0",
-    "@angular-devkit/build-angular": "^22.1.7",
-    "@angular/cli": "^22.1.7",
-    "@angular/compiler-cli": "^22.1.5",
-    "@angular/pwa": "^22.1.7",
+    "@analogjs/vite-plugin-angular": "^2.8.0",
+    "@analogjs/vitest-angular": "^2.8.0",
+    "@angular-devkit/build-angular": "^22.2.1",
+    "@angular/cli": "^22.2.1",
+    "@angular/compiler-cli": "^22.2.1",
+    "@angular/pwa": "^22.2.1",
     "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
@@ -79,5 +79,8 @@
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.2",
     "wait-on": "^9.0.4"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.5"
   }
 }

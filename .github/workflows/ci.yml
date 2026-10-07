@@ -184,6 +184,9 @@ jobs:
       #   PYSEC-2026-2132      click.edit() injection (local CLI helper; never called)
       #   GHSA-82r6-8w77-94w6  anyio TLSStream IDNA 2003 (all hosts are ASCII)
       #   GHSA-5p39-cfhj-2xmp  anyio process-pool stderr (process pools unused)
+      #   PYSEC-2026-4175      urllib3 HTTPS-proxy TLS settings ignored (no proxy is configured)
+      #   PYSEC-2026-4176      urllib3 chunked-deflate infinite loop } need a malicious HTTPS peer; the only
+      #   PYSEC-2026-4177      urllib3 unbounded chunk-size line     } peers are Google/skin APIs (worker DoS at worst)
       - run: >-
           pip-audit -r api/requirements.txt --progress-spinner off
           --ignore-vuln PYSEC-2026-2275
@@ -195,6 +198,9 @@ jobs:
           --ignore-vuln PYSEC-2026-2132
           --ignore-vuln GHSA-82r6-8w77-94w6
           --ignore-vuln GHSA-5p39-cfhj-2xmp
+          --ignore-vuln PYSEC-2026-4175
+          --ignore-vuln PYSEC-2026-4176
+          --ignore-vuln PYSEC-2026-4177
 
   lockfile:
     name: Python Lockfile
