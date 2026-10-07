@@ -23,6 +23,7 @@ import nbtlib
 
 from .advancements import count_completed
 from .skin_resolver import clear_skin_caches, get_skin_url
+from .world_paths import player_files_dir
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,8 @@ logger = logging.getLogger(__name__)
 # run outside the one production VM. Default "." keeps the previous
 # CWD-relative behaviour; set MINECRAFT_DIR to relocate the data root.
 _MC_DIR = os.environ.get("MINECRAFT_DIR", ".")
-_PLAYERDATA_DIR = os.path.join(_MC_DIR, "world", "playerdata")
-_STATS_DIR = os.path.join(_MC_DIR, "world", "stats")
+_PLAYERDATA_DIR = player_files_dir(_MC_DIR, "data", "playerdata")
+_STATS_DIR = player_files_dir(_MC_DIR, "stats", "stats")
 _USERCACHE_FILE = os.path.join(_MC_DIR, "usercache.json")
 _OPS_FILE = os.path.join(_MC_DIR, "ops.json")
 _SR_PLAYERS_DIR = os.path.join(_MC_DIR, "plugins", "SkinsRestorer", "players")  # watched for skin changes
